@@ -1,6 +1,7 @@
 import inspect
 
 import numpy as np
+import torch
 
 import ring_network as network
 import integrate as integ

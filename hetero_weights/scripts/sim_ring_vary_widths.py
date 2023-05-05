@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 import ricciardi as ric
 import ring_network as network
