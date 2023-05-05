@@ -1,7 +1,4 @@
-import inspect
-
 import numpy as np
-import tensorflow as tf
 
 import ricciardi as ric
 import ring_network as network
@@ -10,7 +7,7 @@ import sim_util as su
 ri = ric.Ricciardi()
 ri.set_up_nonlinearity('./phi_int')
 
-NtE = 200
+NtE = 100
 T = np.linspace(0,NtE*ri.tE,round(NtE*ri.tE/(ri.tI/3))+1)
 mask_time = T>(NtE/2*ri.tE)
 
@@ -24,7 +21,7 @@ H = np.array(
 varH = H*2e-5
 
 Lam = 1e-3
-CV_Lam = 12
+CV_Lam = 10
 L = 5
 
 sWE = 30
@@ -42,8 +39,8 @@ for sWI_idx,sWI in enumerate(sWIs):
         this_svarH = this_sH/np.sqrt(2)
 
         params_dict = {}
-        params_dict['Nl'] = 12
-        params_dict['NE'] = 250
+        params_dict['Nl'] = 20
+        params_dict['NE'] = 150
         params_dict['W'] = W
         params_dict['varW'] = varW
         params_dict['SW'] = this_sW

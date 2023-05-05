@@ -1,13 +1,11 @@
 import numpy as np
-import tensorflow as tf
+import torch
 from scipy.special import erf, erfi
 from scipy.integrate import solve_ivp
 from scipy.linalg import circulant
 from mpmath import fp
 
 jtheta = np.vectorize(fp.jtheta, 'D')
-
-#test xcodeproj
     
 class network(object):
     """
@@ -58,9 +56,6 @@ class network(object):
         # Total number of neurons
         self.N = self.ori_map.size
         self.Z = self.ori_map.flatten()
-
-        self.E_cond = tf.zeros(self.N,dtype=tf.bool)
-        self.E_cond = tf.tensor_scatter_nd_update(self.E_cond,self.E_all[:,None],tf.ones_like(self.E_all,dtype=tf.bool))
 
         self.n = n
 
@@ -245,13 +240,25 @@ class network(object):
 
     def generate_disorder(self,W,varW,H,varH,Lam,CV_Lam):
         self.generate_weights(W,varW)
-        self.M_tf = tf.convert_to_tensor(self.M,dtype=tf.float32)
         self.generate_inputs(H,varH)
-        self.H_tf = tf.convert_to_tensor(self.H,dtype=tf.float32)
 
         sigma_l = np.sqrt(np.log(1+CV_Lam**2))
         mu_l = np.log(Lam)-sigma_l**2/2
         self.LAM = np.zeros(self.N)
         self.LAM[self.E_all] = np.random.lognormal(mu_l, sigma_l, self.NE*self.Nloc)
-        self.LAM_tf = tf.convert_to_tensor(self.LAM,dtype=tf.float32)
 
+    def generate_tensors(self):
+        self.E_cond = torch.zeros(self.N,dtype=torch.bool)
+        self.E_cond = self.E_cond.scatter(0,torch.from_numpy(self.E_all),torch.ones(self.E_all.size,dtype=torch.bool))
+
+        self.M_torch = torch.from_numpy(self.M)
+        self.H_torch = torch.from_numpy(self.H)
+        self.LAM_torch = torch.from_numpy(self.LAM)
+
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print("Using",device)
+
+        self.E_cond = self.E_cond.to(device)
+        self.M_torch = self.M_torch.to(device)
+        self.H_torch = self.H_torch.to(device)
+        self.LAM_torch = self.LAM_torch.to(device)
