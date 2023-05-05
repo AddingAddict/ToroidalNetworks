@@ -21,6 +21,7 @@ def sim_ring(params_dict,ri,T,mask_time,seeds,max_min=15):
         filtered_mydict_disorder = {k: v for k, v in this_params_dict.items() if k in [p.name for p in
                                             inspect.signature(net.generate_disorder).parameters.values()]}
         net.generate_disorder(**filtered_mydict_disorder)
+        net.generate_tensors()
         
         sol = integ.sim_dyn(ri,T,0.0,net.M_torch,net.H_torch,net.LAM_torch,net.E_cond,mult_tau=False)
         rates[seed_idx,0,:]=torch.mean(sol[mask_time],axis=0).numpy()
