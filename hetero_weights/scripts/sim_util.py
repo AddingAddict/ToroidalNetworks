@@ -25,10 +25,16 @@ def sim_ring(params_dict,ri,T,mask_time,seeds,max_min=15):
         net.generate_tensors()
         
         sol = integ.sim_dyn(ri,T,0.0,net.M_torch,net.H_torch,net.LAM_torch,net.E_cond,mult_tau=False)
-        rates[seed_idx,0,:]=torch.mean(sol[mask_time],axis=0).numpy()
+        try:
+            rates[seed_idx,0,:]=torch.mean(sol[mask_time],axis=0).numpy()
+        except:
+            rates[seed_idx,0,:]=torch.mean(sol[mask_time],axis=0).cpu().numpy()
         
         sol = integ.sim_dyn(ri,T,params_dict['L'],net.M_torch,net.H_torch,net.LAM_torch,net.E_cond,mult_tau=False)
-        rates[seed_idx,1,:]=torch.mean(sol[mask_time],axis=0).numpy()
+        try:
+            rates[seed_idx,1,:]=torch.mean(sol[mask_time],axis=0).numpy()
+        except:
+            rates[seed_idx,1,:]=torch.mean(sol[mask_time],axis=0).cpu().numpy()
         
     return net,np.hstack([rates[i,:,:] for i in np.arange(len(seeds))])
 
