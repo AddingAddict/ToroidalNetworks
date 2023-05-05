@@ -22,10 +22,10 @@ def sim_ring(params_dict,ri,T,mask_time,seeds,max_min=15):
                                             inspect.signature(net.generate_disorder).parameters.values()]}
         net.generate_disorder(**filtered_mydict_disorder)
         
-        sol = integ.sim_dyn(ri,T,0.0,net.M_tf,net.H_tf,net.LAM_tf,net.E_cond,mult_tau=False)
+        sol = integ.sim_dyn(ri,T,0.0,net.M_torch,net.H_torch,net.LAM_torch,net.E_cond,mult_tau=False)
         rates[seed_idx,0,:]=torch.mean(sol[mask_time],axis=0).numpy()
         
-        sol = integ.sim_dyn(ri,T,params_dict['L'],net.M_tf,net.H_tf,net.LAM_tf,net.E_cond,mult_tau=False)
+        sol = integ.sim_dyn(ri,T,params_dict['L'],net.M_torch,net.H_torch,net.LAM_torch,net.E_cond,mult_tau=False)
         rates[seed_idx,1,:]=torch.mean(sol[mask_time],axis=0).numpy()
         
     return net,np.hstack([rates[i,:,:] for i in np.arange(len(seeds))])
