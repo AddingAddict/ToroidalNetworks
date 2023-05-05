@@ -8,7 +8,7 @@ ri = ric.Ricciardi()
 ri.set_up_nonlinearity('./phi_int')
 
 NtE = 100
-T = np.linspace(0,NtE*ri.tE,round(NtE*ri.tE/(ri.tI/3))+1)
+T = torch.linspace(0,NtE*ri.tE,round(NtE*ri.tE/(ri.tI/3))+1)
 mask_time = T>(NtE/2*ri.tE)
 
 W = np.array(
