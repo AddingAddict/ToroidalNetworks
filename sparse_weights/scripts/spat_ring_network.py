@@ -1,7 +1,7 @@
 from numba import jit
 
 import numpy as np
-import tensorflow as tf
+import torch
 from scipy.special import erf, erfi, i0
 from scipy.integrate import solve_ivp
 from scipy.linalg import circulant
@@ -305,10 +305,26 @@ class network(object):
         C_full, W_mean_full,W_var_full = self.generate_full_rec_conn(W,np.zeros((self.n,self.n)),
             Srf,Sori,K,vanilla_or_not,True)
         self.M = C_full*(W_mean_full+np.random.normal(size=(self.N,self.N))*np.sqrt(W_var_full))
-        self.M_tf = tf.convert_to_tensor(self.M)
 
         CX_full, WX_mean_full,WX_var_full = self.generate_full_ff_conn(WX,np.zeros(self.n),
             SrfX,SoriX,K,vanilla_or_not,True)
         self.MX = CX_full*(WX_mean_full+np.random.normal(size=(self.N,self.NX*self.Nloc))*np.sqrt(WX_var_full))
-        self.MX_tf = tf.convert_to_tensor(self.MX)
+
+    def generate_tensors(self):
+        self.C_conds = []
+        for cidx in range(self.n):
+            this_C_cond = torch.zeros(self.N,dtype=torch.bool)
+            this_C_cond = this_C_cond.scatter(0,torch.from_numpy(self.C_all[cidx]),
+                torch.ones(self.C_all[cidx].size,dtype=torch.bool))
+            self.C_conds.append(this_C_cond)
+
+        self.M_torch = torch.from_numpy(self.M)
+        self.MX_torch = torch.from_numpy(self.MX)
+
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print("Using",device)
+
+        self.E_cond = self.E_cond.to(device)
+        self.M_torch = self.M_torch.to(device)
+        self.MX_torch = self.MX_torch.to(device)
 

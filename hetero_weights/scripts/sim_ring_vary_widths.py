@@ -63,5 +63,5 @@ for sWI_idx,sWI in enumerate(sWIs):
 
         results_dict[(sWI_idx,sH_idx)] = this_results_dict
 
-with open('./sim_ring_vary_widths_results'+'.pkl', 'wb') as handle:
-    pickle.dump(comb_fit,handle)
+        with open('./sim_ring_vary_widths_results'+'.pkl', 'wb') as handle:
+            pickle.dump(comb_fit,handle)
