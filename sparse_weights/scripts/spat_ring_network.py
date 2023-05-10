@@ -218,9 +218,9 @@ class network(object):
         return full_kernel
 
     def generate_full_rec_conn(self,WMat,VarMat,SrfMat,SoriMat,K,vanilla_or_not=False,return_mean_var=False):
-        C_full = np.zeros((self.N,self.N))
-        W_mean_full = np.zeros((self.N,self.N))
-        W_var_full = np.zeros((self.N,self.N))
+        C_full = np.zeros((self.N,self.N),np.float32)
+        W_mean_full = np.zeros((self.N,self.N),np.float32)
+        W_var_full = np.zeros((self.N,self.N),np.float32)
 
         for pstC in range(self.n):
             pstC_idxs = self.C_idxs[pstC]
@@ -261,9 +261,9 @@ class network(object):
             return C_full
 
     def generate_full_ff_conn(self,WVec,VarVec,SrfVec,SoriVec,K,vanilla_or_not=False,return_mean_var=False):
-        C_full = np.zeros((self.N,self.NX*self.Nloc))
-        W_mean_full = np.zeros((self.N,self.NX*self.Nloc))
-        W_var_full = np.zeros((self.N,self.NX*self.Nloc))
+        C_full = np.zeros((self.N,self.NX*self.Nloc),np.float32)
+        W_mean_full = np.zeros((self.N,self.NX*self.Nloc),np.float32)
+        W_var_full = np.zeros((self.N,self.NX*self.Nloc),np.float32)
 
         preC_idxs = self.X_idxs
         preC_all = self.X_all
@@ -303,37 +303,38 @@ class network(object):
         else:
             return C_full
 
-    def gen_full_input(self,HVec,VarVec,SrfVec,SoriVec,vanilla_or_not=False):
-        H_mean_full = np.zeros((self.N))
-        H_var_full = np.zeros((self.N))
+    def generate_full_input(self,HVec,VarVec,SrfVec,SoriVec,vanilla_or_not=False):
+        H_mean_full = np.zeros((self.N),np.float32)
+        H_var_full = np.zeros((self.N),np.float32)
 
         for pstC in range(self.n):
             pstC_idxs = self.C_idxs[pstC]
             pstC_all = self.C_all[pstC]
             NpstC = self.NC[pstC]
 
-            if np.isclose(WVec[pstC],0.): continue    # Skip if no connection of this type
+            if np.isclose(HVec[pstC],0.): continue    # Skip if no connection of this type
 
             if vanilla_or_not=='vanilla' or vanilla_or_not==True:
                 H = np.ones((self.Nloc))
             else:
                 H_aux = self.generate_full_vector(SrfVec[pstC],SoriVec[pstC])
 
-            H_mean_full[preC_all] = HVec[pstC]*H_aux
-            H_var_full[preC_all] = VarVec[pstC]*H_aux
+            H_mean_full[pstC_all] = HVec[pstC]*np.repeat(H_aux,NpstC)
+            H_var_full[pstC_all] = VarVec[pstC]*np.repeat(H_aux,NpstC)
 
         return H_mean_full,H_var_full
 
-    def generate_disorder(self,W,Srf,Sori,WX,SrfX,SoriX,K,vanilla_or_not=False):
+    # def generate_disorder(self,W,SWrf,SWori,WX,SWrfX,SWoriX,K,vanilla_or_not=False):
+    def generate_disorder(self,W,SWrf,SWori,H,SHrf,SHori,K,vanilla_or_not=False):
         C_full, W_mean_full,W_var_full = self.generate_full_rec_conn(W,np.zeros((self.n,self.n)),
-            Srf,Sori,K,vanilla_or_not,True)
+            SWrf,SWori,K,vanilla_or_not,True)
         self.M = C_full*(W_mean_full+np.random.normal(size=(self.N,self.N))*np.sqrt(W_var_full))
 
         # CX_full, WX_mean_full,WX_var_full = self.generate_full_ff_conn(WX,np.zeros(self.n),
-        #     SrfX,SoriX,K,vanilla_or_not,True)
+        #     SWrfX,SWoriX,K,vanilla_or_not,True)
         # self.MX = CX_full*(WX_mean_full+np.random.normal(size=(self.N,self.NX*self.Nloc))*np.sqrt(WX_var_full))
 
-        H_mean_full,H_var_full = self.generate_full_rec_conn(W,np.zeros((self.n)),Srf,Sori,vanilla_or_not)
+        H_mean_full,H_var_full = self.generate_full_input(H,np.zeros((self.n)),SHrf,SHori,vanilla_or_not)
         self.H = H_mean_full+np.random.normal(size=(self.N))*np.sqrt(H_var_full)
 
     def generate_tensors(self):

@@ -190,7 +190,7 @@ class network(object):
         return out*self.dx
 
     def generate_inputs(self,H,varH,ori=None,kernel='nonnormgaussian'):
-        self.H = np.zeros(self.N)
+        self.H = np.zeros(self.N,np.float32)
 
         for i in range(self.n):
             if i == 0:
@@ -209,7 +209,7 @@ class network(object):
                 self.H[i_inds[loc]] = np.random.normal(H_mean[loc],np.sqrt(H_var[loc]),Ni)
 
     def generate_weights(self,W,varW,kernel='gaussian'):
-        self.M = np.zeros((self.N,self.N))
+        self.M = np.zeros((self.N,self.N),np.float32)
 
         for i in range(self.n):
             if i == 0:
@@ -244,7 +244,7 @@ class network(object):
 
         sigma_l = np.sqrt(np.log(1+CV_Lam**2))
         mu_l = np.log(Lam)-sigma_l**2/2
-        self.LAM = np.zeros(self.N)
+        self.LAM = np.zeros(self.N,np.float32)
         self.LAM[self.E_all] = np.random.lognormal(mu_l, sigma_l, self.NE*self.Nloc)
 
     def generate_tensors(self):

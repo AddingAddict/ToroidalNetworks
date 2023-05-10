@@ -25,8 +25,8 @@ CV_Lam = 10
 L = 5
 
 sWE = 30
-sWIs = np.linspace(15,45,7)
-sHs = np.linspace(15,45,7)
+sWIs = np.linspace(20,45,6)
+sHs = np.linspace(20,45,6)
 
 results_dict = {}
 
@@ -64,4 +64,4 @@ for sWI_idx,sWI in enumerate(sWIs):
         results_dict[(sWI_idx,sH_idx)] = this_results_dict
 
         with open('./sim_ring_vary_widths_results'+'.pkl', 'wb') as handle:
-            pickle.dump(comb_fit,handle)
+            pickle.dump(results_dict,handle)
