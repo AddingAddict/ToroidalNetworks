@@ -47,27 +47,27 @@ def runjobs():
     # Ofiles folder
         
     if cluster=='haba':
-        path_2_package="/rigel/theory/users/thn2112/OrientationSSB/scripts"
+        path_2_package="/rigel/theory/users/thn2112/ToroidalNetworks/hetero_weights/scripts"
         ofilesdir = path_2_package + "/Ofiles/"
         resultsdir = path_2_package + "/results/"
 
     if cluster=='moto':
-        path_2_package="/moto/theory/users/thn2112/OrientationSSB/scripts"
+        path_2_package="/moto/theory/users/thn2112/ToroidalNetworks/hetero_weights/scripts"
         ofilesdir = path_2_package + "/Ofiles/"
         resultsdir = path_2_package + "/results/"
 
     if cluster=='burg':
-        path_2_package="/burg/theory/users/thn2112/OrientationSSB/scripts"
+        path_2_package="/burg/theory/users/thn2112/ToroidalNetworks/hetero_weights/scripts"
         ofilesdir = path_2_package + "/Ofiles/"
         resultsdir = path_2_package + "/results/"
         
     elif cluster=='axon':
-        path_2_package="/home/thn2112/OrientationSSB/scripts"
+        path_2_package="/home/thn2112/ToroidalNetworks/hetero_weights/scripts"
         ofilesdir = path_2_package + "/Ofiles/"
         resultsdir = path_2_package + "/results/"
         
     elif cluster=='local':
-        path_2_package="/Users/tuannguyen/OrientationSSB/scripts"
+        path_2_package="/Users/tuannguyen/ToroidalNetworks/hetero_weights/scripts"
         ofilesdir = path_2_package+"/Ofiles/"
         resultsdir = path_2_package + "/results/"
 
