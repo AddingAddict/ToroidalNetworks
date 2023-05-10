@@ -28,10 +28,16 @@ sWE = 30
 sWIs = np.linspace(20,45,6)
 sHs = np.linspace(20,45,6)
 
-results_dict = {}
+try:
+    with open('./sim_ring_vary_widths_tensor_results'+'.pkl', 'rb') as handle:
+        results_dict = pickle.load(handle)
+except:
+    results_dict = {}
 
 for sWI_idx,sWI in enumerate(sWIs):
     for sH_idx,sH in enumerate(sHs):
+        if (sWI_idx,sH_idx) in results_dict: continue
+
         this_sW = np.array([[sWE,sWI]]*2)
         this_svarW = this_sW/np.sqrt(2)
 
