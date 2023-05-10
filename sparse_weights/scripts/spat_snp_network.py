@@ -103,7 +103,7 @@ class network(object):
             self.NX = int(NX)
 
         self.NT = np.sum(self.NC)
-        self.Nloc = self.Nrf**2*self.Nori
+        self.Nloc = self.Nrf**2
 
         self.C_idxs = []
         self.C_all = []
@@ -131,14 +131,18 @@ class network(object):
         self.normalize_by_mean = False
 
     def set_XYZ(self):
-        XYZ = np.array(np.unravel_index(np.arange(self.Nloc),(self.Nrf,self.Nrf,self.Nori))).astype(float)
-        XYZ[0] *= self.Lrf/self.Nrf
-        XYZ[1] *= self.Lrf/self.Nrf
-        XYZ[2] *= self.Lori/self.Nori
-        XYZ = np.repeat(XYZ,self.NT,axis=1)
+        XY = np.array(np.unravel_index(np.arange(self.Nloc),(self.Nrf,self.Nrf))).astype(float)
+        XY[0] *= self.Lrf/self.Nrf
+        XY[1] *= self.Lrf/self.Nrf
+        XY = np.repeat(XYZ,self.NT,axis=1)
 
-        self.XY = XYZ[0:2].T
-        self.Z = XYZ[2]
+        Z = np.mod(np.arange(self.Nloc),self.Nori).astype(float)
+        self.rng.shuffle(Z)
+        Z *= self.Lori/self.Nori
+        Z = np.repeat(Z,self.NT)
+
+        self.XY = XY.T
+        self.Z = Z
         
     def make_periodic(self,vec_in,half_period):
         vec_out = np.copy(vec_in);
