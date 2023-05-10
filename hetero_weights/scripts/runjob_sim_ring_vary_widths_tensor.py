@@ -82,10 +82,10 @@ def runjobs():
     
     #--------------------------------------------------------------------------
     # Make SBTACH
-    inpath = currwd + "/sim_ring_vary_widths.py"
+    inpath = currwd + "/sim_ring_vary_widths_tensor.py"
     c1 = "{:s}".format(inpath)
     
-    jobname="{:s}".format('sim_ring_vary_widths')
+    jobname="{:s}".format('sim_ring_vary_widths_tensor')
     
     if not args2.test:
         jobnameDir=os.path.join(ofilesdir, jobname)
@@ -97,6 +97,7 @@ def runjobs():
         text_file.write("#SBATCH --job-name="+jobname+ "\n")
         text_file.write("#SBATCH -t 0-11:59  \n")
         text_file.write("#SBATCH --mem-per-cpu=4gb \n")
+        text_file.write("#SBATCH --gres=gpu\n")
         text_file.write("#SBATCH -c 1 \n")
         text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
         text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")

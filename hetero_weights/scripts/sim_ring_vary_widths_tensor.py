@@ -1,14 +1,14 @@
 import numpy as np
+import torch
 
 import ricciardi as ric
 import ring_network as network
 import sim_util as su
 
 ri = ric.Ricciardi()
-ri.set_up_nonlinearity('./phi_int')
 
 NtE = 100
-T = np.linspace(0,NtE*ri.tE,round(NtE*ri.tE/(ri.tI/3))+1)
+T = torch.linspace(0,NtE*ri.tE,round(NtE*ri.tE/(ri.tI/3))+1)
 mask_time = T>(NtE/2*ri.tE)
 
 W = np.array(
@@ -55,7 +55,7 @@ for sWI_idx,sWI in enumerate(sWIs):
 
         seeds = np.arange(16)
 
-        net,rates = su.sim_ring(params_dict,ri,T,mask_time,seeds)
+        net,rates = su.sim_ring_tensor(params_dict,ri,T,mask_time,seeds)
         this_results_dict = su.get_ring_input_rate(net,seeds,rates)
 
         this_results_dict['sWI'] = sWI
@@ -63,5 +63,5 @@ for sWI_idx,sWI in enumerate(sWIs):
 
         results_dict[(sWI_idx,sH_idx)] = this_results_dict
 
-        with open('./sim_ring_vary_widths_array_results'+'.pkl', 'wb') as handle:
+        with open('./sim_ring_vary_widths_tensor_results'+'.pkl', 'wb') as handle:
             pickle.dump(results_dict,handle)
