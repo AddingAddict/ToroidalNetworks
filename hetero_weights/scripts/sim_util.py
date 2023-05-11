@@ -92,8 +92,8 @@ def get_ring_input_rate(params_dict,net,seeds,rates):
         MRoI = np.matmul(net.M[:,net.I_all],rates[1,net.I_all])
         
         H_base_input[seed_idx] = net.H
-        H_opto_input[seed_idx] = net.H+L*net.LAM
-        H_diff_input[seed_idx] = L*net.LAM
+        H_opto_input[seed_idx] = net.H+params_dict['L']*net.LAM
+        H_diff_input[seed_idx] = params_dict['L']*net.LAM
         
         E_base_input[seed_idx] = MRbE
         E_opto_input[seed_idx] = MRoE
