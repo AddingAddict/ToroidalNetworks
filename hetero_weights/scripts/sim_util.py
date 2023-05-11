@@ -63,7 +63,7 @@ def sim_ring_tensor(params_dict,ri,T,mask_time,seeds,max_min=15):
         
     return net,np.hstack([rates[i,:,:] for i in np.arange(len(seeds))])
 
-def get_ring_input_rate(net,seeds,rates):
+def get_ring_input_rate(params_dict,net,seeds,rates):
     oris = net.make_periodic(np.concatenate([net.Z for i in range(len(seeds))]),90)
 
     H_base_input=np.zeros((len(seeds),net.N))

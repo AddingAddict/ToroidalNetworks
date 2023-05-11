@@ -1,5 +1,3 @@
-from numba import jit
-
 import numpy as np
 import torch
 from scipy.special import erf, erfi, i0
@@ -201,7 +199,7 @@ class network(object):
         rf_dist = self.get_rf_dist(vis_loc)
         return np.where(rf_dist < delta_dist)
 
-    def generate_full_vector(self,Srf,Sori,kernel="gaussian",byloc=True):
+    def generate_full_vector(self,Srf,Sori,kernel="nonnormgaussian",byloc=True):
         ori_dist = self.get_ori_dist(byloc=byloc)
         rf_xdist,rf_ydist = self.get_rf_dist(byloc=byloc,return_mag=False)
         full_vector = make_vector(ori_dist,Sori,self.Lori,self.Nori,kernel=kernel)
