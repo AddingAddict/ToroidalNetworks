@@ -83,34 +83,36 @@ def runjobs():
     #--------------------------------------------------------------------------
     # Make SBTACH
     inpath = currwd + "/sim_ring_vary_widths.py"
-    c1 = "{:s}".format(inpath)
-    
-    jobname="{:s}".format('sim_ring_vary_widths')
-    
-    if not args2.test:
-        jobnameDir=os.path.join(ofilesdir, jobname)
-        text_file=open(jobnameDir, "w");
-        os. system("chmod u+x "+ jobnameDir)
-        text_file.write("#!/bin/sh \n")
-        if cluster=='haba' or cluster=='moto' or cluster=='burg':
-            text_file.write("#SBATCH --account=theory \n")
-        text_file.write("#SBATCH --job-name="+jobname+ "\n")
-        text_file.write("#SBATCH -t 0-11:59  \n")
-        text_file.write("#SBATCH --mem-per-cpu=4gb \n")
-        text_file.write("#SBATCH -c 1 \n")
-        text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
-        text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
-        text_file.write("python  -W ignore " + c1+" \n")
-        text_file.write("echo $PATH  \n")
-        text_file.write("exit 0  \n")
-        text_file.close()
+    for i in range(7):
+        for j in range(7):
+            c1 = "{:s} -sWI {:d} -sH {:d}".format(inpath,i,j)
+            
+            jobname="{:s}".format('sim_ring_vary_widths')
+            
+            if not args2.test:
+                jobnameDir=os.path.join(ofilesdir, jobname)
+                text_file=open(jobnameDir, "w");
+                os. system("chmod u+x "+ jobnameDir)
+                text_file.write("#!/bin/sh \n")
+                if cluster=='haba' or cluster=='moto' or cluster=='burg':
+                    text_file.write("#SBATCH --account=theory \n")
+                text_file.write("#SBATCH --job-name="+jobname+ "\n")
+                text_file.write("#SBATCH -t 0-11:59  \n")
+                text_file.write("#SBATCH --mem-per-cpu=4gb \n")
+                text_file.write("#SBATCH -c 1 \n")
+                text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
+                text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
+                text_file.write("python  -W ignore " + c1+" \n")
+                text_file.write("echo $PATH  \n")
+                text_file.write("exit 0  \n")
+                text_file.close()
 
-        if cluster=='axon':
-            os.system("sbatch -p burst " +jobnameDir);
-        else:
-            os.system("sbatch " +jobnameDir);
-    else:
-        print (c1)
+                if cluster=='axon':
+                    os.system("sbatch -p burst " +jobnameDir);
+                else:
+                    os.system("sbatch " +jobnameDir);
+            else:
+                print (c1)
 
 
 
