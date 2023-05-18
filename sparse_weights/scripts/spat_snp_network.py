@@ -203,9 +203,9 @@ class network(object):
         rf_dist = self.get_rf_dist(vis_loc)
         return np.where(rf_dist < delta_dist)
 
-    def generate_full_vector(self,Srf,Sori,kernel="nonnormgaussian",byloc=True):
-        ori_dist = self.get_ori_dist(byloc=byloc)
-        rf_xdist,rf_ydist = self.get_rf_dist(byloc=byloc,return_mag=False)
+    def generate_full_vector(self,Srf,Sori,kernel="nonnormgaussian",byloc=True,vis_loc=None,vis_ori=None):
+        ori_dist = self.get_ori_dist(vis_ori=vis_ori,byloc=byloc)
+        rf_xdist,rf_ydist = self.get_rf_dist(vis_loc=vis_loc,byloc=byloc,return_mag=False)
         full_vector = make_vector(ori_dist,Sori,self.Lori,self.Nori,kernel=kernel)
         full_vector *= make_vector(rf_xdist,Srf,self.Lrf,self.Nrf,kernel=kernel)
         full_vector *= make_vector(rf_ydist,Srf,self.Lrf,self.Nrf,kernel=kernel)
@@ -305,7 +305,7 @@ class network(object):
         else:
             return C_full
 
-    def generate_full_input(self,HVec,VarVec,SrfVec,SoriVec,vanilla_or_not=False):
+    def generate_full_input(self,HVec,VarVec,SrfVec,SoriVec,vanilla_or_not=False,vis_loc=None,vis_ori=None):
         H_mean_full = np.zeros((self.N),np.float32)
         H_var_full = np.zeros((self.N),np.float32)
 
@@ -319,12 +319,21 @@ class network(object):
             if vanilla_or_not=='vanilla' or vanilla_or_not==True:
                 H = np.ones((self.Nloc))
             else:
-                H_aux = self.generate_full_vector(SrfVec[pstC],SoriVec[pstC])
+                H_aux = self.generate_full_vector(SrfVec[pstC],SoriVec[pstC],vis_loc=vis_loc,vis_ori=vis_ori)
 
             H_mean_full[pstC_all] = HVec[pstC]*np.repeat(H_aux,NpstC)
             H_var_full[pstC_all] = VarVec[pstC]*np.repeat(H_aux,NpstC)
 
         return H_mean_full,H_var_full
+
+    def generate_M(self,W,SWrf,SWori,K,vanilla_or_not=False):
+        C_full, W_mean_full,W_var_full = self.generate_full_rec_conn(W,np.zeros((self.n,self.n)),
+            SWrf,SWori,K,vanilla_or_not,True)
+        return C_full*(W_mean_full+np.random.normal(size=(self.N,self.N))*np.sqrt(W_var_full))
+
+    def generate_H(self,H,SHrf,SHori,vanilla_or_not=False,vis_loc=None,vis_ori=None):
+        H_mean_full,H_var_full = self.generate_full_input(H,np.zeros((self.n)),SHrf,SHori,vanilla_or_not,vis_loc,vis_ori)
+        return H_mean_full+np.random.normal(size=(self.N))*np.sqrt(H_var_full)
 
     # def generate_disorder(self,W,SWrf,SWori,WX,SWrfX,SWoriX,K,vanilla_or_not=False):
     def generate_disorder(self,W,SWrf,SWori,H,SHrf,SHori,K,vanilla_or_not=False):
