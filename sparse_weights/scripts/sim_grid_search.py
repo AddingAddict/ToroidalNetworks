@@ -1,6 +1,8 @@
 import argparse
 import pickle
 import numpy as np
+from scipy.interpolate import RegularGridInterpolator
+from scipy.optimize import least_squares
 import time
 
 import spat_ring_network as r_network
@@ -25,6 +27,12 @@ T = np.linspace(0,NtE*ri.tE,round(NtE*ri.tE/(ri.tI/3))+1)
 mask_time = T>(NtE/2*ri.tE)
 
 eps = np.random.default_rng(0).standard_normal(6480)
+
+data_means = np.array([6.22, 6.72, 7.17, 7.67, 8.,  10.97, 16.7])
+data_stds =  np.array([5.79, 6.64, 6.93, 7.15, 7.07, 8.98, 13.6])
+
+data_means_err = np.array([0.83, 0.96, 1.00, 1.03, 1.02, 1.30, 2.00])
+data_stds_err =  np.array([0.48, 0.78, 0.96, 0.81, 0.78, 1.08, 2.63])
 
 def gen_prms(seed):
     prm_dict = {}
@@ -98,13 +106,9 @@ for idx_rep in range(first_rep,nrep):
 
     start = time.process_time()
 
-    # aXs = np.arange(1,15+2,2)
-    # bXs = np.arange(1,7+2,2)
-    # eXs = np.arange(0,0.3+0.05,0.05)
-
-    aXs = np.arange(1,15+2,4)
-    bXs = np.arange(1,7+2,4)
-    eXs = np.arange(0,0.3+0.05,0.1)
+    aXs = np.arange(0,18+2,2)
+    bXs = np.arange(1,9+2,2)
+    eXs = np.arange(0,0.35+0.025,0.025)
 
     means = np.zeros((len(aXs),len(bXs),len(eXs)))
     stds = np.zeros((len(aXs),len(bXs),len(eXs)))
@@ -120,10 +124,55 @@ for idx_rep in range(first_rep,nrep):
     print("Simulating inputs took ",time.process_time() - start," s")
     print('')
 
+    start = time.process_time()
+
     this_res_dict = {}
     this_res_dict['prms'] = prm_dict
     this_res_dict['means'] = means
     this_res_dict['stds'] = stds
+
+    mean_itp = RegularGridInterpolator((aXs,bXs,eXs), means)
+    std_itp = RegularGridInterpolator((aXs,bXs,eXs), stds)
+
+    def fit_best_inputs(eX):
+        def residuals(x):
+            this_bX = x[0]
+            this_aXs = np.concatenate(([0],x[1:]))
+            pred_means = mean_itp(np.vstack((this_aXs,this_bX*np.ones(7),eX*np.ones(7))).T)
+            pred_stds = std_itp(np.vstack((this_aXs,this_bX*np.ones(7),eX*np.ones(7))).T)
+            res = np.array([(pred_means-data_means)/data_means_err, (pred_stds-data_stds)/data_stds_err])
+            return res.ravel()
+        xmin = np.concatenate(([bXs[ 0]],aXs[ 0]*np.ones(6)))
+        xmax = np.concatenate(([bXs[-1]],aXs[-1]*np.ones(6)))
+        x0 = np.concatenate(([2],np.linspace(1,12,6)))
+        results = least_squares(residuals,x0,bounds=(xmin,xmax))
+        this_bX = results.x[0]
+        this_aXs = np.concatenate(([0],results.x[1:]))
+        return (this_bX,this_aXs,mean_itp(np.vstack((this_aXs,this_bX*np.ones(7),eX*np.ones(7))).T),
+                std_itp(np.vstack((this_aXs,this_bX*np.ones(7),eX*np.ones(7))).T),results.cost)
+
+    def fit_best_input_var():
+        def residuals(x):
+            _,_,_,_,cost = fit_best_inputs(x[0])
+            return [cost]
+        xmin,xmax = (eXs[0]),(eXs[-1])
+        x0 = np.array([0.2])
+        results = least_squares(residuals,x0,bounds=(xmin,xmax))
+        return (results.x[0],*fit_best_inputs(results.x[0]))
+
+    best_eX,best_bX,best_aXs,best_means,best_stds,best_cost = fit_best_input_var()
+    this_res_dict['best_eX'] = best_eX
+    this_res_dict['best_bX'] = best_bX
+    this_res_dict['best_aXs'] = best_aXs
+    this_res_dict['best_means'] = best_means
+    this_res_dict['best_stds'] = best_stds
+    this_res_dict['best_cost'] = best_cost
+
+    print("Fitting best inputs took ",time.process_time() - start," s")
+    print('')
+    print(prm_dict)
+    print(best_cost)
+    print('')
 
     res_dict[idx_rep] = this_res_dict
 
