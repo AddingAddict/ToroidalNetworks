@@ -106,9 +106,9 @@ for idx_rep in range(first_rep,nrep):
 
     start = time.process_time()
 
-    aXs = np.arange(0,18+2,2)
+    aXs = np.arange(0,16+2,2)
     bXs = np.arange(1,9+2,2)
-    eXs = np.arange(0,0.35+0.025,0.025)
+    eXs = np.arange(0,0.35+0.05,0.05)
 
     means = np.zeros((len(aXs),len(bXs),len(eXs)))
     stds = np.zeros((len(aXs),len(bXs),len(eXs)))
