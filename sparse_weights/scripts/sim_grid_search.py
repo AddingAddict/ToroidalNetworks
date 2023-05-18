@@ -1,11 +1,6 @@
 import argparse
 import pickle
 import numpy as np
-import matplotlib as mpl
-from matplotlib import cm
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib.figure import figaspect
 import time
 
 import spat_ring_network as r_network
