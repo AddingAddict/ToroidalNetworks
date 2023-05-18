@@ -106,10 +106,6 @@ def runjobs():
             text_file.write("#SBATCH -c 1 \n")
             text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
             text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
-            if cluster=='burg':
-                text_file.write("module load anaconda \n")
-            elif cluster=='axon':
-                text_file.write("ml anaconda3-2019.03 \n")
             text_file.write("python  -W ignore " + c1+" \n")
             text_file.write("echo $PATH  \n")
             text_file.write("exit 0  \n")
