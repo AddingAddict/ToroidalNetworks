@@ -19,7 +19,7 @@ def runjobs():
     #--------------------------------------------------------------------------
     # Test commands option
     parser = argparse.ArgumentParser()
-    parser.add_argument("--test", required=True, type=int, default=0)
+    parser.add_argument("--test", "-t", type=int, default=0)
     parser.add_argument("--cluster_", help=" String", default='burg')
     
     args2 = parser.parse_args()
@@ -44,27 +44,27 @@ def runjobs():
     # Ofiles folder
         
     if cluster=='haba':
-        path_2_package="/rigel/theory/users/thn2112/MonkeyMouseGithub/Spatial_Fits"
+        path_2_package="/rigel/theory/users/thn2112/ToroidalNetworks/sparse_weights/scripts"
         ofilesdir = path_2_package + "/Ofiles/"
         resultsdir = path_2_package + "/results/"
 
     if cluster=='moto':
-        path_2_package="/moto/theory/users/thn2112/MonkeyMouseGithub/Spatial_Fits"
+        path_2_package="/moto/theory/users/thn2112/ToroidalNetworks/sparse_weights/scripts"
         ofilesdir = path_2_package + "/Ofiles/"
         resultsdir = path_2_package + "/results/"
 
     if cluster=='burg':
-        path_2_package="/burg/theory/users/thn2112/MonkeyMouseGithub/Spatial_Fits"
+        path_2_package="/burg/theory/users/thn2112/ToroidalNetworks/sparse_weights/scripts"
         ofilesdir = path_2_package + "/Ofiles/"
         resultsdir = path_2_package + "/results/"
         
     elif cluster=='axon':
-        path_2_package="/home/thn2112/MonkeyMouseGithub/Spatial_Fits"
+        path_2_package="/home/thn2112/ToroidalNetworks/sparse_weights/scripts"
         ofilesdir = path_2_package + "/Ofiles/"
         resultsdir = path_2_package + "/results/"
         
     elif cluster=='local':
-        path_2_package="/Users/tuannguyen/MonkeyMouseGithub/Spatial_Fits"
+        path_2_package="/Users/tuannguyen/ToroidalNetworks/sparse_weights/scripts"
         ofilesdir = path_2_package+"/Ofiles/"
         resultsdir = path_2_package + "/results/"
 
@@ -102,7 +102,7 @@ def runjobs():
                 text_file.write("#SBATCH --account=theory \n")
             text_file.write("#SBATCH --job-name="+jobname+ "\n")
             text_file.write("#SBATCH -t 0-11:59  \n")
-            text_file.write("#SBATCH --mem-per-cpu=3gb \n")
+            text_file.write("#SBATCH --mem-per-cpu=4gb \n")
             text_file.write("#SBATCH -c 1 \n")
             text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
             text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
