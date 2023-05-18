@@ -26,7 +26,17 @@ NtE = 100
 T = np.linspace(0,NtE*ri.tE,round(NtE*ri.tE/(ri.tI/3))+1)
 mask_time = T>(NtE/2*ri.tE)
 
-eps = np.random.default_rng(0).standard_normal(6480)
+aXs = np.arange(0,16+2,2)
+bXs = np.arange(1,9+2,2)
+eXs = np.arange(0,0.5+0.05,0.05)
+
+net = m_network.network(seed=0,NC=[4,1],Nrf=36,Nori=9)
+
+eps = np.zeros((len(eXs),net.N))
+for eX_idx,eX in enumerate(eXs):
+    shape = np.sqrt(1/eX)
+    scale = 1/shape
+    eps[eX_idx] = np.random.default_rng(0).gamma(shape,scale=scale,size=net.N)
 
 data_means = np.array([6.22, 6.72, 7.17, 7.67, 8.,  10.97, 16.7])
 data_stds =  np.array([5.79, 6.64, 6.93, 7.15, 7.07, 8.98, 13.6])
@@ -40,7 +50,7 @@ def gen_prms(seed):
     rng = np.random.default_rng(seed)
     prm_dict['SrfE'] = rng.uniform(5,20)
     prm_dict['SrfI'] = rng.uniform(5,20)
-    prm_dict['SrfF'] = rng.uniform(5,20)
+    prm_dict['SrfF'] = 20#rng.uniform(5,20)
     prm_dict['SoriE'] = rng.uniform(15,45)
     prm_dict['SoriI'] = rng.uniform(15,45)
     prm_dict['SoriF'] = rng.uniform(15,45)
@@ -63,7 +73,7 @@ def gen_disorder(prm_dict):
     fIIs = prm_dict['fIIs']
     fFIs = prm_dict['fFIs']
 
-    net = m_network.network(seed=0,NC=[4,1],Nrf=36,Nori=9)
+    net.set_seed(0)
     net.generate_disorder(1e-3*np.array([[0.1,-fEIs*0.8],[fIEs*0.3,-fIIs*0.7]]),
                       np.array([[SrfE,SrfI],[SrfE,SrfI]]),np.array([[SoriE,SoriI],[SoriE,SoriI]]),
                       500*1e-3*np.array([0.25,fFIs*0.2]),
@@ -106,17 +116,13 @@ for idx_rep in range(first_rep,nrep):
 
     start = time.process_time()
 
-    aXs = np.arange(0,16+2,2)
-    bXs = np.arange(1,9+2,2)
-    eXs = np.arange(0,0.35+0.05,0.05)
-
     means = np.zeros((len(aXs),len(bXs),len(eXs)))
     stds = np.zeros((len(aXs),len(bXs),len(eXs)))
 
     for aX_idx,aX in enumerate(aXs):
         for bX_idx,bX in enumerate(bXs):
             for eX_idx,eX in enumerate(eXs):
-                sol,_ = integ.sim_dyn(ri,T,0.0,M,(bX*B+aX*H)*(1+eX*eps),H,net.C_all[0],net.C_all[1],
+                sol,_ = integ.sim_dyn(ri,T,0.0,M,(bX*B+aX*H)*eps[eX_idx],H,net.C_all[0],net.C_all[1],
                                       mult_tau=True,max_min=30)
                 means[aX_idx,bX_idx,eX_idx] = np.mean(sol[net.get_centered_neurons(),-1])
                 stds[aX_idx,bX_idx,eX_idx] = np.std(sol[net.get_centered_neurons(),-1])
