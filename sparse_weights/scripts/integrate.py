@@ -45,13 +45,13 @@ def sim_dyn(rc,T,L,M,H,LAM,E_all,I_all,mult_tau=False,max_min=7.5):
 
     rates=np.zeros((len(H),len(T)));
     sol = solve_ivp(ode_fn,[np.min(T),np.max(T)],rates[:,0], method='RK45', t_eval=T, events=[stat_event,time_event])
-    if len(sol.t) < len(T):
-        print("      Integration stopped after " + str(np.around(T[len(sol.t)-1],2)) + "s of simulation time")
+    if sol.t.size < len(T):
+        print("      Integration stopped after " + str(np.around(T[sol.t.size-1],2)) + "s of simulation time")
         if time.process_time() - start > max_time:
             print("            Integration reached time limit")
             timeout = True
-        rates[:,0:len(sol.t)] = sol.y
-        rates[:,len(sol.t):] = sol.y[:,-1:]
+        rates[:,0:sol.t.size] = sol.y
+        rates[:,sol.t.size:] = sol.y[:,-1:]
     else:
         rates=sol.y
     

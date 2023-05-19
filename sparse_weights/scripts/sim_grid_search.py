@@ -34,9 +34,12 @@ net = m_network.network(seed=0,NC=[4,1],Nrf=36,Nori=9)
 
 eps = np.zeros((len(eXs),net.N))
 for eX_idx,eX in enumerate(eXs):
-    shape = np.sqrt(1/eX)
-    scale = 1/shape
-    eps[eX_idx] = np.random.default_rng(0).gamma(shape,scale=scale,size=net.N)
+    if eX == 0.0:
+        eps[eX_idx] = np.ones(net.N)
+    else:
+        shape = 1/eX**2
+        scale = 1/shape
+        eps[eX_idx] = np.random.default_rng(0).gamma(shape,scale=scale,size=net.N)
 
 data_means = np.array([6.22, 6.72, 7.17, 7.67, 8.,  10.97, 16.7])
 data_stds =  np.array([5.79, 6.64, 6.93, 7.15, 7.07, 8.98, 13.6])
