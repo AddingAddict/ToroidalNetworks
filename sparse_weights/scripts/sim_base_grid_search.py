@@ -42,13 +42,13 @@ for eX_idx,eX in enumerate(eXs):
         scale = 1/shape
         eps[eX_idx] = np.random.default_rng(0).gamma(shape,scale=scale,size=net.N)
 
-data_means = np.array([6.22, 6.72, 7.17, 7.67, 8.,  10.97, 16.7])
-data_stds =  np.array([5.79, 6.64, 6.93, 7.15, 7.07, 8.98, 13.6])
+base_means = np.array([6.22, 6.72, 7.17, 7.67, 8.,  10.97, 16.7])
+base_stds =  np.array([5.79, 6.64, 6.93, 7.15, 7.07, 8.98, 13.6])
 
-data_means_err = np.array([0.83, 0.96, 1.00, 1.03, 1.02, 1.30, 2.00])
-data_stds_err =  np.array([0.48, 0.78, 0.96, 0.81, 0.78, 1.08, 2.63])
+base_means_err = np.array([0.83, 0.96, 1.00, 1.03, 1.02, 1.30, 2.00])
+base_stds_err =  np.array([0.48, 0.78, 0.96, 0.81, 0.78, 1.08, 2.63])
 
-nc = len(data_means)
+nc = len(base_means)
 
 def gen_prms(seed):
     prm_dict = {}
@@ -88,7 +88,7 @@ def gen_disorder(prm_dict):
                       SrfF*np.ones(2),SoriF*np.ones(2),500)
     B = np.zeros_like(net.H)
     B[net.C_all[0]] = 500*1e-3*0.25
-    B[net.C_all[0]] = 500*1e-3*fFI*0.2
+    B[net.C_all[1]] = 500*1e-3*fFI*0.2
 
     return net,net.M,net.H,B
 
@@ -156,7 +156,7 @@ for idx_rep in range(first_rep,nrep):
             this_aXs = np.concatenate(([0],x[1:]))
             pred_means = mean_itp(np.vstack((this_aXs,this_bX*np.ones(nc),eX*np.ones(nc))).T)
             pred_stds = std_itp(np.vstack((this_aXs,this_bX*np.ones(nc),eX*np.ones(nc))).T)
-            res = np.array([(pred_means-data_means)/data_means_err, (pred_stds-data_stds)/data_stds_err])
+            res = np.array([(pred_means-base_means)/base_means_err, (pred_stds-base_stds)/base_stds_err])
             return res.ravel()
         xmin = np.concatenate(([bXs[ 0]],aXs[ 0]*np.ones(nc-1)))
         xmax = np.concatenate(([bXs[-1]],aXs[-1]*np.ones(nc-1)))
