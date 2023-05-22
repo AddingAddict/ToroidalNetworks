@@ -31,7 +31,7 @@ aXs = np.arange(0,16+2,2)
 bXs = np.arange(1,9+2,2)
 eXs = np.arange(0,0.5+0.05,0.05)
 
-net = m_network.network(seed=0,NC=[4,1],Nrf=56,Nori=9,Lrf=90)
+net = m_network.network(seed=0,NC=[4,1],Nrf=48,Nori=9,Lrf=80)
 
 eps = np.zeros((len(eXs),net.N))
 for eX_idx,eX in enumerate(eXs):
@@ -56,7 +56,7 @@ def gen_prms(seed):
     rng = np.random.default_rng(seed)
     prm_dict['SrfE'] = rng.uniform(5,20)
     prm_dict['SrfI'] = rng.uniform(5,20)
-    prm_dict['SrfF'] = 30#rng.uniform(5,20)
+    prm_dict['SrfF'] = 20#rng.uniform(5,20)
     prm_dict['SoriE'] = rng.uniform(15,45)
     prm_dict['SoriI'] = rng.uniform(15,45)
     prm_dict['SoriF'] = rng.uniform(15,45)
