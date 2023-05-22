@@ -88,10 +88,10 @@ def runjobs():
         
         #--------------------------------------------------------------------------
         # Make SBTACH
-        inpath = currwd + "/sim_grid_search.py"
+        inpath = currwd + "/sim_base_grid_search.py"
         c1 = "{:s} -n {:d}".format(inpath,njob)
         
-        jobname="sim_grid_search"+"-njob-{:d}".format(njob)
+        jobname="sim_base_grid_search"+"-njob-{:d}".format(njob)
         
         if not args2.test:
             jobnameDir=os.path.join(ofilesdir, jobname)
