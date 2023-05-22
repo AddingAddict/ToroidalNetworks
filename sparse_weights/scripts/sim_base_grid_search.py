@@ -60,11 +60,11 @@ def gen_prms(seed):
     prm_dict['SoriE'] = rng.uniform(15,45)
     prm_dict['SoriI'] = rng.uniform(15,45)
     prm_dict['SoriF'] = rng.uniform(15,45)
-    prm_dict['fEEs'] = rng.uniform(0.6,1.4)
-    prm_dict['fEIs'] = rng.uniform(0.6,1.4)
-    prm_dict['fIEs'] = rng.uniform(0.6,1.4)
-    prm_dict['fIIs'] = rng.uniform(0.6,1.4)
-    prm_dict['fFIs'] = rng.uniform(0.6,1.4)
+    prm_dict['fEE'] = rng.uniform(0.6,1.4)
+    prm_dict['fEI'] = rng.uniform(0.6,1.4)
+    prm_dict['fIE'] = rng.uniform(0.6,1.4)
+    prm_dict['fII'] = rng.uniform(0.6,1.4)
+    prm_dict['fFI'] = rng.uniform(0.6,1.4)
 
     return prm_dict
 
@@ -75,20 +75,20 @@ def gen_disorder(prm_dict):
     SoriE = prm_dict['SoriE']
     SoriI = prm_dict['SoriI']
     SoriF = prm_dict['SoriF']
-    fEEs = prm_dict['fEEs']
-    fEIs = prm_dict['fEIs']
-    fIEs = prm_dict['fIEs']
-    fIIs = prm_dict['fIIs']
-    fFIs = prm_dict['fFIs']
+    fEE = prm_dict['fEE']
+    fEI = prm_dict['fEI']
+    fIE = prm_dict['fIE']
+    fII = prm_dict['fII']
+    fFI = prm_dict['fFI']
 
     net.set_seed(0)
-    net.generate_disorder(1e-3*np.array([[fEE*0.1,-fEIs*0.8],[fIEs*0.3,-fIIs*0.7]]),
+    net.generate_disorder(1e-3*np.array([[fEE*0.1,-fEI*0.8],[fIE*0.3,-fII*0.7]]),
                       np.array([[SrfE,SrfI],[SrfE,SrfI]]),np.array([[SoriE,SoriI],[SoriE,SoriI]]),
-                      500*1e-3*np.array([0.25,fFIs*0.2]),
+                      500*1e-3*np.array([0.25,fFI*0.2]),
                       SrfF*np.ones(2),SoriF*np.ones(2),500)
     B = np.zeros_like(net.H)
     B[net.C_all[0]] = 500*1e-3*0.25
-    B[net.C_all[0]] = 500*1e-3*fFIs*0.2
+    B[net.C_all[0]] = 500*1e-3*fFI*0.2
 
     return net,net.M,net.H,B
 
@@ -101,7 +101,6 @@ print(' ')
 if not os.path.exists(resultsdir):
     os.makedirs(resultsdir)
 
-init = True
 try:
     with open(this_results, 'rb') as handle:
         res_dict = pickle.load(handle)
