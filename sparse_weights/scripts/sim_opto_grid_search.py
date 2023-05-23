@@ -1,4 +1,5 @@
 import argparse
+import os
 import pickle
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
@@ -26,19 +27,16 @@ NtE = 100
 T = np.linspace(0,NtE*ri.tE,round(NtE*ri.tE/(ri.tI/3))+1)
 mask_time = T>(NtE/2*ri.tE)
 
-Ls = np.arange(0,1.4+0.2,0.2)
-CVLs = np.arange(1,9+2,2)
+Ls = np.arange(0.5,10.0+0.5,0.5)
+CVLs = 10**np.arange(-1.0,1.0+0.25,0.25)
 
-net = m_network.network(seed=0,NC=[4,1],Nrf=56,Nori=9,Lrf=90)
+net = m_network.network(seed=0,NC=[4,1],Nrf=48,Nori=9,Lrf=80)
 
-eps = np.zeros((len(eXs),net.N))
-for eX_idx,eX in enumerate(eXs):
-    if eX == 0.0:
-        eps[eX_idx] = np.ones(net.N)
-    else:
-        shape = 1/eX**2
-        scale = 1/shape
-        eps[eX_idx] = np.random.default_rng(0).gamma(shape,scale=scale,size=net.N)
+LAMs = np.zeros((len(CVLs),net.N))
+for CVL_idx,CVL in enumerate(CVLs):
+    sigma_l = np.sqrt(np.log(1+CVL**2))
+    mu_l = np.log(1e-3)-sigma_l**2/2
+    LAMs[CVL_idx,net.C_all[0]] = np.random.lognormal(mu_l, sigma_l, net.NC[0]*net.Nloc)
 
 opto_means = np.array([10.56, 10.79, 11.25, 12.19, 12.96, 14.89, 20.25])
 opto_stds =  np.array([10.20, 10.20, 10.62, 10.85, 11.47, 11.84, 16.12])
@@ -78,19 +76,13 @@ def gen_disorder(prm_dict,eX):
 
     eps = np.zeros_like(net.H)
     if eX == 0.0:
-        eps[eX_idx] = np.ones(net.N)
+        eps = np.ones(net.N)
     else:
         shape = 1/eX**2
         scale = 1/shape
-        eps[eX_idx] = np.random.default_rng(0).gamma(shape,scale=scale,size=net.N)
+        eps = np.random.default_rng(0).gamma(shape,scale=scale,size=net.N)
 
     return net,net.M,net.H,B,eps
-
-def gen_lam(CVL):
-    sigma_l = np.sqrt(np.log(1+CV_Lam**2))
-    mu_l = np.log(Lam)-sigma_l**2/2
-    LAM = np.zeros(net.N)
-    LAM[net.allE] = np.random.lognormal(mu_l, sigma_l, net.NE*net.Nloc)
 
 resultsdir='./../results/'
 base_results='results_base_'+str(njob)+'.pkl'
@@ -112,12 +104,14 @@ except:
     first_rep = 0
 
 try:
-    with open(base_results, 'rb') as handle:
+    with open(this_base_results, 'rb') as handle:
         base_res_dict = pickle.load(handle)
-    last_rep = max(list(res_dict.keys()))+1
+    last_rep = max(list(base_res_dict.keys()))+1
 except:
     base_res_dict = {}
     last_rep = 0
+
+print((first_rep,last_rep))
 
 nrep = 10000
 for idx_rep in range(first_rep,last_rep):
@@ -138,18 +132,27 @@ for idx_rep in range(first_rep,last_rep):
 
     start = time.process_time()
 
-    means = np.zeros((len(Ls),len(CVLs),len(aXs)))
-    stds = np.zeros((len(Ls),len(CVLs),len(aXs)))
+    opto_means = np.zeros((len(Ls),len(CVLs),len(aXs)))
+    opto_stds = np.zeros((len(Ls),len(CVLs),len(aXs)))
+    diff_means = np.zeros((len(Ls),len(CVLs),len(aXs)))
+    diff_stds = np.zeros((len(Ls),len(CVLs),len(aXs)))
+    norm_covs = np.zeros((len(Ls),len(CVLs),len(aXs)))
 
-    for L_idx,L in enumerate(Ls):
-        for CVL_idx,CVL in enumerate(CVLs):
-            for aX_idx,aX in enumerate(aXs):
-                base_sol,_ = integ.sim_dyn(ri,T,0.0,M,(bX*B+aX*H)*eps[eX_idx],H,net.C_all[0],net.C_all[1],
+    for aX_idx,aX in enumerate(aXs):
+        base_sol,_ = integ.sim_dyn(ri,T,0.0,M,(bX*B+aX*H)*eps,H,net.C_all[0],net.C_all[1],
+                              mult_tau=True,max_min=30)
+        for L_idx,L in enumerate(Ls):
+            for CVL_idx,CVL in enumerate(CVLs):
+                LAM = LAMs[CVL_idx]
+                opto_sol,_ = integ.sim_dyn(ri,T,L,M,(bX*B+aX*H)*eps,LAM,net.C_all[0],net.C_all[1],
                                       mult_tau=True,max_min=30)
-                base_sol,_ = integ.sim_dyn(ri,T,L,M,(bX*B+aX*H)*eps[eX_idx],H,net.C_all[0],net.C_all[1],
-                                      mult_tau=True,max_min=30)
-                means[L_idx,CVL_idx,aX_idx] = np.mean(sol[net.get_centered_neurons(),-1])
-                stds[L_idx,CVL_idx,aX_idx] = np.std(sol[net.get_centered_neurons(),-1])
+                diff_sol = opto_sol - base_sol
+                opto_means[L_idx,CVL_idx,aX_idx] = np.mean(opto_sol[net.get_centered_neurons(),-1])
+                opto_stds[L_idx,CVL_idx,aX_idx] = np.std(opto_sol[net.get_centered_neurons(),-1])
+                diff_means[L_idx,CVL_idx,aX_idx] = np.mean(diff_sol[net.get_centered_neurons(),-1])
+                diff_stds[L_idx,CVL_idx,aX_idx] = np.std(diff_sol[net.get_centered_neurons(),-1])
+                norm_covs[L_idx,CVL_idx,aX_idx] = np.cov(base_sol[net.get_centered_neurons(),-1],
+                    diff_sol[net.get_centered_neurons(),-1])[0,1] / diff_stds[L_idx,CVL_idx,aX_idx]**2
 
     print("Simulating inputs took ",time.process_time() - start," s")
     print('')
@@ -158,44 +161,51 @@ for idx_rep in range(first_rep,last_rep):
 
     this_res_dict = {}
     this_res_dict['prms'] = prm_dict
-    this_res_dict['means'] = means
-    this_res_dict['stds'] = stds
+    this_res_dict['opto_means'] = opto_means
+    this_res_dict['opto_stds'] = opto_stds
+    this_res_dict['diff_means'] = diff_means
+    this_res_dict['diff_stds'] = diff_stds
+    this_res_dict['norm_covs'] = norm_covs
 
-    mean_itp = RegularGridInterpolator((aXs,bXs,eXs), means)
-    std_itp = RegularGridInterpolator((aXs,bXs,eXs), stds)
+    opto_mean_itp = RegularGridInterpolator((Ls,CVLs,aXs), opto_means)
+    opto_std_itp = RegularGridInterpolator((Ls,CVLs,aXs), opto_stds)
+    diff_mean_itp = RegularGridInterpolator((Ls,CVLs,aXs), diff_means)
+    diff_std_itp = RegularGridInterpolator((Ls,CVLs,aXs), diff_stds)
+    norm_cov_itp = RegularGridInterpolator((Ls,CVLs,aXs), norm_covs)
 
-    def fit_best_inputs(eX):
+    def fit_best_opto_inputs():
         def residuals(x):
-            this_bX = x[0]
-            this_aXs = np.concatenate(([0],x[1:]))
-            pred_means = mean_itp(np.vstack((this_aXs,this_bX*np.ones(nc),eX*np.ones(nc))).T)
-            pred_stds = std_itp(np.vstack((this_aXs,this_bX*np.ones(nc),eX*np.ones(nc))).T)
-            res = np.array([(pred_means-opto_means)/opto_means_err, (pred_stds-opto_stds)/opto_stds_err])
+            this_L = x[0]
+            this_CVL = x[1]
+            pred_opto_means = opto_mean_itp(np.vstack((this_L*np.ones(nc),this_CVL*np.ones(nc),aXs)).T)
+            pred_opto_stds = opto_std_itp(np.vstack((this_L*np.ones(nc),this_CVL*np.ones(nc),aXs)).T)
+            pred_diff_means = diff_mean_itp(np.vstack((this_L*np.ones(nc),this_CVL*np.ones(nc),aXs)).T)
+            pred_diff_stds = diff_std_itp(np.vstack((this_L*np.ones(nc),this_CVL*np.ones(nc),aXs)).T)
+            pred_norm_covs = norm_cov_itp(np.vstack((this_L*np.ones(nc),this_CVL*np.ones(nc),aXs)).T)
+            res = np.array([(pred_opto_means-opto_means)/opto_means_err, (pred_opto_stds-opto_stds)/opto_stds_err,
+                (pred_diff_means-diff_means)/diff_means_err, (pred_diff_stds-diff_stds)/diff_stds_err,
+                (pred_norm_covs-norm_covs)/norm_covs_err,])
             return res.ravel()
-        xmin = np.concatenate(([bXs[ 0]],aXs[ 0]*np.ones(nc-1)))
-        xmax = np.concatenate(([bXs[-1]],aXs[-1]*np.ones(nc-1)))
-        x0 = np.concatenate(([2],np.linspace(1,12,nc-1)))
+        xmin = (Ls[ 0],CVLs[ 0])
+        xmax = (Ls[-1],CVLs[-1])
+        x0 = [5,5]
         results = least_squares(residuals,x0,bounds=(xmin,xmax))
-        this_bX = results.x[0]
-        this_aXs = np.concatenate(([0],results.x[1:]))
-        return (this_bX,this_aXs,mean_itp(np.vstack((this_aXs,this_bX*np.ones(nc),eX*np.ones(nc))).T),
-                std_itp(np.vstack((this_aXs,this_bX*np.ones(nc),eX*np.ones(nc))).T),results.cost)
+        this_L = results.x[0]
+        this_CVL = results.x[1]
+        return (this_L,this_CVL,opto_mean_itp(np.vstack((this_L*np.ones(nc),this_CVL*np.ones(nc),aXs)).T),
+                opto_std_itp(np.vstack((this_L*np.ones(nc),this_CVL*np.ones(nc),aXs)).T),
+                diff_mean_itp(np.vstack((this_L*np.ones(nc),this_CVL*np.ones(nc),aXs)).T),
+                diff_std_itp(np.vstack((this_L*np.ones(nc),this_CVL*np.ones(nc),aXs)).T),
+                norm_cov_itp(np.vstack((this_L*np.ones(nc),this_CVL*np.ones(nc),aXs)).T),results.cost)
 
-    def fit_best_input_var():
-        def residuals(x):
-            _,_,_,_,cost = fit_best_inputs(x[0])
-            return [cost]
-        xmin,xmax = (eXs[0]),(eXs[-1])
-        x0 = np.array([0.2])
-        results = least_squares(residuals,x0,bounds=(xmin,xmax))
-        return (results.x[0],*fit_best_inputs(results.x[0]))
-
-    best_eX,best_bX,best_aXs,best_means,best_stds,best_cost = fit_best_input_var()
-    this_res_dict['best_eX'] = best_eX
-    this_res_dict['best_bX'] = best_bX
-    this_res_dict['best_aXs'] = best_aXs
-    this_res_dict['best_means'] = best_means
-    this_res_dict['best_stds'] = best_stds
+    best_L,best_CVL,best_opto_means,best_opto_stds,best_diff_means,best_diff_stds,best_norm_covs,best_cost = fit_best_opto_inputs()
+    this_res_dict['best_L'] = best_L
+    this_res_dict['best_CVL'] = best_CVL
+    this_res_dict['best_opto_means'] = best_opto_means
+    this_res_dict['best_opto_stds'] = best_opto_stds
+    this_res_dict['best_diff_means'] = best_diff_means
+    this_res_dict['best_diff_stds'] = best_diff_stds
+    this_res_dict['best_norm_covs'] = best_norm_covs
     this_res_dict['best_cost'] = best_cost
 
     print("Fitting best inputs took ",time.process_time() - start," s")
