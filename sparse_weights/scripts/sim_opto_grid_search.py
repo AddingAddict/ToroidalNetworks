@@ -27,7 +27,7 @@ NtE = 100
 T = np.linspace(0,NtE*ri.tE,round(NtE*ri.tE/(ri.tI/3))+1)
 mask_time = T>(NtE/2*ri.tE)
 
-Ls = np.arange(0.5,10.0+0.5,0.5)
+Ls = np.arange(0.5,8.0+0.5,0.5)
 CVLs = 10**np.arange(-1.0,1.0+0.25,0.25)
 
 net = m_network.network(seed=0,NC=[4,1],Nrf=48,Nori=9,Lrf=80)
@@ -38,19 +38,19 @@ for CVL_idx,CVL in enumerate(CVLs):
     mu_l = np.log(1e-3)-sigma_l**2/2
     LAMs[CVL_idx,net.C_all[0]] = np.random.lognormal(mu_l, sigma_l, net.NC[0]*net.Nloc)
 
-opto_means = np.array([10.56, 10.79, 11.25, 12.19, 12.96, 14.89, 20.25])
-opto_stds =  np.array([10.20, 10.20, 10.62, 10.85, 11.47, 11.84, 16.12])
-diff_means = np.array([ 4.32,  4.05,  4.07,  4.51,  4.95,  3.90,  3.48])
-diff_stds =  np.array([ 7.98,  7.96,  8.34,  8.42,  8.99,  8.41, 10.30])
-norm_covs =  np.array([0.04409,-0.03578,-0.04356,-0.03427,-0.00142,-0.09287,-0.12237])
+data_opto_means = np.array([10.56, 10.79, 11.25, 12.19, 12.96, 14.89, 20.25])
+data_opto_stds =  np.array([10.20, 10.20, 10.62, 10.85, 11.47, 11.84, 16.12])
+data_diff_means = np.array([ 4.32,  4.05,  4.07,  4.51,  4.95,  3.90,  3.48])
+data_diff_stds =  np.array([ 7.98,  7.96,  8.34,  8.42,  8.99,  8.41, 10.30])
+data_norm_covs =  np.array([0.04409,-0.03578,-0.04356,-0.03427,-0.00142,-0.09287,-0.12237])
 
-opto_means_err = np.array([1.46, 1.47, 1.53, 1.56, 1.65, 1.69, 2.32])
-opto_stds_err =  np.array([1.63, 1.71, 1.88, 1.73, 1.66, 1.33, 2.57])
-diff_means_err = np.array([1.15, 1.15, 1.22, 1.22, 1.31, 1.22, 1.50])
-diff_stds_err =  np.array([1.37, 1.32, 1.76, 1.53, 1.61, 1.53, 1.86])
-norm_covs_err =  np.array([0.1270, 0.1679, 0.1588, 0.1608, 0.1424, 0.1883, 0.4295])
+data_opto_means_err = np.array([1.46, 1.47, 1.53, 1.56, 1.65, 1.69, 2.32])
+data_opto_stds_err =  np.array([1.63, 1.71, 1.88, 1.73, 1.66, 1.33, 2.57])
+data_diff_means_err = np.array([1.15, 1.15, 1.22, 1.22, 1.31, 1.22, 1.50])
+data_diff_stds_err =  np.array([1.37, 1.32, 1.76, 1.53, 1.61, 1.53, 1.86])
+data_norm_covs_err =  np.array([0.1270, 0.1679, 0.1588, 0.1608, 0.1424, 0.1883, 0.4295])
 
-nc = len(opto_means)
+nc = len(data_opto_means)
 
 def gen_disorder(prm_dict,eX):
     SrfE = prm_dict['SrfE']
@@ -182,9 +182,11 @@ for idx_rep in range(first_rep,last_rep):
             pred_diff_means = diff_mean_itp(np.vstack((this_L*np.ones(nc),this_CVL*np.ones(nc),aXs)).T)
             pred_diff_stds = diff_std_itp(np.vstack((this_L*np.ones(nc),this_CVL*np.ones(nc),aXs)).T)
             pred_norm_covs = norm_cov_itp(np.vstack((this_L*np.ones(nc),this_CVL*np.ones(nc),aXs)).T)
-            res = np.array([(pred_opto_means-opto_means)/opto_means_err, (pred_opto_stds-opto_stds)/opto_stds_err,
-                (pred_diff_means-diff_means)/diff_means_err, (pred_diff_stds-diff_stds)/diff_stds_err,
-                (pred_norm_covs-norm_covs)/norm_covs_err,])
+            res = np.array([(pred_opto_means-data_opto_means)/data_opto_means_err,
+                            (pred_opto_stds-data_opto_stds)/data_opto_stds_err,
+                            (pred_diff_means-data_diff_means)/data_diff_means_err,
+                            (pred_diff_stds-data_diff_stds)/data_diff_stds_err,
+                            (pred_norm_covs-data_norm_covs)/data_norm_covs_err])
             return res.ravel()
         xmin = (Ls[ 0],CVLs[ 0])
         xmax = (Ls[-1],CVLs[-1])
