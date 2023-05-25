@@ -4,6 +4,7 @@ Code collaboratively written by Alessandro Sanzeni, Agostina Palmigiano, and Tua
 import pickle
 import numpy as np
 import torch
+import torch_interpolations
 from scipy.special import erf, erfi
 from scipy.integrate import solve_ivp, quad
 from scipy.interpolate import interp1d,interpn
@@ -72,87 +73,6 @@ class Ricciardi(object):
                                                                       max_u[idx]**2) -
                                        min_u[idx]**2*fp.hyp2f2(1.0,1.0,1.5,2.0,
                                                                       min_u[idx]**2)))
-                else:
-                    r[idx]=1.0/(self.trp+t*(np.log(abs(min_u[idx])) -
-                                            np.log(abs(max_u[idx])) +
-                                       (0.25*min_u[idx]**-2 - 0.1875*min_u[idx]**-4 +
-                                        0.3125*min_u[idx]**-6 - 0.8203125*min_u[idx]**-8 +
-                                        2.953125*min_u[idx]**-10) -
-                                       (0.25*max_u[idx]**-2 - 0.1875*max_u[idx]**-4 +
-                                        0.3125*max_u[idx]**-6 - 0.8203125*max_u[idx]**-8 +
-                                        2.953125*max_u[idx]**-10)))
-        return r
-
-    def calc_phi_approx(self,u,t):
-        min_u = (self.Vr-u)/self.st
-        max_u = (self.tht-u)/self.st
-        r = np.zeros_like(u);
-
-        if np.isscalar(u):
-            if(min_u>3):
-                r=max_u/t/srpi*np.exp(-max_u**2)
-            elif(max_u>-3):
-                r=1.0/(self.trp+t*(srpi*(1+(0.5641895835477563*max_u - 0.06824374242989947*max_u**3 + 
-                                            0.018376713395784477*max_u**5 - 0.0009168058486500035*max_u**7 + 
-                                            0.00010449954923720645*max_u**9 - 1.911985476019063e-6*max_u**11 + 
-                                            1.118370573045194e-7*max_u**13)/(1.- 0.12095888407007947*max_u**2 + 
-                                            0.04368298753645629*max_u**4 - 0.0019107825995500012*max_u**6 + 
-                                            0.00032212978373256045*max_u**8 - 4.103627436954744e-6*max_u**10 + 
-                                            5.09655674445676e-7*max_u**12 + 1.8327283888908581e-9*max_u**14 + 6.654290429711112e-11*max_u**16))*
-                                            np.exp(max_u**2)*max_u*(2027025+810180*max_u**2+263340*max_u**4+69336*max_u**6+
-                                                15408*max_u**8+3040*max_u**10+576*max_u**12+128*max_u**14)/
-                                            (2027025+2162160*max_u**2+1164240*max_u**4+423360*max_u**6+117600*max_u**8+
-                                                26880*max_u**10+5376*max_u**12+1024*max_u**14+256*max_u**16) -
-                                        srpi*(1+(0.5641895835477563*min_u - 0.06824374242989947*min_u**3 + 
-                                            0.018376713395784477*min_u**5 - 0.0009168058486500035*min_u**7 + 
-                                            0.00010449954923720645*min_u**9 - 1.911985476019063e-6*min_u**11 + 
-                                            1.118370573045194e-7*min_u**13)/(1.- 0.12095888407007947*min_u**2 + 
-                                            0.04368298753645629*min_u**4 - 0.0019107825995500012*min_u**6 + 
-                                            0.00032212978373256045*min_u**8 - 4.103627436954744e-6*min_u**10 + 
-                                            5.09655674445676e-7*min_u**12 + 1.8327283888908581e-9*min_u**14 + 6.654290429711112e-11*min_u**16))*
-                                            np.exp(min_u**2)*min_u*(2027025+810180*min_u**2+263340*min_u**4+69336*min_u**6+
-                                                15408*min_u**8+3040*min_u**10+576*min_u**12+128*min_u**14)/
-                                            (2027025+2162160*min_u**2+1164240*min_u**4+423360*min_u**6+117600*min_u**8+
-                                                26880*min_u**10+5376*min_u**12+1024*min_u**14+256*min_u**16)))
-            else:
-                r=1.0/(self.trp+t*(np.log(abs(min_u)) - np.log(abs(max_u)) +
-                                   (0.25*min_u**-2 - 0.1875*min_u**-4 + 0.3125*min_u**-6 -
-                                    0.8203125*min_u**-8 + 2.953125*min_u**-10) -
-                                   (0.25*max_u**-2 - 0.1875*max_u**-4 + 0.3125*max_u**-6 -
-                                    0.8203125*max_u**-8 + 2.953125*max_u**-10)))
-        else:
-            for idx in range(len(u)):
-                if(min_u[idx]>3):
-                    r[idx]=max_u[idx]/t/srpi*np.exp(-max_u[idx]**2)
-                if(min_u[idx]>-3):
-                    r[idx]=1.0/(self.trp+t*(srpi*(1+(0.5641895835477563*max_u[idx]-0.07310176646978049*max_u[idx]**3+
-                                                    0.019916897946949282*max_u[idx]**5-0.001187484601754455*max_u[idx]**7+
-                                                    0.00014245755084666304*max_u[idx]**9-4.208652789675569e-6*max_u[idx]**11+
-                                                    2.8330406295105274e-7*max_u[idx]**13-3.2731460579579614e-9*max_u[idx]**15+
-                                                    1.263640520928807e-10*max_u[idx]**17)/(1.-0.12956950748735815*max_u[idx]**2+
-                                                    0.046412893575273534*max_u[idx]**4-0.002486221791373608*max_u[idx]**6+
-                                                    0.000410629108366176*max_u[idx]**8-9.781058014448444e-6*max_u[idx]**10+
-                                                    1.0371239952922995e-6*max_u[idx]**12-7.166099219321984e-9*max_u[idx]**14+
-                                                    6.85317470793816e-10*max_u[idx]**16+1.932753647574705e-12*max_u[idx]**18+
-                                                    4.121310879310989e-14*max_u[idx]**20))*
-                                                np.exp(max_u[idx]**2)*max_u[idx]*(654729075+252702450*max_u[idx]**2+79999920*max_u[idx]**4+20386080*max_u[idx]**6+
-                                                    4313760*max_u[idx]**8+784320*max_u[idx]**10+126720*max_u[idx]**12+18944*max_u[idx]**14+2816*max_u[idx]**16+512*max_u[idx]**18)/
-                                                (654729075+689188500*max_u[idx]**2+364864500*max_u[idx]**4+129729600*max_u[idx]**6+34927200*max_u[idx]**8+
-                                                    7620480*max_u[idx]**10+1411200*max_u[idx]**12+230400*max_u[idx]**14+34560*max_u[idx]**16+5120*max_u[idx]**18+1024*max_u[idx]**20) -
-                                            srpi*(1+(0.5641895835477563*min_u[idx]-0.07310176646978049*min_u[idx]**3+
-                                                    0.019916897946949282*min_u[idx]**5-0.001187484601754455*min_u[idx]**7+
-                                                    0.00014245755084666304*min_u[idx]**9-4.208652789675569e-6*min_u[idx]**11+
-                                                    2.8330406295105274e-7*min_u[idx]**13-3.2731460579579614e-9*min_u[idx]**15+
-                                                    1.263640520928807e-10*min_u[idx]**17)/(1.-0.12956950748735815*min_u[idx]**2+
-                                                    0.046412893575273534*min_u[idx]**4-0.002486221791373608*min_u[idx]**6+
-                                                    0.000410629108366176*min_u[idx]**8-9.781058014448444e-6*min_u[idx]**10+
-                                                    1.0371239952922995e-6*min_u[idx]**12-7.166099219321984e-9*min_u[idx]**14+
-                                                    6.85317470793816e-10*min_u[idx]**16+1.932753647574705e-12*min_u[idx]**18+
-                                                    4.121310879310989e-14*min_u[idx]**20))*
-                                                np.exp(min_u[idx]**2)*min_u[idx]*(654729075+252702450*min_u[idx]**2+79999920*min_u[idx]**4+20386080*min_u[idx]**6+
-                                                    4313760*min_u[idx]**8+784320*min_u[idx]**10+126720*min_u[idx]**12+18944*min_u[idx]**14+2816*min_u[idx]**16+512*min_u[idx]**18)/
-                                                (654729075+689188500*min_u[idx]**2+364864500*min_u[idx]**4+129729600*min_u[idx]**6+34927200*min_u[idx]**8+
-                                                    7620480*min_u[idx]**10+1411200*min_u[idx]**12+230400*min_u[idx]**14+34560*min_u[idx]**16+5120*min_u[idx]**18+1024*min_u[idx]**20)))
                 else:
                     r[idx]=1.0/(self.trp+t*(np.log(abs(min_u[idx])) -
                                             np.log(abs(max_u[idx])) +
@@ -240,6 +160,45 @@ class Ricciardi(object):
         if save_file:
             out_dict = {'phi_int_E':self.phi_int_E,
                         'phi_int_I':self.phi_int_I}
+            with open(nameout+'.pkl', 'wb') as handle:
+                pickle.dump(out_dict,handle)
+        
+    def set_up_nonlinearity_tensor(self,nameout=None):
+        save_file = False
+        if nameout is not None:
+            try:
+                with open(nameout+'.pkl', 'rb') as handle:
+                    out_dict = pickle.load(handle)
+                self.phi_int_tensor_E=out_dict['phi_int_tensor_E']
+                self.phi_int_tensor_I=out_dict['phi_int_tensor_I']
+                print('Loading previously saved nonlinearity')
+                return None
+            except:
+                print('Calculating nonlinearity')
+                save_file = True
+
+        u_tab_max=10.0;
+        u_tab=np.linspace(-u_tab_max/5,u_tab_max,int(200000*1.2+1))
+        u_tab=np.concatenate(([-10000],u_tab))
+        u_tab=np.concatenate((u_tab,[10000]))
+
+        phi_tab_E,phi_tab_I=u_tab*0,u_tab*0;
+        # phi_der_tab_E,phi_der_tab_I=u_tab*0,u_tab*0;
+
+        for idx in range(len(phi_tab_E)):
+            phi_tab_E[idx]=self.calc_phi(u_tab[idx],self.tE)
+            phi_tab_I[idx]=self.calc_phi(u_tab[idx],self.tI)
+
+        u_tab_tensor = torch.from_numpy(u_tab.astype(np.float32))
+        phi_tab_tensor_E = torch.from_numpy(phi_tab_E.astype(np.float32))
+        phi_tab_tensor_I = torch.from_numpy(phi_tab_I.astype(np.float32))
+
+        self.phi_int_tensor_E=torch_interpolations.RegularGridInterpolator((u_tab_tensor,), phi_tab_tensor_E)
+        self.phi_int_tensor_I=torch_interpolations.RegularGridInterpolator((u_tab_tensor,), phi_tab_tensor_I)
+
+        if save_file:
+            out_dict = {'phi_int_tensor_E':self.phi_int_tensor_E,
+                        'phi_int_tensor_I':self.phi_int_tensor_I}
             with open(nameout+'.pkl', 'wb') as handle:
                 pickle.dump(out_dict,handle)
 
@@ -397,9 +356,11 @@ class Ricciardi(object):
         return interpn((self.uL_tab,self.sigL_tab), self.M_phiL2_tab_E, (u,sig), method='linear', fill_value=None)[0]
 
     def phiE_tensor(self,u):
-        return self.calc_phi_tensor(u,self.tE)
+        # return self.calc_phi_tensor(u,self.tE)
+        return self.phi_int_tensor_E(u[None,:])
     def phiI_tensor(self,u):
-        return self.calc_phi_tensor(u,self.tI)
+        # return self.calc_phi_tensor(u,self.tI)
+        return self.phi_int_tensor_I(u[None,:])
 
     def phiE(self,u):
         return self.phi_int_E(u)

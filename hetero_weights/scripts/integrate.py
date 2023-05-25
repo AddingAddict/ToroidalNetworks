@@ -4,7 +4,7 @@ from scipy.integrate import solve_ivp
 import torch
 from torchdiffeq import odeint, odeint_event
 
-def sim_dyn(rc,T,L,M,H,LAM,E_all,I_all,mult_tau=False,max_min=7.5):
+def sim_dyn(rc,T,L,M,H,LAM,E_all,I_all,mult_tau=False,max_min=7.5,stat_stop=True):
     LAS = LAM*L
 
     F=np.zeros_like(H)
@@ -44,7 +44,10 @@ def sim_dyn(rc,T,L,M,H,LAM,E_all,I_all,mult_tau=False,max_min=7.5):
     time_event.terminal = True
 
     rates=np.zeros((len(H),len(T)));
-    sol = solve_ivp(ode_fn,[np.min(T),np.max(T)],rates[:,0], method='RK45', t_eval=T, events=[stat_event,time_event])
+    if stat_stop:
+        sol = solve_ivp(ode_fn,[np.min(T),np.max(T)],rates[:,0], method='RK45', t_eval=T, events=[stat_event,time_event])
+    else:
+        sol = solve_ivp(ode_fn,[np.min(T),np.max(T)],rates[:,0], method='RK45', t_eval=T, events=[time_event])
     if sol.t.size < len(T):
         print("      Integration stopped after " + str(np.around(T[sol.t.size-1],2)) + "s of simulation time")
         if time.process_time() - start > max_time:
@@ -58,8 +61,8 @@ def sim_dyn(rc,T,L,M,H,LAM,E_all,I_all,mult_tau=False,max_min=7.5):
     return rates,timeout
 
 def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False):
-    MU = torch.zeros_like(H)
-    F = torch.ones_like(H)
+    MU = torch.zeros_like(H,dtype=torch.float32)
+    F = torch.ones_like(H,dtype=torch.float32)
     LAS = LAM*L
 
     # This function computes the dynamics of the rate model
@@ -84,4 +87,5 @@ def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False):
         return torch.tensor(meanF)
 
     # return odeint(ode_fn,torch.zeros_like(H),T[[0,-1]],event_fn=event_fn)
-    return odeint(ode_fn,torch.zeros_like(H),T)
+    return odeint(ode_fn,torch.zeros_like(H,dtype=torch.float32),T)
+

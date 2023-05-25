@@ -3,21 +3,17 @@ import inspect
 import numpy as np
 import torch
 
-import spat_ring_network as sr_network
-import spat_snp_network as sm_network
+import spat_ori_network as network
 import integrate as integ
 
-def sim_ring(params_dict,ri,T,mask_time,seeds,max_min=15,ring=True):
+def sim_ring(params_dict,ri,T,mask_time,seeds,max_min=15,ori_type='ring'):
     this_params_dict = params_dict.copy()
     this_params_dict['seed_con'] = 0
-    if ring:
-        filtered_mydict_net = {k: v for k, v in this_params_dict.items() if k in [p.name for p in
-                                                        inspect.signature(sr_network.network).parameters.values()]}
-        net = sr_network.network(**filtered_mydict_net)
-    else:
-        filtered_mydict_net = {k: v for k, v in this_params_dict.items() if k in [p.name for p in
-                                                        inspect.signature(sm_network.network).parameters.values()]}
-        net = sm_network.network(**filtered_mydict_net)
+    this_params_dict['ori_type'] = ori_type
+
+    filtered_mydict_net = {k: v for k, v in this_params_dict.items() if k in [p.name for p in
+                                                    inspect.signature(network.SpatOriNetwork).parameters.values()]}
+    net = network.SpatOriNetwork(**filtered_mydict_net)
     rates = np.zeros((len(seeds),2,net.N))
     
     for seed_idx,seed in enumerate(seeds):
@@ -37,17 +33,14 @@ def sim_ring(params_dict,ri,T,mask_time,seeds,max_min=15,ring=True):
         
     return net,np.hstack([rates[i,:,:] for i in np.arange(len(seeds))])
 
-def sim_ring_tensor(params_dict,ri,T,mask_time,seeds,max_min=15,ring=True):
+def sim_ring_tensor(params_dict,ri,T,mask_time,seeds,max_min=15,ori_type='ring'):
     this_params_dict = params_dict.copy()
     this_params_dict['seed_con'] = 0
-    if ring:
-        filtered_mydict_net = {k: v for k, v in this_params_dict.items() if k in [p.name for p in
-                                                        inspect.signature(sr_network.network).parameters.values()]}
-        net = sr_network.network(**filtered_mydict_net)
-    else:
-        filtered_mydict_net = {k: v for k, v in this_params_dict.items() if k in [p.name for p in
-                                                        inspect.signature(sm_network.network).parameters.values()]}
-        net = sm_network.network(**filtered_mydict_net)
+    this_params_dict['ori_type'] = ori_type
+
+    filtered_mydict_net = {k: v for k, v in this_params_dict.items() if k in [p.name for p in
+                                                    inspect.signature(network.SpatOriNetwork).parameters.values()]}
+    net = network.SpatOriNetwork(**filtered_mydict_net)
     rates = np.zeros((len(seeds),2,net.N))
     
     for seed_idx,seed in enumerate(seeds):

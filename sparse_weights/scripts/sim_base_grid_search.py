@@ -27,8 +27,8 @@ NtE = 100
 T = np.linspace(0,NtE*ri.tE,round(NtE*ri.tE/(ri.tI/3))+1)
 mask_time = T>(NtE/2*ri.tE)
 
-aXs = np.arange(0,16+2,2)
-bXs = np.arange(1,9+2,2)
+aXs = np.arange(0,27+3,3)
+bXs = np.arange(1,11+2,2)
 eXs = np.arange(0,0.5+0.05,0.05)
 
 net = m_network.network(seed=0,NC=[4,1],Nrf=48,Nori=9,Lrf=80)
@@ -42,13 +42,13 @@ for eX_idx,eX in enumerate(eXs):
         scale = 1/shape
         eps[eX_idx] = np.random.default_rng(0).gamma(shape,scale=scale,size=net.N)
 
-base_means = np.array([6.22, 6.72, 7.17, 7.67, 8.,  10.97, 16.7])
-base_stds =  np.array([5.79, 6.64, 6.93, 7.15, 7.07, 8.98, 13.6])
+data_base_means = np.array([ 6.22,  6.72,  7.17,  7.67,  8.00, 10.97, 16.7 ])
+data_base_stds =  np.array([ 5.79,  6.64,  6.93,  7.15,  7.07,  8.98, 13.6 ])
 
-base_means_err = np.array([0.83, 0.96, 1.00, 1.03, 1.02, 1.30, 2.00])
-base_stds_err =  np.array([0.48, 0.78, 0.96, 0.81, 0.78, 1.08, 2.63])
+data_base_means_err = np.array([0.83, 0.96, 1.00, 1.03, 1.02, 1.30, 2.00])
+data_base_stds_err =  np.array([0.48, 0.78, 0.96, 0.81, 0.78, 1.08, 2.63])
 
-nc = len(base_means)
+nc = len(data_base_means)
 
 def gen_prms(seed):
     prm_dict = {}
@@ -56,7 +56,7 @@ def gen_prms(seed):
     rng = np.random.default_rng(seed)
     prm_dict['SrfE'] = rng.uniform(5,20)
     prm_dict['SrfI'] = rng.uniform(5,20)
-    prm_dict['SrfF'] = 20#rng.uniform(5,20)
+    prm_dict['SrfF'] = 30#rng.uniform(5,20)
     prm_dict['SoriE'] = rng.uniform(15,45)
     prm_dict['SoriI'] = rng.uniform(15,45)
     prm_dict['SoriF'] = rng.uniform(15,45)
@@ -156,7 +156,8 @@ for idx_rep in range(first_rep,nrep):
             this_aXs = np.concatenate(([0],x[1:]))
             pred_means = mean_itp(np.vstack((this_aXs,this_bX*np.ones(nc),eX*np.ones(nc))).T)
             pred_stds = std_itp(np.vstack((this_aXs,this_bX*np.ones(nc),eX*np.ones(nc))).T)
-            res = np.array([(pred_means-base_means)/base_means_err, (pred_stds-base_stds)/base_stds_err])
+            res = np.array([(pred_means-data_base_means)/data_base_means_err,
+                            (pred_stds-data_base_stds)/data_base_stds_err])
             return res.ravel()
         xmin = np.concatenate(([bXs[ 0]],aXs[ 0]*np.ones(nc-1)))
         xmax = np.concatenate(([bXs[-1]],aXs[-1]*np.ones(nc-1)))

@@ -251,9 +251,9 @@ class network(object):
         self.E_cond = torch.zeros(self.N,dtype=torch.bool)
         self.E_cond = self.E_cond.scatter(0,torch.from_numpy(self.E_all),torch.ones(self.E_all.size,dtype=torch.bool))
 
-        self.M_torch = torch.from_numpy(self.M)
-        self.H_torch = torch.from_numpy(self.H)
-        self.LAM_torch = torch.from_numpy(self.LAM)
+        self.M_torch = torch.from_numpy(self.M.astype(dtype=np.float32))
+        self.H_torch = torch.from_numpy(self.H.astype(dtype=np.float32))
+        self.LAM_torch = torch.from_numpy(self.LAM.astype(dtype=np.float32))
 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print("Using",device)
