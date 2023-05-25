@@ -71,5 +71,5 @@ results_dict = su.get_ring_input_rate(params_dict,net,seeds,rates)
 results_dict['sWI'] = sWI
 results_dict['sH'] = sH
 
-with open('./sim_ring_vary_widths_array_results_sWI={:d}_sH={:d}'.format(int(sWI),int(sH))+'.pkl', 'wb') as handle:
+with open('./../results/sim_ring_vary_widths_array_results_sWI={:d}_sH={:d}'.format(int(sWI),int(sH))+'.pkl', 'wb') as handle:
     pickle.dump(results_dict,handle)

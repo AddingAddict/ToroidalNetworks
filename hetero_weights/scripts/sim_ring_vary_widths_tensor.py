@@ -32,7 +32,7 @@ sWIs = np.linspace(20,45,6)
 sHs = np.linspace(20,45,6)
 
 try:
-    with open('./sim_ring_vary_widths_tensor_results'+'.pkl', 'rb') as handle:
+    with open('./../results/sim_ring_vary_widths_tensor_results'+'.pkl', 'rb') as handle:
         results_dict = pickle.load(handle)
 except:
     results_dict = {}
@@ -72,5 +72,5 @@ for sWI_idx,sWI in enumerate(sWIs):
 
         results_dict[(sWI_idx,sH_idx)] = this_results_dict
 
-        with open('./sim_ring_vary_widths_tensor_results'+'.pkl', 'wb') as handle:
+        with open('./../results/sim_ring_vary_widths_tensor_results'+'.pkl', 'wb') as handle:
             pickle.dump(results_dict,handle)

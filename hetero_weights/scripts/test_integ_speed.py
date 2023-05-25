@@ -44,7 +44,7 @@ this_svarH = this_sH/np.sqrt(2)
 
 NEs = [2000,3000,4000,5000]
 
-seeds = np.arange(1)
+seeds = np.arange(4)
 
 for NE_idx,NE in enumerate(NEs):
     params_dict = {}
