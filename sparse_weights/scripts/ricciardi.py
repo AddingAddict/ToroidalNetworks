@@ -189,9 +189,12 @@ class Ricciardi(object):
             phi_tab_E[idx]=self.calc_phi(u_tab[idx],self.tE)
             phi_tab_I[idx]=self.calc_phi(u_tab[idx],self.tI)
 
-        u_tab_tensor = torch.from_numpy(u_tab.astype(np.float32))
-        phi_tab_tensor_E = torch.from_numpy(phi_tab_E.astype(np.float32))
-        phi_tab_tensor_I = torch.from_numpy(phi_tab_I.astype(np.float32))
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print("Using",device)
+
+        u_tab_tensor = torch.from_numpy(u_tab.astype(np.float32)).to(device)
+        phi_tab_tensor_E = torch.from_numpy(phi_tab_E.astype(np.float32)).to(device)
+        phi_tab_tensor_I = torch.from_numpy(phi_tab_I.astype(np.float32)).to(device)
 
         self.phi_int_tensor_E=torch_interpolations.RegularGridInterpolator((u_tab_tensor,), phi_tab_tensor_E)
         self.phi_int_tensor_I=torch_interpolations.RegularGridInterpolator((u_tab_tensor,), phi_tab_tensor_I)
