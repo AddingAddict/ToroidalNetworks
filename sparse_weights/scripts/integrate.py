@@ -86,6 +86,8 @@ def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False):
         if meanF < 0: meanF = 0
         return torch.tensor(meanF)
 
-    # return odeint(ode_fn,torch.zeros_like(H),T[[0,-1]],event_fn=event_fn)
-    return odeint(ode_fn,torch.zeros_like(H,dtype=torch.float32),T)
+    # rates = odeint(ode_fn,torch.zeros_like(H),T[[0,-1]],event_fn=event_fn)
+    rates = odeint(ode_fn,torch.zeros_like(H,dtype=torch.float32),T)
+
+    return torch.transpose(rates,0,1),False
 

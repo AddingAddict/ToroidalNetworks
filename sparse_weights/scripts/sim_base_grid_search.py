@@ -6,8 +6,7 @@ from scipy.interpolate import RegularGridInterpolator
 from scipy.optimize import least_squares
 import time
 
-import spat_ring_network as r_network
-import spat_snp_network as m_network
+import spat_ori_network as network
 import sim_util as su
 import ricciardi as ric
 import integrate as integ
@@ -31,7 +30,7 @@ aXs = np.arange(0,27+3,3)
 bXs = np.arange(1,11+2,2)
 eXs = np.arange(0,0.5+0.05,0.05)
 
-net = m_network.network(seed=0,NC=[4,1],Nrf=48,Nori=9,Lrf=80)
+net = network.SpatOriNetwork(seed=0,NC=[4,1],Nrf=48,Nori=9,Lrf=80,ori_type='snp')
 
 eps = np.zeros((len(eXs),net.N))
 for eX_idx,eX in enumerate(eXs):
@@ -56,7 +55,7 @@ def gen_prms(seed):
     rng = np.random.default_rng(seed)
     prm_dict['SrfE'] = rng.uniform(5,20)
     prm_dict['SrfI'] = rng.uniform(5,20)
-    prm_dict['SrfF'] = 30#rng.uniform(5,20)
+    prm_dict['SrfF'] = 20#rng.uniform(5,20)
     prm_dict['SoriE'] = rng.uniform(15,45)
     prm_dict['SoriI'] = rng.uniform(15,45)
     prm_dict['SoriF'] = rng.uniform(15,45)

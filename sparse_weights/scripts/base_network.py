@@ -128,7 +128,63 @@ class BaseNetwork(ABC):
         self.profile = profile
         self.normalize_by_mean = normalize_by_mean
 
-    def set_seed(self,seed_con):
+    def set_seed(self,seed):
         self.rng = np.random.default_rng(seed=seed)
 
-        
+    def generate_sparse_rec_conn(self,WKern,K):
+        C_full = np.zeros((self.N,self.N),np.float32)
+        W_mean_full = np.zeros((self.N,self.N),np.float32)
+        W_var_full = np.zeros((self.N,self.N),np.float32)
+
+        for pstC in range(self.n):
+            pstC_idxs = self.C_idxs[pstC]
+            pstC_all = self.C_all[pstC]
+            NpstC = self.NC[pstC]
+            for preC in range(self.n):
+                preC_idxs = self.C_idxs[preC]
+                preC_all = self.C_all[preC]
+                NpreC = self.NC[preC]
+
+                W = WKern[pstC][preC]
+                if W is None: continue
+
+                ps = np.fmax(K/self.NC[0] * W,1e-12)
+                if np.any(ps > 1):
+                    raise Exception("Error: p > 1, please decrease K or increase NC")
+
+                for pst_loc in range(self.Nloc):
+                    pst_idxs = pstC_idxs[pst_loc]
+                    for pre_loc in range(self.Nloc):
+                        p = ps[pst_loc,pre_loc]
+                        pre_idxs = preC_idxs[pre_loc]
+                        C_full[pst_idxs,pre_idxs] = self.rng.binomial(1,p,size=(NpstC,NpreC))
+
+        return C_full
+
+    def generate_sparse_ff_conn(self,WKern,K):
+        C_full = np.zeros((self.N,self.NX*self.Nloc),np.float32)
+
+        preC_idxs = self.X_idxs
+        preC_all = self.X_all
+        NpreC = self.NX
+
+        for pstC in range(self.n):
+            pstC_idxs = self.C_idxs[pstC]
+            pstC_all = self.C_all[pstC]
+            NpstC = self.NC[pstC]
+
+            W = WKern[pstC]
+            if W is None: continue
+
+            ps = np.fmax(K/self.NX * W,1e-12)
+            if np.any(ps > 1):
+                raise Exception("Error: p > 1, please decrease K or increase NC")
+
+            for pst_loc in range(self.Nloc):
+                pst_idxs = pstC_idxs[pst_loc]
+                for pre_loc in range(self.Nloc):
+                    p = ps[pst_loc,pre_loc]
+                    pre_idxs = preC_idxs[pre_loc]
+                    C_full[pst_idxs,pre_idxs] = self.rng.binomial(1,p,size=(NpstC,NpreC))
+
+        return C_full

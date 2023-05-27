@@ -177,17 +177,22 @@ class Ricciardi(object):
                 print('Calculating nonlinearity')
                 save_file = True
 
-        u_tab_max=10.0;
-        u_tab=np.linspace(-u_tab_max/5,u_tab_max,int(200000*1.2+1))
-        u_tab=np.concatenate(([-10000],u_tab))
-        u_tab=np.concatenate((u_tab,[10000]))
+        if hasattr(self,"phi_int_E"):
+            u_tab=self.phi_int_E.x
+            phi_tab_E=self.phi_int_E.y
+            phi_tab_I=self.phi_int_I.y
+        else:
+            u_tab_max=10.0;
+            u_tab=np.linspace(-u_tab_max/5,u_tab_max,int(200000*1.2+1))
+            u_tab=np.concatenate(([-10000],u_tab))
+            u_tab=np.concatenate((u_tab,[10000]))
 
-        phi_tab_E,phi_tab_I=u_tab*0,u_tab*0;
-        # phi_der_tab_E,phi_der_tab_I=u_tab*0,u_tab*0;
+            phi_tab_E,phi_tab_I=u_tab*0,u_tab*0;
+            # phi_der_tab_E,phi_der_tab_I=u_tab*0,u_tab*0;
 
-        for idx in range(len(phi_tab_E)):
-            phi_tab_E[idx]=self.calc_phi(u_tab[idx],self.tE)
-            phi_tab_I[idx]=self.calc_phi(u_tab[idx],self.tI)
+            for idx in range(len(phi_tab_E)):
+                phi_tab_E[idx]=self.calc_phi(u_tab[idx],self.tE)
+                phi_tab_I[idx]=self.calc_phi(u_tab[idx],self.tI)
 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print("Using",device)

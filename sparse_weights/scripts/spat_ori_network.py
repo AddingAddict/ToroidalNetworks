@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-import network
+import base_network as network
 
 class SpatOriNetwork(network.BaseNetwork):
 
@@ -251,9 +251,9 @@ class SpatOriNetwork(network.BaseNetwork):
                 torch.ones(self.C_all[cidx].size,dtype=torch.bool))
             self.C_conds.append(this_C_cond)
 
-        self.M_torch = torch.from_numpy(self.M)
-        # self.MX_torch = torch.from_numpy(self.MX)
-        self.H_torch = torch.from_numpy(self.H)
+        self.M_torch = torch.from_numpy(self.M.astype(dtype=np.float32))
+        # self.MX_torch = torch.from_numpy(self.MX.astype(dtype=np.float32))
+        self.H_torch = torch.from_numpy(self.H.astype(dtype=np.float32))
 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print("Using",device)

@@ -6,8 +6,7 @@ from scipy.interpolate import RegularGridInterpolator
 from scipy.optimize import least_squares
 import time
 
-import spat_ring_network as r_network
-import spat_snp_network as m_network
+import spat_ori_network as network
 import sim_util as su
 import ricciardi as ric
 import integrate as integ
@@ -31,7 +30,7 @@ aXs = np.arange(0,24+3,3)
 bXs = np.arange(1,11+2,2)
 eXs = np.arange(0,0.6+0.05,0.05)
 
-net = m_network.network(seed=0,NC=[4,1],Nrf=48,Nori=9,Lrf=80)
+net = network.SpatOriNetwork(seed=0,NC=[4,1],Nrf=48,Nori=9,Lrf=80,ori_type='snp')
 
 eps = np.zeros((len(eXs),net.N))
 for eX_idx,eX in enumerate(eXs):
@@ -171,7 +170,7 @@ for idx_rep in range(first_rep,nrep):
                 diff_means[aX_idx,bX_idx,eX_idx] = np.mean(diff_rates[net.get_centered_neurons()])
                 diff_stds[aX_idx,bX_idx,eX_idx] = np.std(diff_rates[net.get_centered_neurons()])
                 norm_covs[aX_idx,bX_idx,eX_idx] = np.cov(base_rates[net.get_centered_neurons()],
-                    diff_sol[net.get_centered_neurons(),-1])[0,1] / diff_stds[aX_idx,bX_idx,eX_idx]**2
+                    diff_rates[net.get_centered_neurons()])[0,1] / diff_stds[aX_idx,bX_idx,eX_idx]**2
 
     print("Simulating inputs took ",time.process_time() - start," s")
     print('')

@@ -3,17 +3,79 @@ import inspect
 import numpy as np
 import torch
 
-import spat_ori_network as network
+import ring_network as ring_network
+import spat_ori_network as spat_network
 import integrate as integ
 
-def sim_ring(params_dict,ri,T,mask_time,seeds,max_min=15,ori_type='ring'):
+def sim_ring(params_dict,ri,T,mask_time,seeds,max_min=15,stat_stop=True):
+    this_params_dict = params_dict.copy()
+    this_params_dict['seed_con'] = 0
+    filtered_mydict_net = {k: v for k, v in this_params_dict.items() if k in [p.name for p in
+                                                    inspect.signature(network.network).parameters.values()]}
+    net = network.network(**filtered_mydict_net)
+    rates = np.zeros((len(seeds),2,net.N))
+    
+    for seed_idx,seed in enumerate(seeds):
+        print('Doing seed '+str(seed_idx+1) +' of '+str(len(seeds)))
+        
+        net.set_seed(int(seed))
+        
+        filtered_mydict_disorder = {k: v for k, v in this_params_dict.items() if k in [p.name for p in
+                                            inspect.signature(net.generate_disorder).parameters.values()]}
+        net.generate_disorder(**filtered_mydict_disorder)
+        
+        sol,_ = integ.sim_dyn(ri,T,0.0,net.M,net.H,net.LAM,net.E_all,net.I_all,
+            mult_tau=False,max_min=30,stat_stop=stat_stop)
+        rates[seed_idx,0,:]=np.mean(sol[:,mask_time],axis=1)
+        
+        sol,_ = integ.sim_dyn(ri,T,params_dict['L'],net.M,net.H,net.LAM,net.E_all,net.I_all,
+            mult_tau=False,max_min=30,stat_stop=stat_stop)
+        rates[seed_idx,1,:]=np.mean(sol[:,mask_time],axis=1)
+        
+    return net,np.hstack([rates[i,:,:] for i in np.arange(len(seeds))])
+
+def sim_ring_tensor(params_dict,ri,T,mask_time,seeds,max_min=15):
+    this_params_dict = params_dict.copy()
+    this_params_dict['seed_con'] = 0
+    filtered_mydict_net = {k: v for k, v in this_params_dict.items() if k in [p.name for p in
+                                                    inspect.signature(network.network).parameters.values()]}
+    net = network.network(**filtered_mydict_net)
+    rates = np.zeros((len(seeds),2,net.N))
+    
+    for seed_idx,seed in enumerate(seeds):
+        print('Doing seed '+str(seed_idx+1) +' of '+str(len(seeds)))
+        
+        net.set_seed(int(seed))
+        
+        filtered_mydict_disorder = {k: v for k, v in this_params_dict.items() if k in [p.name for p in
+                                            inspect.signature(net.generate_disorder).parameters.values()]}
+        net.generate_disorder(**filtered_mydict_disorder)
+        net.generate_tensors()
+        
+        sol = integ.sim_dyn_tensor(ri,T,0.0,net.M_torch,net.H_torch,net.LAM_torch,net.E_cond,
+            mult_tau=False)
+        try:
+            rates[seed_idx,0,:]=torch.mean(sol[mask_time],axis=0).numpy()
+        except:
+            rates[seed_idx,0,:]=torch.mean(sol[mask_time],axis=0).cpu().numpy()
+        
+        sol = integ.sim_dyn_tensor(ri,T,params_dict['L'],net.M_torch,net.H_torch,net.LAM_torch,net.E_cond,
+            mult_tau=False)
+        try:
+            rates[seed_idx,1,:]=torch.mean(sol[mask_time],axis=0).numpy()
+        except:
+            rates[seed_idx,1,:]=torch.mean(sol[mask_time],axis=0).cpu().numpy()
+        
+    return net,np.hstack([rates[i,:,:] for i in np.arange(len(seeds))])
+
+def sim_spat(params_dict,ri,T,mask_time,seeds,max_min=15,ori_type='ring'):
     this_params_dict = params_dict.copy()
     this_params_dict['seed_con'] = 0
     this_params_dict['ori_type'] = ori_type
 
     filtered_mydict_net = {k: v for k, v in this_params_dict.items() if k in [p.name for p in
-                                                    inspect.signature(network.SpatOriNetwork).parameters.values()]}
-    net = network.SpatOriNetwork(**filtered_mydict_net)
+                                                    inspect.signature(spat_network.SpatOriNetwork).parameters.values()]}
+    net = spat_network.SpatOriNetwork(**filtered_mydict_net)
     rates = np.zeros((len(seeds),2,net.N))
     
     for seed_idx,seed in enumerate(seeds):
@@ -33,14 +95,14 @@ def sim_ring(params_dict,ri,T,mask_time,seeds,max_min=15,ori_type='ring'):
         
     return net,np.hstack([rates[i,:,:] for i in np.arange(len(seeds))])
 
-def sim_ring_tensor(params_dict,ri,T,mask_time,seeds,max_min=15,ori_type='ring'):
+def sim_spat_tensor(params_dict,ri,T,mask_time,seeds,max_min=15,ori_type='ring'):
     this_params_dict = params_dict.copy()
     this_params_dict['seed_con'] = 0
     this_params_dict['ori_type'] = ori_type
 
     filtered_mydict_net = {k: v for k, v in this_params_dict.items() if k in [p.name for p in
-                                                    inspect.signature(network.SpatOriNetwork).parameters.values()]}
-    net = network.SpatOriNetwork(**filtered_mydict_net)
+                                                    inspect.signature(spat_network.SpatOriNetwork).parameters.values()]}
+    net = spat_network.SpatOriNetwork(**filtered_mydict_net)
     rates = np.zeros((len(seeds),2,net.N))
     
     for seed_idx,seed in enumerate(seeds):

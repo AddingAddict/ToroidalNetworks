@@ -6,8 +6,7 @@ from scipy.interpolate import RegularGridInterpolator
 from scipy.optimize import least_squares
 import time
 
-import spat_ring_network as r_network
-import spat_snp_network as m_network
+import spat_ori_network as network
 import sim_util as su
 import ricciardi as ric
 import integrate as integ
@@ -30,7 +29,7 @@ mask_time = T>(NtE/2*ri.tE)
 Ls = np.arange(0.5,8.0+0.5,0.5)
 CVLs = 10**np.arange(-1.0,1.0+0.25,0.25)
 
-net = m_network.network(seed=0,NC=[4,1],Nrf=48,Nori=9,Lrf=80)
+net = network.SpatOriNetwork(seed=0,NC=[4,1],Nrf=48,Nori=9,Lrf=80,ori_type='snp')
 
 LAMs = np.zeros((len(CVLs),net.N))
 for CVL_idx,CVL in enumerate(CVLs):
