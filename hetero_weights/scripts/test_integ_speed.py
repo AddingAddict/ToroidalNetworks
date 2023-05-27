@@ -9,7 +9,7 @@ import sim_util as su
 
 ri = ric.Ricciardi()
 ri.set_up_nonlinearity('./phi_int')
-ri.set_up_nonlinearity_tensor('./phi_int_tensor')
+ri.set_up_nonlinearity_tensor()
 
 NtE = 100
 
