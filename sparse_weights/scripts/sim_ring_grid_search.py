@@ -12,6 +12,8 @@ import sim_util as su
 import ricciardi as ric
 import integrate as integ
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 parser = argparse.ArgumentParser(description=('This python script takes results from sampled spatial model parameters, '
     'trains a net to interpolate the results, and finds parameters that best fit the experimental results'))
 
@@ -44,6 +46,7 @@ for eX_idx,eX in enumerate(eXs):
         scale = 1/shape
         this_eps = np.random.default_rng(0).gamma(shape,scale=scale,size=net.N).astype(np.float32)
         eps[eX_idx] = torch.from_numpy(this_eps)
+eps = eps.to(device)
 
 mous_base_means =       np.array([ 6.21,  6.71,  7.16,  7.66,  7.99, 10.98, 16.73])
 mous_base_stds =        np.array([ 5.79,  6.63,  6.92,  7.14,  7.07,  9.00, 13.64])
@@ -128,7 +131,6 @@ def gen_disorder(prm_dict):
     LAS_E = np.random.default_rng(0).lognormal(mu_l, sigma_l, net.NC[0]*net.Nloc).astype(np.float32)
     LAS[net.C_conds[0]] = torch.from_numpy(LAS_E)
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     B = B.to(device)
     LAS = LAS.to(device)
 
