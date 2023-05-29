@@ -31,9 +31,9 @@ NtE = 75
 T = torch.linspace(0,NtE*ri.tE,round(NtE*ri.tE/(ri.tI/3))+1)
 mask_time = T>(NtE/2*ri.tE)
 
-aXs = np.arange(0,26+2,2)
-bXs = np.arange(1,9+2,2)
-eXs = np.arange(0,0.6+0.1,0.1)
+aXs = np.arange(0,30+2,2)
+bXs = np.arange(1,19+2,2)
+eXs = np.arange(0,0.6+0.05,0.05)
 
 net = network.RingNetwork(seed=0,NC=[4,1],Nori=1200)
 
