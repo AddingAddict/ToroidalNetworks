@@ -70,15 +70,15 @@ def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False):
         def ode_fn(t,R):
             torch.matmul(M,R,out=MU)
             torch.add(MU,H,out=MU)
-            torch.where(E_cond,rc.tE*MU,rc.tI*MU,out=MU)
+            MU=torch.where(E_cond,rc.tE*MU,rc.tI*MU)#,out=MU)
             torch.add(MU,LAS,out=MU)
-            torch.where(E_cond,(-R+rc.phiE_tensor(MU))/rc.tE,(-R+rc.phiI_tensor(MU))/rc.tI,out=F)
+            F=torch.where(E_cond,(-R+rc.phiE_tensor(MU))/rc.tE,(-R+rc.phiI_tensor(MU))/rc.tI)#,out=F)
             return F
     else:
         def ode_fn(t,R):
             torch.matmul(M,R,out=MU)
             torch.add(MU,H + LAS,out=MU)
-            torch.where(E_cond,(-R+rc.phiE_tensor(MU))/rc.tE,(-R+rc.phiI_tensor(MU))/rc.tI,out=F)
+            F=torch.where(E_cond,(-R+rc.phiE_tensor(MU))/rc.tE,(-R+rc.phiI_tensor(MU))/rc.tI)#,out=F)
             return F
 
     def event_fn(t,R):
