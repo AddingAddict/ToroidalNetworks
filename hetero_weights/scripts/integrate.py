@@ -68,16 +68,16 @@ def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False):
     # This function computes the dynamics of the rate model
     if mult_tau:
         def ode_fn(t,R):
-            torch.matmul(M,R,out=MU)
-            torch.add(MU,H,out=MU)
+            MU=torch.matmul(M,R)#,out=MU)
+            MU=torch.add(MU,H)#,out=MU)
             MU=torch.where(E_cond,rc.tE*MU,rc.tI*MU)#,out=MU)
-            torch.add(MU,LAS,out=MU)
+            MU=torch.add(MU,LAS)#,out=MU)
             F=torch.where(E_cond,(-R+rc.phiE_tensor(MU))/rc.tE,(-R+rc.phiI_tensor(MU))/rc.tI)#,out=F)
             return F
     else:
         def ode_fn(t,R):
-            torch.matmul(M,R,out=MU)
-            torch.add(MU,H + LAS,out=MU)
+            MU=torch.matmul(M,R)#,out=MU)
+            MU=torch.add(MU,H + LAS)#,out=MU)
             F=torch.where(E_cond,(-R+rc.phiE_tensor(MU))/rc.tE,(-R+rc.phiI_tensor(MU))/rc.tI)#,out=F)
             return F
 
