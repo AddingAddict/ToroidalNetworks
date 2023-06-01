@@ -1,6 +1,9 @@
 import argparse
 import os
-import pickle
+try:
+    import pickle5 as pickle
+except:
+    import pickle
 import numpy as np
 import torch
 from scipy.interpolate import RegularGridInterpolator
