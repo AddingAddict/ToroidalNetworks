@@ -1,5 +1,5 @@
-
 import os
+import socket
 import argparse
 import numpy as np
 from subprocess import Popen
@@ -25,8 +25,11 @@ def runjobs():
     args2 = parser.parse_args()
     args = vars(args2)
     
-    cluster = str(args["cluster_"])
-
+    hostname = socket.gethostname()
+    if 'ax' in hostname:
+        cluster = 'axon'
+    else:
+        cluster = str(args["cluster_"])
     
     if (args2.test):
         print ("testing commands")
