@@ -1,7 +1,10 @@
 '''
 Code collaboratively written by Alessandro Sanzeni, Agostina Palmigiano, and Tuan Nguyen
 '''
-import pickle
+try:
+    import pickle5 as pickle
+except:
+    import pickle
 import numpy as np
 import torch
 import torch_interpolations
