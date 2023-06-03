@@ -112,12 +112,12 @@ def φI(μ):
 
 def ME(μ,Σ):
     try:
-        return ME_itp(torch.stack((1e3*torch.sqrt(Σ),μtox_torch(1e3*μ)),dim=0))
+        return ME_itp(torch.row_stack(torch.broadcast_tensors(1e3*torch.sqrt(Σ),μtox_torch(1e3*μ))))
     except:
         return ME_itp(torch.tensor([[1e3*torch.sqrt(Σ)],[μtox_torch(1e3*μ)]]))
 def MI(μ,Σ):
     try:
-        return MI_itp(torch.stack((1e3*torch.sqrt(Σ),μtox_torch(1e3*μ)),dim=0))
+        return MI_itp(torch.row_stack(torch.broadcast_tensors(1e3*torch.sqrt(Σ),μtox_torch(1e3*μ))))
     except:
         return MI_itp(torch.tensor([[1e3*torch.sqrt(Σ)],[μtox_torch(1e3*μ)]]))
 def ME_vecμ(μ,Σ):
@@ -128,13 +128,13 @@ def MI_vecμ(μ,Σ):
 def CE(μ,Σ,k):
     c = torch.sign(k)*torch.fmin(torch.abs(k)/Σ,torch.tensor(1))
     try:
-        return CE_itp(torch.stack((c,1e3*torch.sqrt(Σ),μtox_torch(1e3*μ)),dim=0))
+        return CE_itp(torch.row_stack(torch.broadcast_tensors(c,1e3*torch.sqrt(Σ),μtox_torch(1e3*μ))))
     except:
         return CE_itp(torch.tensor([[c],[1e3*torch.sqrt(Σ)],[μtox_torch(1e3*μ)]]))
 def CI(μ,Σ,k):
     c = torch.sign(k)*torch.fmin(torch.abs(k)/Σ,torch.tensor(1))
     try:
-        return CI_itp(torch.stack((c,1e3*torch.sqrt(Σ),μtox_torch(1e3*μ)),dim=0))
+        return CI_itp(torch.row_stack(torch.broadcast_tensors(c,1e3*torch.sqrt(Σ),μtox_torch(1e3*μ))))
     except:
         return CI_itp(torch.tensor([[c],[1e3*torch.sqrt(Σ)],[μtox_torch(1e3*μ)]]))
 def CE_vecμ(μ,Σ,k):
@@ -168,14 +168,17 @@ start = time.process_time()
 φxs = np.linspace(φxrange[0],φxrange[1],round(φxrange[2])).astype(np.float32)
 φxs_torch = torch.from_numpy(φxs).to(device)
 
-φLs = np.zeros((len(φxs)),dtype=np.float32)
+try:
+    φLs = np.load(resultsdir+'PhL_itp'+'_L={:.2f}'.format(L)+'_CVL={:.2f}'.format(CVL)+'.npy').astype(np.float32)
+except:
+    φLs = np.zeros((len(φxs)),dtype=np.float32)
 
-for x_idx,x in enumerate(φxs_torch):
-    φLs[x_idx] = φLint(xtoμ(x)*1e-3)
-    
-# φL_itp = torchitp.RegularGridInterpolator((φxs,),φLs)
+    for x_idx,x in enumerate(φxs_torch):
+        φLs[x_idx] = φLint(xtoμ(x)*1e-3)
+        
+    # φL_itp = torchitp.RegularGridInterpolator((φxs,),φLs)
 
-np.save(resultsdir+'PhL_itp'+'_L={:.2f}'.format(L)+'_CVL={:.2f}'.format(CVL),φLs)
+    np.save(resultsdir+'PhL_itp'+'_L={:.2f}'.format(L)+'_CVL={:.2f}'.format(CVL),φLs)
 
 print("Interpolating φL took ",time.process_time() - start," s")
 print('')
@@ -189,15 +192,18 @@ Mσs = np.linspace(Mσrange[0],Mσrange[1],round(Mσrange[2])).astype(np.float32
 Mxs_torch = torch.from_numpy(Mxs).to(device)
 Mσs_torch = torch.from_numpy(Mσs).to(device)
 
-MLs = np.zeros((len(Mσs),len(Mxs)),dtype=np.float32)
+try:
+    MLs = np.load(resultsdir+'ML_itp'+'_L={:.2f}'.format(L)+'_CVL={:.2f}'.format(CVL)+'.npy').astype(np.float32)
+except:
+    MLs = np.zeros((len(Mσs),len(Mxs)),dtype=np.float32)
 
-for σ_idx,σ in enumerate(Mσs_torch):
-    for x_idx,x in enumerate(Mxs_torch):
-        MLs[σ_idx,x_idx] = MLint(xtoμ(x)*1e-3,(σ*1e-3)**2)
-    
-# ML_itp = torchitp.RegularGridInterpolator((Mσs,Mxs),MLs)
+    for σ_idx,σ in enumerate(Mσs_torch):
+        for x_idx,x in enumerate(Mxs_torch):
+            MLs[σ_idx,x_idx] = MLint(xtoμ(x)*1e-3,(σ*1e-3)**2)
+        
+    # ML_itp = torchitp.RegularGridInterpolator((Mσs,Mxs),MLs)
 
-np.save(resultsdir+'ML_itp'+'_L={:.2f}'.format(L)+'_CVL={:.2f}'.format(CVL),MLs)
+    np.save(resultsdir+'ML_itp'+'_L={:.2f}'.format(L)+'_CVL={:.2f}'.format(CVL),MLs)
 
 print("Interpolating ML took ",time.process_time() - start," s")
 print('')
@@ -214,16 +220,19 @@ Cxs_torch = torch.from_numpy(Cxs).to(device)
 Cσs_torch = torch.from_numpy(Cσs).to(device)
 Ccs_torch = torch.from_numpy(Ccs).to(device)
 
-CLs = np.zeros((len(Ccs),len(Cσs),len(Cxs)),dtype=np.float32)
+try:
+    CLs = np.load(resultsdir+'CL_itp'+'_L={:.2f}'.format(L)+'_CVL={:.2f}'.format(CVL)+'.npy').astype(np.float32)
+except:
+    CLs = np.zeros((len(Ccs),len(Cσs),len(Cxs)),dtype=np.float32)
 
-for c_idx,c in enumerate(Ccs_torch):
-    for σ_idx,σ in enumerate(Cσs_torch):
-        for x_idx,x in enumerate(Cxs_torch):
-            CLs[c_idx,σ_idx,x_idx] = CLint(xtoμ(x)*1e-3,(σ*1e-3)**2,c*(σ*1e-3)**2)
-    
-# CL_itp = torchitp.RegularGridInterpolator((Ccs,Cσs,Cxs),CLs)
+    for c_idx,c in enumerate(Ccs_torch):
+        for σ_idx,σ in enumerate(Cσs_torch):
+            for x_idx,x in enumerate(Cxs_torch):
+                CLs[c_idx,σ_idx,x_idx] = CLint(xtoμ(x)*1e-3,(σ*1e-3)**2,c*(σ*1e-3)**2)
+        
+    # CL_itp = torchitp.RegularGridInterpolator((Ccs,Cσs,Cxs),CLs)
 
-np.save(resultsdir+'CL_itp'+'_L={:.2f}'.format(L)+'_CVL={:.2f}'.format(CVL),CLs)
+    np.save(resultsdir+'CL_itp'+'_L={:.2f}'.format(L)+'_CVL={:.2f}'.format(CVL),CLs)
 
 print("Interpolating CL took ",time.process_time() - start," s")
 print('')
