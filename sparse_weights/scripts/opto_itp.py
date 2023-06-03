@@ -174,7 +174,7 @@ except:
     φLs = np.zeros((len(φxs)),dtype=np.float32)
 
     for x_idx,x in enumerate(φxs_torch):
-        φLs[x_idx] = φLint(xtoμ(x)*1e-3)
+        φLs[x_idx] = φLint(xtoμ_torch(x)*1e-3)
         
     # φL_itp = torchitp.RegularGridInterpolator((φxs,),φLs)
 
@@ -199,7 +199,7 @@ except:
 
     for σ_idx,σ in enumerate(Mσs_torch):
         for x_idx,x in enumerate(Mxs_torch):
-            MLs[σ_idx,x_idx] = MLint(xtoμ(x)*1e-3,(σ*1e-3)**2)
+            MLs[σ_idx,x_idx] = MLint(xtoμ_torch(x)*1e-3,(σ*1e-3)**2)
         
     # ML_itp = torchitp.RegularGridInterpolator((Mσs,Mxs),MLs)
 
@@ -228,7 +228,7 @@ except:
     for c_idx,c in enumerate(Ccs_torch):
         for σ_idx,σ in enumerate(Cσs_torch):
             for x_idx,x in enumerate(Cxs_torch):
-                CLs[c_idx,σ_idx,x_idx] = CLint(xtoμ(x)*1e-3,(σ*1e-3)**2,c*(σ*1e-3)**2)
+                CLs[c_idx,σ_idx,x_idx] = CLint(xtoμ_torch(x)*1e-3,(σ*1e-3)**2,c*(σ*1e-3)**2)
         
     # CL_itp = torchitp.RegularGridInterpolator((Ccs,Cσs,Cxs),CLs)
 
