@@ -8,6 +8,44 @@ import ring_network as ring_network
 import spat_ori_network as spat_network
 import integrate as integ
 
+def gen_ring_disorder(seed,prm_dict,eX):
+    net = ring_network.RingNetwork(seed=0,NC=[4,1],Nori=1200)
+
+    K = prm_dict['K']
+    SoriE = prm_dict['SoriE']
+    SoriI = prm_dict['SoriI']
+    SoriF = prm_dict['SoriF']
+    J = prm_dict['J']
+    beta = prm_dict['beta']
+    gE = prm_dict['gE']
+    gI = prm_dict['gI']
+    hE = prm_dict['hE']
+    hI = prm_dict['hI']
+    L = prm_dict['L']
+    CVL = prm_dict['CVL']
+
+    WMat = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
+    HVec = K*J*np.array([hE,hI/beta],dtype=np.float32)
+
+    net.set_seed(seed)
+    net.generate_disorder(WMat,np.array([[SoriE,SoriI],[SoriE,SoriI]]),HVec,SoriF*np.ones(2),K)
+
+    B = np.zeros(net.N,dtype=np.float32)
+    B[net.C_all[0]] = HVec[0]
+    B[net.C_all[1]] = HVec[1]
+
+    LAS = np.zeros(net.N,dtype=np.float32)
+    sigma_l = np.sqrt(np.log(1+CVL**2))
+    mu_l = np.log(1e-3*L)-sigma_l**2/2
+    LAS_E = np.random.default_rng(seed).lognormal(mu_l, sigma_l, net.NC[0]*net.Nloc).astype(np.float32)
+    LAS[net.C_all[0]] = LAS_E
+
+    shape = 1/eX**2
+    scale = 1/shape
+    eps = np.random.default_rng(seed).gamma(shape,scale=scale,size=net.N).astype(np.float32)
+
+    return net,net.M,net.H,B,LAS,eps
+
 def gen_ring_disorder_tensor(seed,prm_dict,eX):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -38,7 +76,7 @@ def gen_ring_disorder_tensor(seed,prm_dict,eX):
     LAS = torch.zeros(net.N,dtype=torch.float32)
     sigma_l = np.sqrt(np.log(1+CVL**2))
     mu_l = np.log(1e-3*L)-sigma_l**2/2
-    LAS_E = np.random.default_rng(0).lognormal(mu_l, sigma_l, net.NC[0]*net.Nloc).astype(np.float32)
+    LAS_E = np.random.default_rng(seed).lognormal(mu_l, sigma_l, net.NC[0]*net.Nloc).astype(np.float32)
     LAS[net.C_conds[0]] = torch.from_numpy(LAS_E)
 
     B = B.to(device)
@@ -46,7 +84,7 @@ def gen_ring_disorder_tensor(seed,prm_dict,eX):
 
     shape = 1/eX**2
     scale = 1/shape
-    this_eps = np.random.default_rng(0).gamma(shape,scale=scale,size=net.N).astype(np.float32)
+    this_eps = np.random.default_rng(seed).gamma(shape,scale=scale,size=net.N).astype(np.float32)
     eps = torch.from_numpy(this_eps)
     eps = eps.to(device)
 

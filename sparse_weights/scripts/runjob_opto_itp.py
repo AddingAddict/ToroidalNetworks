@@ -32,6 +32,8 @@ def runjobs():
     hostname = socket.gethostname()
     if 'ax' in hostname:
         cluster = 'axon'
+    elif 'bader' in hostname:
+        cluster = 'burg'
     else:
         cluster = str(args["cluster_"])
     
