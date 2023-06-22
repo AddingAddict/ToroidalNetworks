@@ -9,20 +9,21 @@ import spat_ori_network as spat_network
 import integrate as integ
 
 def gen_ring_disorder(seed,prm_dict,eX):
-    net = ring_network.RingNetwork(seed=0,NC=[4,1],Nori=1200)
+    net = ring_network.RingNetwork(seed=0,NC=[prm_dict.get('NE',4),prm_dict.get('NI',1)],
+        Nori=prm_dict.get('Nori',180))
 
-    K = prm_dict['K']
-    SoriE = prm_dict['SoriE']
-    SoriI = prm_dict['SoriI']
-    SoriF = prm_dict['SoriF']
-    J = prm_dict['J']
-    beta = prm_dict['beta']
-    gE = prm_dict['gE']
-    gI = prm_dict['gI']
-    hE = prm_dict['hE']
-    hI = prm_dict['hI']
-    L = prm_dict['L']
-    CVL = prm_dict['CVL']
+    K = prm_dict.get('K',500)
+    SoriE = prm_dict.get('SoriE',30)
+    SoriI = prm_dict.get('SoriI',30)
+    SoriF = prm_dict.get('SoriF',30)
+    J = prm_dict.get('J',1e-4)
+    beta = prm_dict.get('beta',1)
+    gE = prm_dict.get('gE',5)
+    gI = prm_dict.get('gI',4)
+    hE = prm_dict.get('hE',1)
+    hI = prm_dict.get('hI',1)
+    L = prm_dict.get('L',1)
+    CVL = prm_dict.get('CVL',1)
 
     WMat = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
     HVec = K*J*np.array([hE,hI/beta],dtype=np.float32)
@@ -48,21 +49,22 @@ def gen_ring_disorder(seed,prm_dict,eX):
 
 def gen_ring_disorder_tensor(seed,prm_dict,eX):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
+    net = ring_network.RingNetwork(seed=0,NC=[prm_dict.get('NE',4),prm_dict.get('NI',1)],
+        Nori=prm_dict.get('Nori',180))
 
-    net = ring_network.RingNetwork(seed=0,NC=[4,1],Nori=1200)
-
-    K = prm_dict['K']
-    SoriE = prm_dict['SoriE']
-    SoriI = prm_dict['SoriI']
-    SoriF = prm_dict['SoriF']
-    J = prm_dict['J']
-    beta = prm_dict['beta']
-    gE = prm_dict['gE']
-    gI = prm_dict['gI']
-    hE = prm_dict['hE']
-    hI = prm_dict['hI']
-    L = prm_dict['L']
-    CVL = prm_dict['CVL']
+    K = prm_dict.get('K',500)
+    SoriE = prm_dict.get('SoriE',30)
+    SoriI = prm_dict.get('SoriI',30)
+    SoriF = prm_dict.get('SoriF',30)
+    J = prm_dict.get('J',1e-4)
+    beta = prm_dict.get('beta',1)
+    gE = prm_dict.get('gE',5)
+    gI = prm_dict.get('gI',4)
+    hE = prm_dict.get('hE',1)
+    hI = prm_dict.get('hI',1)
+    L = prm_dict.get('L',1)
+    CVL = prm_dict.get('CVL',1)
 
     WMat = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
     HVec = K*J*np.array([hE,hI/beta],dtype=np.float32)
@@ -91,7 +93,8 @@ def gen_ring_disorder_tensor(seed,prm_dict,eX):
     return net,net.M_torch,net.H_torch,B,LAS,eps
 
 def sim_ring_tensor(prm_dict,eX,bX,aX,ri,T,mask_time,seeds,return_dynas=False):
-    net = ring_network.RingNetwork(seed=0,NC=[4,1],Nori=1200)
+    net = ring_network.RingNetwork(seed=0,NC=[prm_dict.get('NE',4),prm_dict.get('NI',1)],
+        Nori=prm_dict.get('Nori',180))
 
     rates = np.zeros((2,len(seeds),net.N))
     if return_dynas:
