@@ -71,8 +71,8 @@ prms['NI'] = NI
 seeds = np.arange(20)
 
 cAs = aXs[[0,-1]]/bX
-rXs = bX*10**np.arange(-4/3,1/3+0.1,1/3)
-Ks = np.round(500*10**np.arange(-4/3,1/3+0.1,1/3)).astype(np.int32)
+rXs = bX*10**np.arange(-1.4,0.4+0.1,0.2)
+Ks = np.round(500*10**np.arange(-1.4,0.4+0.1,0.2)).astype(np.int32)
 
 μrEs = np.zeros((2,2*Nori))
 μrIs = np.zeros((2,2*Nori))
