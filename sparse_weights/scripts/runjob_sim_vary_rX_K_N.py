@@ -107,7 +107,48 @@ def runjobs():
                     text_file.write("#SBATCH --account=theory \n")
                 text_file.write("#SBATCH --job-name="+jobname+ "\n")
                 text_file.write("#SBATCH -t 0-11:59  \n")
-                text_file.write("#SBATCH --mem-per-cpu=8gb \n")
+                text_file.write("#SBATCH --mem-per-cpu=12gb \n")
+                text_file.write("#SBATCH --gres=gpu\n")
+                text_file.write("#SBATCH -c 1 \n")
+                text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
+                text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
+                text_file.write("python  -W ignore " + c1+" \n")
+                text_file.write("echo $PATH  \n")
+                text_file.write("exit 0  \n")
+                text_file.close()
+
+                if cluster=='axon':
+                    os.system("sbatch -p burst " +jobnameDir);
+                else:
+                    os.system("sbatch " +jobnameDir);
+            else:
+                print (c1)
+    
+    r_Vec=range(10)
+    n_Vec=range(10)
+    
+    for r in r_Vec:
+        for n in n_Vec:
+
+            time.sleep(0.2)
+            
+            #--------------------------------------------------------------------------
+            # Make SBTACH
+            inpath = currwd + "/sim_vary_rX_N.py"
+            c1 = "{:s} -r {:d} -n {:d}".format(inpath,r,n)
+            
+            jobname="sim_vary_rX_N"+"-r-{:d}-n-{:d}".format(r,n)
+            
+            if not args2.test:
+                jobnameDir=os.path.join(ofilesdir, jobname)
+                text_file=open(jobnameDir, "w");
+                os.system("chmod u+x "+ jobnameDir)
+                text_file.write("#!/bin/sh \n")
+                if cluster=='haba' or cluster=='moto' or cluster=='burg':
+                    text_file.write("#SBATCH --account=theory \n")
+                text_file.write("#SBATCH --job-name="+jobname+ "\n")
+                text_file.write("#SBATCH -t 0-11:59  \n")
+                text_file.write("#SBATCH --mem-per-cpu=12gb \n")
                 text_file.write("#SBATCH --gres=gpu\n")
                 text_file.write("#SBATCH -c 1 \n")
                 text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")

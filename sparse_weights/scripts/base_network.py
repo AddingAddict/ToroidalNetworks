@@ -90,7 +90,7 @@ class BaseNetwork(ABC):
                 self.n = int(n)
         elif np.isscalar(NC):
             if n is None:
-                self.NC = np.ones(1)
+                self.NC = NC*np.ones(1,dtype=int)
                 self.n = 1
             else:
                 self.NC = NC*np.ones(n,dtype=int)
@@ -133,8 +133,6 @@ class BaseNetwork(ABC):
 
     def generate_sparse_rec_conn(self,WKern,K):
         C_full = np.zeros((self.N,self.N),np.float32)
-        W_mean_full = np.zeros((self.N,self.N),np.float32)
-        W_var_full = np.zeros((self.N,self.N),np.float32)
 
         for pstC in range(self.n):
             pstC_idxs = self.C_idxs[pstC]

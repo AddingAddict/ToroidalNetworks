@@ -373,6 +373,11 @@ class Ricciardi(object):
         # return self.calc_phi_tensor(u,self.tI)
         return self.phi_int_tensor_I(u[None,:])
 
+    def dphiE_tensor(self,u):
+        return d(self.phiE_tensor,u)
+    def dphiI_tensor(self,u):
+        return d(self.phiI_tensor,u)
+
     def phiE(self,u):
         return self.phi_int_E(u)
     def phiI(self,u):

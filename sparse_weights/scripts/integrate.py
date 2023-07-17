@@ -87,7 +87,73 @@ def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False):
         return torch.tensor(meanF)
 
     # rates = odeint(ode_fn,torch.zeros_like(H),T[[0,-1]],event_fn=event_fn)
-    rates = odeint(ode_fn,torch.zeros_like(H,dtype=torch.float32),T)
+    rates = odeint(ode_fn,torch.zeros_like(H,dtype=torch.float32),T,method='rk4')
 
     return torch.transpose(rates,0,1),False
 
+def calc_lyapunov_exp_tensor(rc,T,L,M,H,LAM,E_cond,RATEs,NLE,TWONS,TONS,mult_tau=False):
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    if len(H) != RATEs.shape[0]:
+        raise("Rates must have shape Ncell x Ntime")
+
+    LAS = LAM*L
+
+    dt = T[1] - T[0]
+    dt_tau_inv = (dt / torch.where(E_cond,rc.tE,rc.tI)).to(device)
+    NT = len(T) - 1
+    NWONS = int(np.round(TWONS/dt))
+    NONS = int(np.round(TONS/dt))
+
+    print('NWONS =',NWONS)
+    print('NT =',NT)
+    print('NONS =',NONS)
+
+    if mult_tau:
+        def calc_mu(RATE,MU):
+            torch.matmul(M,RATE,out=MU)
+            torch.add(MU,H,out=MU)
+            torch.where(E_cond,rc.tE*MU,rc.tI*MU,out=MU)
+            torch.add(MU,LAS,out=MU)
+    else:
+        def calc_mu(RATE,MU):
+            torch.matmul(M,RATE,out=MU)
+            torch.add(MU,H + LAS,out=MU)
+
+    start = time.process_time()
+
+    # Initialize Q
+    Q,_ = torch.linalg.qr(torch.rand(len(H),len(H),dtype=torch.float32))
+    Q = Q[:,:NLE].to(device)
+    R = torch.zeros((NLE,NLE),dtype=torch.float32).to(device)
+    G = torch.zeros(len(H),dtype=torch.float32).to(device)
+    MU = torch.zeros(len(H),dtype=torch.float32).to(device)
+
+    print('Initializing Q took',time.process_time() - start,'s\n')
+
+    Ls = np.zeros(NLE)
+
+    start = time.process_time()
+
+    # Evolve Q
+    for i in range(NT):
+        calc_mu(RATEs[:,i+1],MU)
+        torch.where(E_cond,rc.dphiE_tensor(MU),rc.dphiI_tensor(MU),out=G)
+        Q = (-Q + G[:,None]*torch.matmul(M,Q)) * dt_tau_inv[:,None]
+        # Reorthogonalize Q
+        if (i+1) % NONS == 0:
+            torch.linalg.qr(Q,out=(Q,R))
+            # After warming up, use R to calculate Lyapunov exponents
+            if i > NWONS:
+                Ls += np.log(np.abs(np.diag(R.cpu().numpy())))
+                if np.any(np.isnan(Ls)):
+                    print(R)
+        if i+1 == NWONS:
+            print('Warmup took',time.process_time() - start,'s\n')
+            start = time.process_time()
+
+    print('Full Q evolution took',time.process_time() - start,'s\n')
+
+    Ls /= (NT-NWONS)*dt
+
+    return Ls

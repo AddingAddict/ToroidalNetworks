@@ -22,11 +22,11 @@ import integrate as integ
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--rX_idx', '-r',  help='which rX', type=int, default=0)
-parser.add_argument('--K_idx', '-k',  help='which K', type=int, default=0)
+parser.add_argument('--N_idx', '-n',  help='which N', type=int, default=0)
 args = vars(parser.parse_args())
 print(parser.parse_args())
 rX_idx= args['rX_idx']
-K_idx= args['K_idx']
+N_idx= args['N_idx']
 
 id = (133, 0)
 with open('./../results/results_ring_'+str(id[0])+'.pkl', 'rb') as handle:
@@ -35,7 +35,7 @@ with open('./../results/results_ring_'+str(id[0])+'.pkl', 'rb') as handle:
     CVh = res_dict['best_monk_eX']
     bX = res_dict['best_monk_bX']
     aXs = res_dict['best_monk_aXs']
-#     K = prms['K']
+    K = prms['K']
     SoriE = prms['SoriE']
     SoriI = prms['SoriI']
     # SoriF = prms['SoriF']
@@ -59,20 +59,15 @@ T = torch.linspace(0,8*Nt,round(8*Nt/dt)+1)
 mask_time = T>(4*Nt)
 T_mask = T.cpu().numpy()[mask_time][2::3]
 
-N = 10000
 Nori = 20
-NE = 4*(N//Nori)//5
-NI = 1*(N//Nori)//5
 
 prms['Nori'] = Nori
-prms['NE'] = NE
-prms['NI'] = NI
 
 seeds = np.arange(20)
 
 cAs = aXs[[0,-1]]/bX
 rXs = bX*10**np.arange(-1.4,0.4+0.1,0.2)
-Ks = np.round(500*10**np.arange(-1.4,0.4+0.1,0.2)).astype(np.int32)
+Ns = np.round(10000*10**np.arange(-0.9,0.0+0.01,0.1)).astype(np.int32)
 
 μrEs = np.zeros((2,Nori))
 μrIs = np.zeros((2,Nori))
@@ -91,17 +86,21 @@ print('simulating rX # '+str(rX_idx+1))
 print('')
 rX = rXs[rX_idx]
 
-print('simulating K # '+str(K_idx+1))
+print('simulating N # '+str(N_idx+1))
 print('')
-K = Ks[K_idx]
+N = Ns[N_idx]
+NE = 4*(N//Nori)//5
+NI = 1*(N//Nori)//5
+prms['NE'] = NE
+prms['NI'] = NI
 
 for cA_idx,cA in enumerate(cAs):
     print('simulating contrast # '+str(cA_idx+1))
     print('')
-    K_prms = prms.copy()
-    K_prms['N'] = N
-    K_prms['K'] = K
-    K_prms['J'] = prms['J'] / np.sqrt(K/500)
+    N_prms = prms.copy()
+    N_prms['N'] = N
+    N_prms['K'] = K
+    N_prms['J'] = prms['J'] / np.sqrt(K/500)
 
     rs = np.zeros((len(seeds),N,len(T_mask)))
     mus = np.zeros((len(seeds),N,len(T_mask)))
@@ -115,7 +114,7 @@ for cA_idx,cA in enumerate(cAs):
         
         start = time.process_time()
 
-        net,this_M,this_H,this_B,this_LAS,this_EPS = su.gen_ring_disorder_tensor(seed,K_prms,CVh)
+        net,this_M,this_H,this_B,this_LAS,this_EPS = su.gen_ring_disorder_tensor(seed,N_prms,CVh)
         M = this_M.cpu().numpy()
         H = (rX*(this_B+cA*this_H)*this_EPS).cpu().numpy()
 
@@ -144,8 +143,8 @@ for cA_idx,cA in enumerate(cAs):
     start = time.process_time()
 
     for nloc in range(Nori):
-        μrIs[cA_idx,nloc] = np.mean(rs[:,net.C_idxs[1][nloc],:])
         μrEs[cA_idx,nloc] = np.mean(rs[:,net.C_idxs[0][nloc],:])
+        μrIs[cA_idx,nloc] = np.mean(rs[:,net.C_idxs[1][nloc],:])
         ΣrEs[cA_idx,nloc] = np.var(rs[:,net.C_idxs[0][nloc],:])
         ΣrIs[cA_idx,nloc] = np.var(rs[:,net.C_idxs[1][nloc],:])
         μhEs[cA_idx,nloc] = np.mean(mus[:,net.C_idxs[0][nloc],:])
@@ -198,7 +197,7 @@ res_dict['prms'] = prms
 
 res_dict['cAs'] = cAs
 res_dict['rX'] = rX
-res_dict['K'] = K
+res_dict['N'] = N
 
 res_dict['μrEs'] = μrEs
 res_dict['μrIs'] = μrIs
@@ -213,5 +212,5 @@ res_dict['balIs'] = balIs
 res_dict['Mevs'] = Mevs
 res_dict['Lexps'] = Lexps
 
-with open('./../results/vary_rX_{:d}_K_{:d}'.format(rX_idx,K_idx)+'.pkl', 'wb') as handle:
+with open('./../results/vary_rX_{:d}_N_{:d}'.format(rX_idx,N_idx)+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)
