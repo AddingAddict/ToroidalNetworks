@@ -127,7 +127,7 @@ for cA_idx,cA in enumerate(cAs):
         sol,_ = integ.sim_dyn_tensor(ri,T,0.0,this_M,rX*(this_B+cA*this_H)*this_EPS,
                                      this_LAS,net.C_conds[0],mult_tau=True)
         Ls[seed_idx] = integ.calc_lyapunov_exp_tensor(ri,T,0.0,this_M,rX*(this_B+cA*this_H)*this_EPS,this_LAS,
-                                                      net.C_conds[0],1,4*Nt,2.5*ri.tE,mult_tau=True).cpu().numpy()
+                                                      net.C_conds[0],sol,1,4*Nt,2.5*ri.tE,mult_tau=True).cpu().numpy()
         rs[seed_idx] = sol[:,mask_time].cpu().numpy()[:,2::3]
 
         muEs[seed_idx] = M[:,net.C_all[0]]@rs[seed_idx,net.C_all[0],:] + H[:,None]
