@@ -67,7 +67,7 @@ seeds = np.arange(20)
 
 cAs = aXs[[0,-1]]/bX
 rXs = bX*10**np.arange(-1.4,0.4+0.1,0.2)
-Ns = np.round(10000*10**np.arange(-0.9,0.0+0.01,0.1)).astype(np.int32)
+Ns = Nori*np.round(10000/Nori*10**np.arange(-1.8/3,0.0+0.01,0.2/3)).astype(np.int32)
 
 μrEs = np.zeros((2,Nori))
 μrIs = np.zeros((2,Nori))
