@@ -60,7 +60,7 @@ def sim_dyn(rc,T,L,M,H,LAM,E_all,I_all,mult_tau=False,max_min=7.5,stat_stop=True
     
     return rates,timeout
 
-def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False):
+def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False,method=None):
     MU = torch.zeros_like(H,dtype=torch.float32)
     F = torch.ones_like(H,dtype=torch.float32)
     LAS = LAM*L
@@ -87,7 +87,7 @@ def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False):
         return torch.tensor(meanF)
 
     # rates = odeint(ode_fn,torch.zeros_like(H),T[[0,-1]],event_fn=event_fn)
-    rates = odeint(ode_fn,torch.zeros_like(H,dtype=torch.float32),T,method='rk4')
+    rates = odeint(ode_fn,torch.zeros_like(H,dtype=torch.float32),T,method=method)
 
     return torch.transpose(rates,0,1),False
 
