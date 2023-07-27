@@ -91,7 +91,7 @@ def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False,method=None):
 
     return torch.transpose(rates,0,1),False
 
-def calc_lyapunov_exp_tensor(rc,T,L,M,H,LAM,E_cond,RATEs,NLE,TWONS,TONS,mult_tau=False):
+def calc_lyapunov_exp_tensor(rc,T,L,M,H,LAM,E_cond,RATEs,NLE,TWONS,TONS,mult_tau=False,save_time=False):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     if len(H) != RATEs.shape[0]:
@@ -131,7 +131,10 @@ def calc_lyapunov_exp_tensor(rc,T,L,M,H,LAM,E_cond,RATEs,NLE,TWONS,TONS,mult_tau
 
     print('Initializing Q took',time.process_time() - start,'s\n')
 
-    Ls = np.zeros(NLE)
+    if save_time:
+        Ls = np.zeros((NLE,(NT-NWONS)//NONS))
+    else:
+        Ls = np.zeros((NLE))
 
     start = time.process_time()
 
@@ -139,13 +142,16 @@ def calc_lyapunov_exp_tensor(rc,T,L,M,H,LAM,E_cond,RATEs,NLE,TWONS,TONS,mult_tau
     for i in range(NT):
         calc_mu(RATEs[:,i+1],MU)
         torch.where(E_cond,rc.dphiE_tensor(MU),rc.dphiI_tensor(MU),out=G)
-        Q = (-Q + G[:,None]*torch.matmul(M,Q)) * dt_tau_inv[:,None]
+        Q += (-Q*dt_tau_inv[:,None] + G[:,None]*torch.matmul(M,Q)*dt)
         # Reorthogonalize Q
         if (i+1) % NONS == 0:
             torch.linalg.qr(Q,out=(Q,R))
             # After warming up, use R to calculate Lyapunov exponents
             if i > NWONS:
-                Ls += np.log(np.abs(np.diag(R.cpu().numpy())))
+                if save_time:
+                    Ls[:,(i-NWONS+1)//NONS-1] = np.log(np.abs(np.diag(R.cpu().numpy())))
+                else:
+                    Ls += np.log(np.abs(np.diag(R.cpu().numpy())))
                 if np.any(np.isnan(Ls)):
                     print(R)
         if i+1 == NWONS:
@@ -154,6 +160,9 @@ def calc_lyapunov_exp_tensor(rc,T,L,M,H,LAM,E_cond,RATEs,NLE,TWONS,TONS,mult_tau
 
     print('Full Q evolution took',time.process_time() - start,'s\n')
 
-    Ls /= (NT-NWONS)*dt
+    if save_time:
+        Ls /= NONS*dt
+    else:
+        Ls /= (NT-NWONS)*dt
 
     return Ls
