@@ -54,10 +54,10 @@ ri.set_up_nonlinearity_tensor()
 
 NtE = 50
 Nt = NtE*ri.tE
-dt = ri.tI/3
+dt = ri.tI/4
 T = torch.linspace(0,8*Nt,round(8*Nt/dt)+1)
 mask_time = T>(4*Nt)
-T_mask = T.cpu().numpy()[mask_time][2::3]
+T_mask = T.cpu().numpy()[mask_time]
 
 Nori = 20
 
@@ -126,8 +126,8 @@ for cA_idx,cA in enumerate(cAs):
         sol,_ = integ.sim_dyn_tensor(ri,T,0.0,this_M,rX*(this_B+cA*this_H)*this_EPS,
                                      this_LAS,net.C_conds[0],mult_tau=True)
         Ls[seed_idx] = integ.calc_lyapunov_exp_tensor(ri,T,0.0,this_M,rX*(this_B+cA*this_H)*this_EPS,this_LAS,
-                                                      net.C_conds[0],sol,1,4*Nt,2.5*ri.tE,mult_tau=True).cpu().numpy()
-        rs[seed_idx] = sol[:,mask_time].cpu().numpy()[:,2::3]
+                                                      net.C_conds[0],sol,1,4*Nt,2*ri.tE,mult_tau=True).cpu().numpy()
+        rs[seed_idx] = sol[:,mask_time].cpu().numpy()
 
         muEs[seed_idx] = M[:,net.C_all[0]]@rs[seed_idx,net.C_all[0],:] + H[:,None]
         muIs[seed_idx] = M[:,net.C_all[1]]@rs[seed_idx,net.C_all[1],:]
