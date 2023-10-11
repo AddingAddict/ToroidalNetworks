@@ -49,7 +49,7 @@ class RingNetwork(network.BaseNetwork):
         ori_dist = self.get_ori_dist(vis_ori)
         return np.where(ori_dist < delta_ori)
 
-    def generate_full_vector(self,Sori,kernel="nonnormgaussian",byloc=True,vis_loc=None,vis_ori=None):
+    def generate_full_vector(self,Sori,kernel="nonnormgaussian",byloc=True,vis_ori=None):
         ori_dist = self.get_ori_dist(vis_ori=vis_ori,byloc=byloc)
         full_vector = network.apply_kernel(ori_dist,Sori,self.Lori,kernel=kernel)
         return full_vector
@@ -76,7 +76,7 @@ class RingNetwork(network.BaseNetwork):
                 if np.isclose(WMat[pstC,preC],0.): continue    # Skip if no connection of this type
 
                 if vanilla_or_not=='vanilla' or vanilla_or_not==True:
-                    W = np.ones((self.Nloc,self.Nloc))
+                    W = np.ones((self.Nloc,self.Nloc)) / self.Nloc
                 else:
                     W_aux = self.generate_full_kernel(SoriMat[pstC,preC])
                     if self.normalize_by_mean:
@@ -112,7 +112,7 @@ class RingNetwork(network.BaseNetwork):
             if np.isclose(WVec[pstC],0.): continue    # Skip if no connection of this type
 
             if vanilla_or_not=='vanilla' or vanilla_or_not==True:
-                W = np.ones((self.Nloc,self.Nloc))
+                W = np.ones((self.Nloc,self.Nloc)) / self.Nloc
             else:
                 W_aux = self.generate_full_kernel(SoriVec[pstC])
                 if self.normalize_by_mean:
@@ -135,7 +135,7 @@ class RingNetwork(network.BaseNetwork):
         else:
             return C_full
 
-    def generate_full_input(self,HVec,VarVec,SoriVec,vanilla_or_not=False,vis_loc=None,vis_ori=None):
+    def generate_full_input(self,HVec,VarVec,SoriVec,vanilla_or_not=False,vis_ori=None):
         H_mean_full = np.zeros((self.N),np.float32)
         H_var_full = np.zeros((self.N),np.float32)
 
@@ -149,7 +149,7 @@ class RingNetwork(network.BaseNetwork):
             if vanilla_or_not=='vanilla' or vanilla_or_not==True:
                 H = np.ones((self.Nloc))
             else:
-                H = self.generate_full_vector(SoriVec[pstC])
+                H = self.generate_full_vector(SoriVec[pstC],vis_ori=vis_ori)
 
             H_mean_full[pstC_all] = HVec[pstC]*np.repeat(H,NpstC)
             H_var_full[pstC_all] = VarVec[pstC]*np.repeat(H,NpstC)
@@ -161,13 +161,13 @@ class RingNetwork(network.BaseNetwork):
             SWori,K,vanilla_or_not,True)
         return C_full*(W_mean_full+np.random.normal(size=(self.N,self.N))*np.sqrt(W_var_full))
 
-    def generate_MX(self,W,SWori,K,vanilla_or_not=False):
+    def generate_MX(self,WX,SWoriX,K,vanilla_or_not=False):
         CX_full, WX_mean_full,WX_var_full = self.generate_full_ff_conn(WX,np.zeros(self.n),
             SWoriX,K,vanilla_or_not,True)
         return CX_full*(WX_mean_full+np.random.normal(size=(self.N,self.NX*self.Nloc))*np.sqrt(WX_var_full))
 
-    def generate_H(self,H,SHori,vanilla_or_not=False,vis_loc=None,vis_ori=None):
-        H_mean_full,H_var_full = self.generate_full_input(H,np.zeros((self.n)),SHori,vanilla_or_not,vis_loc,vis_ori)
+    def generate_H(self,H,SHori,vanilla_or_not=False,vis_ori=None):
+        H_mean_full,H_var_full = self.generate_full_input(H,np.zeros((self.n)),SHori,vanilla_or_not,vis_ori)
         return H_mean_full+np.random.normal(size=(self.N))*np.sqrt(H_var_full)
 
     # def generate_disorder(self,W,SWori,WX,SWoriX,K,vanilla_or_not=False):

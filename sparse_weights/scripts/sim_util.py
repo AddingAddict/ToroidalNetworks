@@ -29,7 +29,8 @@ def gen_ring_disorder(seed,prm_dict,eX):
     HVec = K*J*np.array([hE,hI/beta],dtype=np.float32)
 
     net.set_seed(seed)
-    net.generate_disorder(WMat,np.array([[SoriE,SoriI],[SoriE,SoriI]]),HVec,SoriF*np.ones(2),K)
+    net.generate_disorder(WMat,np.array([[SoriE,SoriI],[SoriE,SoriI]]),HVec,SoriF*np.ones(2),K,
+                          vanilla_or_not=prm_dict.get('vanilla_or_not',False))
 
     B = np.zeros(net.N,dtype=np.float32)
     B[net.C_all[0]] = HVec[0]
@@ -70,7 +71,8 @@ def gen_ring_disorder_tensor(seed,prm_dict,eX):
     HVec = K*J*np.array([hE,hI/beta],dtype=np.float32)
 
     net.set_seed(seed)
-    net.generate_disorder(WMat,np.array([[SoriE,SoriI],[SoriE,SoriI]]),HVec,SoriF*np.ones(2),K)
+    net.generate_disorder(WMat,np.array([[SoriE,SoriI],[SoriE,SoriI]]),HVec,SoriF*np.ones(2),K,
+                          vanilla_or_not=prm_dict.get('vanilla_or_not',False))
     net.generate_tensors()
 
     B = torch.where(net.C_conds[0],HVec[0],HVec[1])
