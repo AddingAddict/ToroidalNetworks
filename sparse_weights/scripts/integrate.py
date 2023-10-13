@@ -60,10 +60,13 @@ def sim_dyn(rc,T,L,M,H,LAM,E_all,I_all,mult_tau=False,max_min=7.5,stat_stop=True
     
     return rates,timeout
 
-def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False,method=None):
+def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False,max_min=30,method=None):
     MU = torch.zeros_like(H,dtype=torch.float32)
     F = torch.ones_like(H,dtype=torch.float32)
     LAS = LAM*L
+
+    start = time.process_time()
+    max_time = max_min*60
 
     # This function computes the dynamics of the rate model
     if mult_tau:
@@ -73,12 +76,14 @@ def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False,method=None):
             MU=torch.where(E_cond,rc.tE*MU,rc.tI*MU)#,out=MU)
             MU=torch.add(MU,LAS)#,out=MU)
             F=torch.where(E_cond,(-R+rc.phiE_tensor(MU))/rc.tE,(-R+rc.phiI_tensor(MU))/rc.tI)#,out=F)
+            if time.process_time() - start > max_time: raise Exception('Timeout')
             return F
     else:
         def ode_fn(t,R):
             MU=torch.matmul(M,R)#,out=MU)
             MU=torch.add(MU,H + LAS)#,out=MU)
             F=torch.where(E_cond,(-R+rc.phiE_tensor(MU))/rc.tE,(-R+rc.phiI_tensor(MU))/rc.tI)#,out=F)
+            if time.process_time() - start > max_time: raise Exception('Timeout')
             return F
 
     def event_fn(t,R):
@@ -86,12 +91,17 @@ def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False,method=None):
         if meanF < 0: meanF = 0
         return torch.tensor(meanF)
 
-    # rates = odeint(ode_fn,torch.zeros_like(H),T[[0,-1]],event_fn=event_fn)
-    rates = odeint(ode_fn,torch.zeros_like(H,dtype=torch.float32),T,method=method)
+    try:
+        # rates = odeint(ode_fn,torch.zeros_like(H),T[[0,-1]],event_fn=event_fn)
+        rates = odeint(ode_fn,torch.zeros_like(H,dtype=torch.float32),T,method=method)
+        timeout = False
+    except:
+        rates = torch.randn((len(T),len(H)),dtype=torch.float32)*1e4+1e4
+        timeout = True
+        print(rates)
+    return torch.transpose(rates,0,1),timeout
 
-    return torch.transpose(rates,0,1),False
-
-def calc_lyapunov_exp_tensor(rc,T,L,M,H,LAM,E_cond,RATEs,NLE,TWONS,TONS,mult_tau=False,save_time=False):
+def calc_lyapunov_exp_tensor(rc,T,L,M,H,LAM,E_cond,RATEs,NLE,TWONS,TONS,mult_tau=False,save_time=False,return_Q=False):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     if len(H) != RATEs.shape[0]:
@@ -165,4 +175,7 @@ def calc_lyapunov_exp_tensor(rc,T,L,M,H,LAM,E_cond,RATEs,NLE,TWONS,TONS,mult_tau
     else:
         Ls /= (NT-NWONS)*dt
 
-    return Ls
+    if return_Q:
+        return Ls,Q
+    else:
+        return Ls

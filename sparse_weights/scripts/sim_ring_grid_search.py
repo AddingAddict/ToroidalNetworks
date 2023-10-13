@@ -189,14 +189,43 @@ for idx_rep in range(first_rep,nrep):
     vsm_diff_stds = np.zeros((len(aXs),len(bXs),len(eXs)))
     vsm_norm_covs = np.zeros((len(aXs),len(bXs),len(eXs)))
 
+    timeouts = np.zeros((len(aXs),len(bXs),len(eXs))).astype(bool)
+
     for aX_idx,aX in enumerate(aXs):
+        if aX_idx > 0 and np.all(timeouts[aX_idx-1,:,:]):
+            timeouts[aX_idx,:,:] = True
+            continue
+
         for bX_idx,bX in enumerate(bXs):
+            if bX_idx > 0 and np.all(timeouts[aX_idx,bX_idx-1,:]):
+                timeouts[aX_idx,bX_idx,:] = True
+                continue
+
             for eX_idx,eX in enumerate(eXs):
-                base_sol,_ = integ.sim_dyn_tensor(ri,T,0.0,M,(bX*B+aX*H)*eps[eX_idx],LAS,net.C_conds[0],
-                                      mult_tau=True)
-                opto_sol,_ = integ.sim_dyn_tensor(ri,T,1.0,M,(bX*B+aX*H)*eps[eX_idx],LAS,net.C_conds[0],
-                                      mult_tau=True)
+                if eX_idx > 0 and timeouts[aX_idx,bX_idx,eX_idx-1]:
+                    all_base_means[aX_idx,bX_idx,eX_idx] = all_base_means[aX_idx,bX_idx,eX_idx-1] + eX
+                    all_base_stds[aX_idx,bX_idx,eX_idx] = all_base_stds[aX_idx,bX_idx,eX_idx-1] + eX
+                    all_opto_means[aX_idx,bX_idx,eX_idx] = all_opto_means[aX_idx,bX_idx,eX_idx-1] + eX
+                    all_opto_stds[aX_idx,bX_idx,eX_idx] = all_opto_stds[aX_idx,bX_idx,eX_idx-1] + eX
+                    all_diff_means[aX_idx,bX_idx,eX_idx] = all_diff_means[aX_idx,bX_idx,eX_idx-1] + eX
+                    all_diff_stds[aX_idx,bX_idx,eX_idx] = all_diff_stds[aX_idx,bX_idx,eX_idx-1] + eX
+                    all_norm_covs[aX_idx,bX_idx,eX_idx] = all_norm_covs[aX_idx,bX_idx,eX_idx-1] + eX
+                    vsm_base_means[aX_idx,bX_idx,eX_idx] = vsm_base_means[aX_idx,bX_idx,eX_idx-1] + eX
+                    vsm_base_stds[aX_idx,bX_idx,eX_idx] = vsm_base_stds[aX_idx,bX_idx,eX_idx-1] + eX
+                    vsm_opto_means[aX_idx,bX_idx,eX_idx] = vsm_opto_means[aX_idx,bX_idx,eX_idx-1] + eX
+                    vsm_opto_stds[aX_idx,bX_idx,eX_idx] = vsm_opto_stds[aX_idx,bX_idx,eX_idx-1] + eX
+                    vsm_diff_means[aX_idx,bX_idx,eX_idx] = vsm_diff_means[aX_idx,bX_idx,eX_idx-1] + eX
+                    vsm_diff_stds[aX_idx,bX_idx,eX_idx] = vsm_diff_stds[aX_idx,bX_idx,eX_idx-1] + eX
+                    vsm_norm_covs[aX_idx,bX_idx,eX_idx] = vsm_norm_covs[aX_idx,bX_idx,eX_idx-1] + eX
+                    timeouts[aX_idx,bX_idx,eX_idx] = True
+                    continue
+
+                base_sol,base_timeout = integ.sim_dyn_tensor(ri,T,0.0,M,(bX*B+aX*H)*eps[eX_idx],LAS,net.C_conds[0],
+                                                             mult_tau=True,max_min=15)
+                opto_sol,opto_timeout = integ.sim_dyn_tensor(ri,T,1.0,M,(bX*B+aX*H)*eps[eX_idx],LAS,net.C_conds[0],
+                                                             mult_tau=True,max_min=15)
                 diff_sol = opto_sol - base_sol
+                timeout = base_timeout or opto_timeout
 
                 base_rates = np.mean(base_sol[:,mask_time].cpu().numpy(),axis=1)
                 opto_rates = np.mean(opto_sol[:,mask_time].cpu().numpy(),axis=1)
@@ -219,6 +248,12 @@ for idx_rep in range(first_rep,nrep):
                 vsm_diff_stds[aX_idx,bX_idx,eX_idx] = np.std(diff_rates[net.get_oriented_neurons()])
                 vsm_norm_covs[aX_idx,bX_idx,eX_idx] = np.cov(base_rates[net.get_oriented_neurons()],
                     diff_rates[net.get_oriented_neurons()])[0,1] / vsm_diff_stds[aX_idx,bX_idx,eX_idx]**2
+                
+                if timeout:
+                    all_norm_covs[aX_idx,bX_idx,eX_idx] = 1000
+                    vsm_norm_covs[aX_idx,bX_idx,eX_idx] = 1000
+                
+                timeouts[aX_idx,bX_idx,eX_idx] = timeout
 
     print("Simulating inputs took ",time.process_time() - start," s")
     print('')

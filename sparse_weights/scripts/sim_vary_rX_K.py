@@ -54,7 +54,7 @@ ri.set_up_nonlinearity_tensor()
 
 NtE = 50
 Nt = NtE*ri.tE
-dt = ri.tI/3
+dt = ri.tI/5
 T = torch.linspace(0,8*Nt,round(8*Nt/dt)+1)
 mask_time = T>(4*Nt)
 T_mask = T.cpu().numpy()[mask_time]
@@ -125,8 +125,9 @@ def simulate_networks(prms,rX,cA,CVh):
 
         sol,_ = integ.sim_dyn_tensor(ri,T,0.0,this_M,rX*(this_B+cA*this_H)*this_EPS,
                                      this_LAS,net.C_conds[0],mult_tau=True)
-        Ls[seed_idx] = np.max(integ.calc_lyapunov_exp_tensor(ri,T,0.0,this_M,rX*(this_B+cA*this_H)*this_EPS,this_LAS,
-                                                             net.C_conds[0],sol,10,4*Nt,2*ri.tE,
+        Ls[seed_idx] = np.max(integ.calc_lyapunov_exp_tensor(ri,T[T>=4*Nt],0.0,this_M,
+                                                             rX*(this_B+cA*this_H)*this_EPS,this_LAS,
+                                                             net.C_conds[0],sol[:,T>=4*Nt],10,2*Nt,2*ri.tE,
                                                              mult_tau=True).cpu().numpy())
         rs[seed_idx] = sol[:,mask_time].cpu().numpy()
 
@@ -159,10 +160,14 @@ def simulate_networks(prms,rX,cA,CVh):
 
         varWs = np.zeros((2*Nori,2*Nori))
 
-        ori_diff = base_net.make_periodic(np.abs(np.arange(Nori) -\
-                                                    np.arange(Nori)[:,None])*180/Nori,90)
-        Ekern = base_net.apply_kernel(ori_diff,SoriE,180,180/Nori,kernel='gaussian')
-        Ikern = base_net.apply_kernel(ori_diff,SoriI,180,180/Nori,kernel='gaussian')
+        if prms.get('vanilla_or_not',False):
+            Ekern = 1/Nori
+            Ikern = 1/Nori
+        else:
+            ori_diff = base_net.make_periodic(np.abs(np.arange(Nori) -\
+                                                     np.arange(Nori)[:,None])*180/Nori,90)
+            Ekern = base_net.apply_kernel(ori_diff,SoriE,180,180/Nori,kernel='gaussian')
+            Ikern = base_net.apply_kernel(ori_diff,SoriI,180,180/Nori,kernel='gaussian')
 
         varWs[:Nori,:Nori] = ri.tE**2*K  *Mpop[0,0]**2*Ekern
         varWs[Nori:,:Nori] = ri.tI**2*K  *Mpop[1,0]**2*Ekern
@@ -227,7 +232,7 @@ for cA_idx,cA in enumerate(cAs):
     K_prms['K'] = K
     K_prms['J'] = prms['J'] / np.sqrt(K/500)
 
-    net,rs,mus,muEs,muIs,Ls,Ms = simulate_networks(K_prms,rX,cAs[0],CVh)
+    net,rs,mus,muEs,muIs,Ls,Ms = simulate_networks(K_prms,rX,cA,CVh)
 
     start = time.process_time()
 

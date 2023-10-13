@@ -28,7 +28,7 @@ def expval(fun,us,sigs):
         return [quad(lambda z: fun(us[i]+sigs[i]*z)*np.exp(-z**2/2)/sr2pi,-8,8)[0]
                 for i in range(len(us))]
 
-du = 1e-3
+du = 1e-4
 
 def d(fun,u):
     return (fun(u+du)-fun(u-du))/(2*du)

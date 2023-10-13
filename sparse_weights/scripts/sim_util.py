@@ -94,7 +94,7 @@ def gen_ring_disorder_tensor(seed,prm_dict,eX):
 
     return net,net.M_torch,net.H_torch,B,LAS,eps
 
-def sim_ring_tensor(prm_dict,eX,bX,aX,ri,T,mask_time,seeds,return_dynas=False):
+def sim_ring_tensor(prm_dict,eX,bX,aX,ri,T,mask_time,seeds,return_dynas=False,max_min=15):
     net = ring_network.RingNetwork(seed=0,NC=[prm_dict.get('NE',4),prm_dict.get('NI',1)],
         Nori=prm_dict.get('Nori',180))
 
@@ -113,8 +113,9 @@ def sim_ring_tensor(prm_dict,eX,bX,aX,ri,T,mask_time,seeds,return_dynas=False):
         print('')
         
         start = time.process_time()
-            
-        sol,_ = integ.sim_dyn_tensor(ri,T,0.0,M,(bX*B+aX*H)*eps,LAS,net.C_conds[0],mult_tau=True)
+        
+        sol,base_timeout = integ.sim_dyn_tensor(ri,T,0.0,M,(bX*B+aX*H)*eps,LAS,net.C_conds[0],
+            mult_tau=True,max_min=max_min)
         rates[0,seed_idx,:]=torch.mean(sol[:,mask_time],axis=1).cpu().numpy()
         if return_dynas:
             dynas[0,seed_idx,:,:]=sol.cpu().numpy()
@@ -124,7 +125,8 @@ def sim_ring_tensor(prm_dict,eX,bX,aX,ri,T,mask_time,seeds,return_dynas=False):
         
         start = time.process_time()
         
-        sol,_ = integ.sim_dyn_tensor(ri,T,1.0,M,(bX*B+aX*H)*eps,LAS,net.C_conds[0],mult_tau=True)
+        sol,opto_timeout = integ.sim_dyn_tensor(ri,T,1.0,M,(bX*B+aX*H)*eps,LAS,net.C_conds[0],
+            mult_tau=True,max_min=max_min)
         rates[1,seed_idx,:]=torch.mean(sol[:,mask_time],axis=1).cpu().numpy()
         if return_dynas:
             dynas[1,seed_idx,:,:]=sol.cpu().numpy()
@@ -133,36 +135,36 @@ def sim_ring_tensor(prm_dict,eX,bX,aX,ri,T,mask_time,seeds,return_dynas=False):
         print('')
         
     if return_dynas:
-        return net,rates.reshape((2,-1)),dynas.reshape((2,-1,len(T)))
+        return net,rates.reshape((2,-1)),dynas.reshape((2,-1,len(T))),(base_timeout or opto_timeout)
     else:
-        return net,rates.reshape((2,-1))
+        return net,rates.reshape((2,-1)),(base_timeout or opto_timeout)
 
-# def sim_ring(params_dict,ri,T,mask_time,seeds,max_min=15,stat_stop=True):
-#     this_params_dict = params_dict.copy()
-#     this_params_dict['seed_con'] = 0
-#     filtered_mydict_net = {k: v for k, v in this_params_dict.items() if k in [p.name for p in
-#                                                     inspect.signature(network.network).parameters.values()]}
-#     net = network.network(**filtered_mydict_net)
-#     rates = np.zeros((len(seeds),2,net.N))
+def sim_ring(params_dict,ri,T,mask_time,seeds,return_dynas=False,max_min=15,stat_stop=True):
+    this_params_dict = params_dict.copy()
+    this_params_dict['seed_con'] = 0
+    filtered_mydict_net = {k: v for k, v in this_params_dict.items() if k in [p.name for p in
+                                                    inspect.signature(network.network).parameters.values()]}
+    net = network.network(**filtered_mydict_net)
+    rates = np.zeros((len(seeds),2,net.N))
     
-#     for seed_idx,seed in enumerate(seeds):
-#         print('Doing seed '+str(seed_idx+1) +' of '+str(len(seeds)))
+    for seed_idx,seed in enumerate(seeds):
+        print('Doing seed '+str(seed_idx+1) +' of '+str(len(seeds)))
         
-#         net.set_seed(int(seed))
+        net.set_seed(int(seed))
         
-#         filtered_mydict_disorder = {k: v for k, v in this_params_dict.items() if k in [p.name for p in
-#                                             inspect.signature(net.generate_disorder).parameters.values()]}
-#         net.generate_disorder(**filtered_mydict_disorder)
+        filtered_mydict_disorder = {k: v for k, v in this_params_dict.items() if k in [p.name for p in
+                                            inspect.signature(net.generate_disorder).parameters.values()]}
+        net.generate_disorder(**filtered_mydict_disorder)
         
-#         sol,_ = integ.sim_dyn(ri,T,0.0,net.M,net.H,net.LAM,net.E_all,net.I_all,
-#             mult_tau=False,max_min=30,stat_stop=stat_stop)
-#         rates[seed_idx,0,:]=np.mean(sol[:,mask_time],axis=1)
+        sol,base_timeout = integ.sim_dyn(ri,T,0.0,net.M,net.H,net.LAM,net.E_all,net.I_all,
+            mult_tau=False,max_min=max_min,stat_stop=stat_stop)
+        rates[seed_idx,0,:]=np.mean(sol[:,mask_time],axis=1)
         
-#         sol,_ = integ.sim_dyn(ri,T,params_dict['L'],net.M,net.H,net.LAM,net.E_all,net.I_all,
-#             mult_tau=False,max_min=30,stat_stop=stat_stop)
-#         rates[seed_idx,1,:]=np.mean(sol[:,mask_time],axis=1)
+        sol,opto_timeout = integ.sim_dyn(ri,T,params_dict['L'],net.M,net.H,net.LAM,net.E_all,net.I_all,
+            mult_tau=False,max_min=max_min,stat_stop=stat_stop)
+        rates[seed_idx,1,:]=np.mean(sol[:,mask_time],axis=1)
         
-#     return net,np.hstack([rates[i,:,:] for i in np.arange(len(seeds))])
+    return net,np.hstack([rates[i,:,:] for i in np.arange(len(seeds))]),(base_timeout or opto_timeout)
 
 # def sim_ring_tensor(params_dict,ri,T,mask_time,seeds,max_min=15):
 #     this_params_dict = params_dict.copy()
