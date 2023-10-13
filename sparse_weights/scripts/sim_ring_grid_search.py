@@ -193,11 +193,39 @@ for idx_rep in range(first_rep,nrep):
 
     for aX_idx,aX in enumerate(aXs):
         if aX_idx > 0 and np.all(timeouts[aX_idx-1,:,:]):
+            all_base_means[aX_idx,:,:] = all_base_means[aX_idx-1,:,:] + aX
+            all_base_stds[aX_idx,:,:] = all_base_stds[aX_idx-1,:,:] + aX
+            all_opto_means[aX_idx,:,:] = all_opto_means[aX_idx-1,:,:] + aX
+            all_opto_stds[aX_idx,:,:] = all_opto_stds[aX_idx-1,:,:] + aX
+            all_diff_means[aX_idx,:,:] = all_diff_means[aX_idx-1,:,:] + aX
+            all_diff_stds[aX_idx,:,:] = all_diff_stds[aX_idx-1,:,:] + aX
+            all_norm_covs[aX_idx,:,:] = all_norm_covs[aX_idx-1,:,:] + aX
+            vsm_base_means[aX_idx,:,:] = vsm_base_means[aX_idx-1,:,:] + aX
+            vsm_base_stds[aX_idx,:,:] = vsm_base_stds[aX_idx-1,:,:] + aX
+            vsm_opto_means[aX_idx,:,:] = vsm_opto_means[aX_idx-1,:,:] + aX
+            vsm_opto_stds[aX_idx,:,:] = vsm_opto_stds[aX_idx-1,:,:] + aX
+            vsm_diff_means[aX_idx,:,:] = vsm_diff_means[aX_idx-1,:,:] + aX
+            vsm_diff_stds[aX_idx,:,:] = vsm_diff_stds[aX_idx-1,:,:] + aX
+            vsm_norm_covs[aX_idx,:,:] = vsm_norm_covs[aX_idx-1,:,:] + aX
             timeouts[aX_idx,:,:] = True
             continue
 
         for bX_idx,bX in enumerate(bXs):
             if bX_idx > 0 and np.all(timeouts[aX_idx,bX_idx-1,:]):
+                all_base_means[aX_idx,bX_idx,:] = all_base_means[aX_idx,bX_idx-1,:] + bX
+                all_base_stds[aX_idx,bX_idx,:] = all_base_stds[aX_idx,bX_idx-1,:] + bX
+                all_opto_means[aX_idx,bX_idx,:] = all_opto_means[aX_idx,bX_idx-1,:] + bX
+                all_opto_stds[aX_idx,bX_idx,:] = all_opto_stds[aX_idx,bX_idx-1,:] + bX
+                all_diff_means[aX_idx,bX_idx,:] = all_diff_means[aX_idx,bX_idx-1,:] + bX
+                all_diff_stds[aX_idx,bX_idx,:] = all_diff_stds[aX_idx,bX_idx-1,:] + bX
+                all_norm_covs[aX_idx,bX_idx,:] = all_norm_covs[aX_idx,bX_idx-1,:] + bX
+                vsm_base_means[aX_idx,bX_idx,:] = vsm_base_means[aX_idx,bX_idx-1,:] + bX
+                vsm_base_stds[aX_idx,bX_idx,:] = vsm_base_stds[aX_idx,bX_idx-1,:] + bX
+                vsm_opto_means[aX_idx,bX_idx,:] = vsm_opto_means[aX_idx,bX_idx-1,:] + bX
+                vsm_opto_stds[aX_idx,bX_idx,:] = vsm_opto_stds[aX_idx,bX_idx-1,:] + bX
+                vsm_diff_means[aX_idx,bX_idx,:] = vsm_diff_means[aX_idx,bX_idx-1,:] + bX
+                vsm_diff_stds[aX_idx,bX_idx,:] = vsm_diff_stds[aX_idx,bX_idx-1,:] + bX
+                vsm_norm_covs[aX_idx,bX_idx,:] = vsm_norm_covs[aX_idx,bX_idx-1,:] + bX
                 timeouts[aX_idx,bX_idx,:] = True
                 continue
 

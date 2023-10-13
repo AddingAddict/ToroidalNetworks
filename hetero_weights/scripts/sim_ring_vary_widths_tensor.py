@@ -64,7 +64,7 @@ for sWI_idx,sWI in enumerate(sWIs):
 
         seeds = np.arange(16)
 
-        net,rates = su.sim_ring_tensor(params_dict,ri,T,mask_time,seeds)
+        net,rates,_ = su.sim_ring_tensor(params_dict,ri,T,mask_time,seeds)
         this_results_dict = su.get_ring_input_rate(params_dict,net,seeds,rates)
 
         this_results_dict['sWI'] = sWI

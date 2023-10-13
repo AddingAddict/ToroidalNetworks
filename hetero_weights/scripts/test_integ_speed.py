@@ -64,11 +64,11 @@ for NE_idx,NE in enumerate(NEs):
 
     print('Simulating Ring on CPU, N = {:d}'.format(2*NE))
     start = time.time()
-    net,rates = su.sim_ring(params_dict,ri,T,mask_time,seeds,max_min=60,stat_stop=False)
+    net,rates,_ = su.sim_ring(params_dict,ri,T,mask_time,seeds,max_min=60,stat_stop=False)
     print('Simulation took {:.2f} s\n\n'.format(time.time()-start))
 
     print('Simulating Ring on GPU, N = {:d}'.format(2*NE))
     start = time.time()
-    net,rates = su.sim_ring_tensor(params_dict,ri,T_torch,mask_time_torch,seeds)
+    net,rates,_ = su.sim_ring_tensor(params_dict,ri,T_torch,mask_time_torch,seeds,max_min=60)
     print('Simulation took {:.2f} s\n\n'.format(time.time()-start))
 

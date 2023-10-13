@@ -65,7 +65,7 @@ params_dict['L'] = L
 
 seeds = np.arange(16)
 
-net,rates = su.sim_ring(params_dict,ri,T,mask_time,seeds)
+net,rates,_ = su.sim_ring(params_dict,ri,T,mask_time,seeds)
 results_dict = su.get_ring_input_rate(params_dict,net,seeds,rates)
 
 results_dict['sWI'] = sWI
