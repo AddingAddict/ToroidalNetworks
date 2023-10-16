@@ -280,6 +280,8 @@ for idx_rep in range(first_rep,nrep):
                 if timeout:
                     all_norm_covs[aX_idx,bX_idx,eX_idx] = 1000
                     vsm_norm_covs[aX_idx,bX_idx,eX_idx] = 1000
+
+                timeout = timeout or all_base_means[aX_idx,bX_idx,eX_idx] > 200
                 
                 timeouts[aX_idx,bX_idx,eX_idx] = timeout
 

@@ -35,18 +35,18 @@ with open('./../results/results_ring_'+str(id[0])+'.pkl', 'rb') as handle:
     CVh = res_dict['best_monk_eX']
     bX = res_dict['best_monk_bX']
     aXs = res_dict['best_monk_aXs']
-#     K = prms['K']
+    # K = prms['K']
     SoriE = prms['SoriE']
     SoriI = prms['SoriI']
     # SoriF = prms['SoriF']
-#     J = prms['J']
-#     beta = prms['beta']
-#     gE = prms['gE']
-#     gI = prms['gI']
-#     hE = prms['hE']
-#     hI = prms['hI']
-#     L = prms['L']
-#     CVL = prms['CVL']
+    # J = prms['J']
+    # beta = prms['beta']
+    # gE = prms['gE']
+    # gI = prms['gI']
+    # hE = prms['hE']
+    # hI = prms['hI']
+    # L = prms['L']
+    # CVL = prms['CVL']
 
 ri = ric.Ricciardi()
 ri.set_up_nonlinearity('./phi_int')
@@ -73,6 +73,14 @@ seeds = np.arange(20)
 cAs = aXs[[0,-1]]/bX
 rXs = bX*10**np.arange(-1.4,0.4+0.1,0.2)
 Ks = np.round(500*10**np.arange(-1.4,0.4+0.1,0.2)).astype(np.int32)
+
+print('simulating rX # '+str(rX_idx+1))
+print('')
+rX = rXs[rX_idx]
+
+print('simulating K # '+str(K_idx+1))
+print('')
+K = Ks[K_idx]
 
 # μrEs = np.zeros((2,Nori))
 # μrIs = np.zeros((2,Nori))
@@ -169,10 +177,10 @@ def simulate_networks(prms,rX,cA,CVh):
             Ekern = base_net.apply_kernel(ori_diff,SoriE,180,180/Nori,kernel='gaussian')
             Ikern = base_net.apply_kernel(ori_diff,SoriI,180,180/Nori,kernel='gaussian')
 
-        varWs[:Nori,:Nori] = ri.tE**2*K  *Mpop[0,0]**2*Ekern
-        varWs[Nori:,:Nori] = ri.tI**2*K  *Mpop[1,0]**2*Ekern
-        varWs[:Nori,Nori:] = ri.tE**2*K/4*Mpop[0,1]**2*Ikern
-        varWs[Nori:,Nori:] = ri.tI**2*K/4*Mpop[1,1]**2*Ikern
+        varWs[:Nori,:Nori] = ri.tE**2*prms['K']  *Mpop[0,0]**2*Ekern
+        varWs[Nori:,:Nori] = ri.tI**2*prms['K']  *Mpop[1,0]**2*Ekern
+        varWs[:Nori,Nori:] = ri.tE**2*prms['K']/4*Mpop[0,1]**2*Ikern
+        varWs[Nori:,Nori:] = ri.tI**2*prms['K']/4*Mpop[1,1]**2*Ikern
 
         stabM = varWs@np.diag(gain2s)
 
@@ -184,14 +192,6 @@ def simulate_networks(prms,rX,cA,CVh):
         print('')
 
     return net,rs,mus,muEs,muIs,Ls,Ms
-
-print('simulating rX # '+str(rX_idx+1))
-print('')
-rX = rXs[rX_idx]
-
-print('simulating K # '+str(K_idx+1))
-print('')
-K = Ks[K_idx]
 
 # Simulate zero contrast network, but with all-to-all connectivity\
 print('simulating all-to-all network')
