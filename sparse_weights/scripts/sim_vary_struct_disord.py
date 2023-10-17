@@ -68,7 +68,7 @@ prms['Nori'] = Nori
 prms['NE'] = NE
 prms['NI'] = NI
 
-seeds = np.arange(5)
+seeds = np.arange(50)
 
 structs = np.arange(0,8+1)/8
 disords = 3**(np.arange(0,8+1)/8)
