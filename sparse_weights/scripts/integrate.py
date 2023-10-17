@@ -98,7 +98,6 @@ def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False,max_min=30,method=None):
     except:
         rates = torch.randn((len(T),len(H)),dtype=torch.float32)*1e4+1e4
         timeout = True
-        print(rates)
     return torch.transpose(rates,0,1),timeout
 
 def calc_lyapunov_exp_tensor(rc,T,L,M,H,LAM,E_cond,RATEs,NLE,TWONS,TONS,mult_tau=False,save_time=False,return_Q=False):
