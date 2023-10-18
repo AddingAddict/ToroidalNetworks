@@ -167,14 +167,16 @@ def simulate_networks(prms,rX,cA,CVh):
 
         varWs = np.zeros((2*Nori,2*Nori))
 
-        if prms.get('vanilla_or_not',False):
+        if prms.get('basefrac',0)==1:
             Ekern = 1/Nori
             Ikern = 1/Nori
         else:
             ori_diff = base_net.make_periodic(np.abs(np.arange(Nori) -\
                                                      np.arange(Nori)[:,None])*180/Nori,90)
-            Ekern = base_net.apply_kernel(ori_diff,SoriE,180,180/Nori,kernel='gaussian')
-            Ikern = base_net.apply_kernel(ori_diff,SoriI,180,180/Nori,kernel='gaussian')
+            Ekern = prms.get('basefrac',0) + (1-prms.get('basefrac',0))*\
+                base_net.apply_kernel(ori_diff,SoriE,180,180/Nori,kernel='gaussian')
+            Ikern = prms.get('basefrac',0) + (1-prms.get('basefrac',0))*\
+                base_net.apply_kernel(ori_diff,SoriI,180,180/Nori,kernel='gaussian')
 
         varWs[:Nori,:Nori] = ri.tE**2*prms['K']  *Mpop[0,0]**2*Ekern
         varWs[Nori:,:Nori] = ri.tI**2*prms['K']  *Mpop[1,0]**2*Ekern
@@ -197,23 +199,27 @@ print('simulating all-to-all network')
 print('')
 N_prms = prms.copy()
 N_prms['N'] = N
-N_prms['vanilla_or_not'] = True
+N_prms['basefrac'] = 1
 
 net,rs,mus,muEs,muIs,Ls,Ms = simulate_networks(N_prms,rX,cAs[0],CVh)
+rs = np.mean(rs,-1)
+mus = np.mean(mus,-1)
+muEs = np.mean(muEs,-1)
+muIs = np.mean(muIs,-1)
 
 start = time.process_time()
 
 for nloc in range(Nori):
-    μrIs[:,0,nloc] = np.mean(rs[:,net.C_idxs[1][nloc],:],axis=(-2,-1))
-    μrEs[:,0,nloc] = np.mean(rs[:,net.C_idxs[0][nloc],:],axis=(-2,-1))
-    ΣrEs[:,0,nloc] = np.var(rs[:,net.C_idxs[0][nloc],:],axis=(-2,-1))
-    ΣrIs[:,0,nloc] = np.var(rs[:,net.C_idxs[1][nloc],:],axis=(-2,-1))
-    μhEs[:,0,nloc] = np.mean(mus[:,net.C_idxs[0][nloc],:],axis=(-2,-1))
-    μhIs[:,0,nloc] = np.mean(mus[:,net.C_idxs[1][nloc],:],axis=(-2,-1))
-    ΣhEs[:,0,nloc] = np.var(mus[:,net.C_idxs[0][nloc],:],axis=(-2,-1))
-    ΣhIs[:,0,nloc] = np.var(mus[:,net.C_idxs[1][nloc],:],axis=(-2,-1))
-    balEs[:,0,nloc] = np.mean(np.abs(mus[:,net.C_idxs[0][nloc],:])/muEs[:,net.C_idxs[0][nloc],:],axis=(-2,-1))
-    balIs[:,0,nloc] = np.mean(np.abs(mus[:,net.C_idxs[1][nloc],:])/muEs[:,net.C_idxs[1][nloc],:],axis=(-2,-1))
+    μrEs[:,0,nloc] = np.mean(rs[:,net.C_idxs[0][nloc]],axis=-1)
+    μrIs[:,0,nloc] = np.mean(rs[:,net.C_idxs[1][nloc]],axis=-1)
+    ΣrEs[:,0,nloc] = np.var(rs[:,net.C_idxs[0][nloc]],axis=-1)
+    ΣrIs[:,0,nloc] = np.var(rs[:,net.C_idxs[1][nloc]],axis=-1)
+    μhEs[:,0,nloc] = np.mean(mus[:,net.C_idxs[0][nloc]],axis=-1)
+    μhIs[:,0,nloc] = np.mean(mus[:,net.C_idxs[1][nloc]],axis=-1)
+    ΣhEs[:,0,nloc] = np.var(mus[:,net.C_idxs[0][nloc]],axis=-1)
+    ΣhIs[:,0,nloc] = np.var(mus[:,net.C_idxs[1][nloc]],axis=-1)
+    balEs[:,0,nloc] = np.mean(np.abs(mus[:,net.C_idxs[0][nloc]])/muEs[:,net.C_idxs[0][nloc]],axis=-1)
+    balIs[:,0,nloc] = np.mean(np.abs(mus[:,net.C_idxs[1][nloc]])/muEs[:,net.C_idxs[1][nloc]],axis=-1)
 Lexps[:,0] = Ls
 Mevs[:,0] = Ms
 
@@ -227,22 +233,24 @@ for cA_idx,cA in enumerate(cAs):
     N_prms['N'] = N
 
     net,rs,mus,muEs,muIs,Ls,Ms = simulate_networks(N_prms,rX,cA,CVh)
+    rs = np.mean(rs,-1)
+    mus = np.mean(mus,-1)
+    muEs = np.mean(muEs,-1)
+    muIs = np.mean(muIs,-1)
 
     start = time.process_time()
 
     for nloc in range(Nori):
-        μrIs[:,cA_idx+1,nloc] = np.mean(rs[:,net.C_idxs[1][nloc],:],axis=(-2,-1))
-        μrEs[:,cA_idx+1,nloc] = np.mean(rs[:,net.C_idxs[0][nloc],:],axis=(-2,-1))
-        ΣrEs[:,cA_idx+1,nloc] = np.var(rs[:,net.C_idxs[0][nloc],:],axis=(-2,-1))
-        ΣrIs[:,cA_idx+1,nloc] = np.var(rs[:,net.C_idxs[1][nloc],:],axis=(-2,-1))
-        μhEs[:,cA_idx+1,nloc] = np.mean(mus[:,net.C_idxs[0][nloc],:],axis=(-2,-1))
-        μhIs[:,cA_idx+1,nloc] = np.mean(mus[:,net.C_idxs[1][nloc],:],axis=(-2,-1))
-        ΣhEs[:,cA_idx+1,nloc] = np.var(mus[:,net.C_idxs[0][nloc],:],axis=(-2,-1))
-        ΣhIs[:,cA_idx+1,nloc] = np.var(mus[:,net.C_idxs[1][nloc],:],axis=(-2,-1))
-        balEs[:,cA_idx+1,nloc] = np.mean(np.abs(mus[:,net.C_idxs[0][nloc],:])/muEs[:,net.C_idxs[0][nloc],:],
-                                         axis=(-2,-1))
-        balIs[:,cA_idx+1,nloc] = np.mean(np.abs(mus[:,net.C_idxs[1][nloc],:])/muEs[:,net.C_idxs[1][nloc],:],
-                                         axis=(-2,-1))
+        μrEs[:,cA_idx+1,nloc] = np.mean(rs[:,net.C_idxs[0][nloc]],axis=-1)
+        μrIs[:,cA_idx+1,nloc] = np.mean(rs[:,net.C_idxs[1][nloc]],axis=-1)
+        ΣrEs[:,cA_idx+1,nloc] = np.var(rs[:,net.C_idxs[0][nloc]],axis=-1)
+        ΣrIs[:,cA_idx+1,nloc] = np.var(rs[:,net.C_idxs[1][nloc]],axis=-1)
+        μhEs[:,cA_idx+1,nloc] = np.mean(mus[:,net.C_idxs[0][nloc]],axis=-1)
+        μhIs[:,cA_idx+1,nloc] = np.mean(mus[:,net.C_idxs[1][nloc]],axis=-1)
+        ΣhEs[:,cA_idx+1,nloc] = np.var(mus[:,net.C_idxs[0][nloc]],axis=-1)
+        ΣhIs[:,cA_idx+1,nloc] = np.var(mus[:,net.C_idxs[1][nloc]],axis=-1)
+        balEs[:,cA_idx+1,nloc] = np.mean(np.abs(mus[:,net.C_idxs[0][nloc]])/muEs[:,net.C_idxs[0][nloc]],axis=-1)
+        balIs[:,cA_idx+1,nloc] = np.mean(np.abs(mus[:,net.C_idxs[1][nloc]])/muEs[:,net.C_idxs[1][nloc]],axis=-1)
     Lexps[:,cA_idx+1] = Ls
     Mevs[:,cA_idx+1] = Ms
 

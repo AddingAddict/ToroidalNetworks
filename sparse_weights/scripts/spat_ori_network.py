@@ -124,9 +124,10 @@ class SpatOriNetwork(network.BaseNetwork):
         full_kernel = network.apply_kernel(ori_diff,Sori,self.Lori,self.Lori/self.Nori,kernel=kernel)
         full_kernel *= network.apply_kernel(rf_xdiff,Srf,self.Lrf,self.Lrf/self.Nrf,kernel=kernel)
         full_kernel *= network.apply_kernel(rf_ydiff,Srf,self.Lrf,self.Lrf/self.Nrf,kernel=kernel)
+        full_kernel /= np.sum(full_kernel,1)[:,None]
         return full_kernel
 
-    def generate_full_rec_conn(self,WMat,VarMat,SrfMat,SoriMat,K,vanilla_or_not=False,return_mean_var=False):
+    def generate_full_rec_conn(self,WMat,VarMat,SrfMat,SoriMat,K,basefrac=0,return_mean_var=False):
         WKern = [[None]*self.n]*self.n
         W_mean_full = np.zeros((self.N,self.N),np.float32)
         W_var_full = np.zeros((self.N,self.N),np.float32)
@@ -142,10 +143,10 @@ class SpatOriNetwork(network.BaseNetwork):
                 
                 if np.isclose(WMat[pstC,preC],0.): continue    # Skip if no connection of this type
 
-                if vanilla_or_not=='vanilla' or vanilla_or_not==True:
+                if basefrac==1:
                     W = np.ones((self.Nloc,self.Nloc))
                 else:
-                    W_aux = self.generate_full_kernel(SrfMat[pstC,preC],SoriMat[pstC,preC])
+                    W_aux = basefrac + (1-basefrac)*self.generate_full_kernel(SrfMat[pstC,preC],SoriMat[pstC,preC])
                     if self.normalize_by_mean:
                         W = W_aux/np.mean(W_aux)
                     else:
@@ -166,7 +167,7 @@ class SpatOriNetwork(network.BaseNetwork):
         else:
             return C_full
 
-    def generate_full_ff_conn(self,WVec,VarVec,SrfVec,SoriVec,K,vanilla_or_not=False,return_mean_var=False):
+    def generate_full_ff_conn(self,WVec,VarVec,SrfVec,SoriVec,K,basefrac=0,return_mean_var=False):
         WKern = [None]*self.n
         W_mean_full = np.zeros((self.N,self.NX*self.Nloc),np.float32)
         W_var_full = np.zeros((self.N,self.NX*self.Nloc),np.float32)
@@ -178,10 +179,10 @@ class SpatOriNetwork(network.BaseNetwork):
 
             if np.isclose(WVec[pstC],0.): continue    # Skip if no connection of this type
 
-            if vanilla_or_not=='vanilla' or vanilla_or_not==True:
+            if basefrac==1:
                 W = np.ones((self.Nloc,self.Nloc))
             else:
-                W_aux = self.generate_full_kernel(SrfVec[pstC],SoriVec[pstC])
+                W_aux = basefrac + (1-basefrac)*self.generate_full_kernel(SrfVec[pstC],SoriVec[pstC])
                 if self.normalize_by_mean:
                     W = W_aux/np.mean(W_aux)
                 else:
@@ -202,7 +203,7 @@ class SpatOriNetwork(network.BaseNetwork):
         else:
             return C_full
 
-    def generate_full_input(self,HVec,VarVec,SrfVec,SoriVec,vanilla_or_not=False,vis_loc=None,vis_ori=None):
+    def generate_full_input(self,HVec,VarVec,SrfVec,SoriVec,basefrac=0,vis_loc=None,vis_ori=None):
         H_mean_full = np.zeros((self.N),np.float32)
         H_var_full = np.zeros((self.N),np.float32)
 
@@ -213,35 +214,35 @@ class SpatOriNetwork(network.BaseNetwork):
 
             if np.isclose(HVec[pstC],0.): continue    # Skip if no connection of this type
 
-            if vanilla_or_not=='vanilla' or vanilla_or_not==True:
+            if basefrac==1:
                 H = np.ones((self.Nloc))
             else:
-                H = self.generate_full_vector(SrfVec[pstC],SoriVec[pstC])
+                H = basefrac + (1-basefrac)*self.generate_full_vector(SrfVec[pstC],SoriVec[pstC])
 
             H_mean_full[pstC_all] = HVec[pstC]*np.repeat(H,NpstC)
             H_var_full[pstC_all] = VarVec[pstC]*np.repeat(H,NpstC)
 
         return H_mean_full,H_var_full
 
-    def generate_M(self,W,SWrf,SWori,K,vanilla_or_not=False):
+    def generate_M(self,W,SWrf,SWori,K,basefrac=0):
         C_full, W_mean_full,W_var_full = self.generate_full_rec_conn(W,np.zeros((self.n,self.n)),
-            SWrf,SWori,K,vanilla_or_not,True)
+            SWrf,SWori,K,basefrac,True)
         return C_full*(W_mean_full+np.random.normal(size=(self.N,self.N))*np.sqrt(W_var_full))
 
-    def generate_MX(self,W,SWrf,SWori,K,vanilla_or_not=False):
+    def generate_MX(self,W,SWrf,SWori,K,basefrac=0):
         CX_full, WX_mean_full,WX_var_full = self.generate_full_ff_conn(WX,np.zeros(self.n),
-            SWrfX,SWoriX,K,vanilla_or_not,True)
+            SWrfX,SWoriX,K,basefrac,True)
         return CX_full*(WX_mean_full+np.random.normal(size=(self.N,self.NX*self.Nloc))*np.sqrt(WX_var_full))
 
-    def generate_H(self,H,SHrf,SHori,vanilla_or_not=False,vis_loc=None,vis_ori=None):
-        H_mean_full,H_var_full = self.generate_full_input(H,np.zeros((self.n)),SHrf,SHori,vanilla_or_not,vis_loc,vis_ori)
+    def generate_H(self,H,SHrf,SHori,basefrac=0,vis_loc=None,vis_ori=None):
+        H_mean_full,H_var_full = self.generate_full_input(H,np.zeros((self.n)),SHrf,SHori,basefrac,vis_loc,vis_ori)
         return H_mean_full+np.random.normal(size=(self.N))*np.sqrt(H_var_full)
 
-    # def generate_disorder(self,W,SWrf,SWori,WX,SWrfX,SWoriX,K,vanilla_or_not=False):
-    def generate_disorder(self,W,SWrf,SWori,H,SHrf,SHori,K,vanilla_or_not=False):
-        self.M = self.generate_M(W,SWrf,SWori,K,vanilla_or_not)
-        # self.MX = self.generate_MX(W,SWrf,SWori,K,vanilla_or_not)
-        self.H = self.generate_H(H,SHrf,SHori,vanilla_or_not)
+    # def generate_disorder(self,W,SWrf,SWori,WX,SWrfX,SWoriX,K):
+    def generate_disorder(self,W,SWrf,SWori,H,SHrf,SHori,K,basefrac=0):
+        self.M = self.generate_M(W,SWrf,SWori,K,basefrac)
+        # self.MX = self.generate_MX(W,SWrf,SWori,K,basefrac)
+        self.H = self.generate_H(H,SHrf,SHori,basefrac)
 
     def generate_tensors(self):
         self.C_conds = []
