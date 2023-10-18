@@ -99,9 +99,9 @@ for seed_idx,seed in enumerate(seeds):
     
     start = time.process_time()
     
-    net,M,H,B,LAS,EPS = su.gen_ring_Jer_tensor(seed,this_prms,CVh)
+    net,M,H,B,LAS,EPS = su.gen_ring_disorder_tensor(seed,this_prms,CVh)
 
-    print("Generating Jer took ",time.process_time() - start," s")
+    print("Generating disorder took ",time.process_time() - start," s")
     print('')
     
     start = time.process_time()
