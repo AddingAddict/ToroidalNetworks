@@ -41,8 +41,8 @@ with open('./../results/results_ring_'+str(id[0])+'.pkl', 'rb') as handle:
 
 ri = ric.Ricciardi()
 
-Twrm = 2.0
-Tsav = 0.5
+Twrm = 4.0
+Tsav = 1.0
 Tsim = 4.0
 dt = 0.01/4
 
@@ -75,6 +75,7 @@ normCIs = np.zeros((2,Nori))
 convs = np.zeros((2,2)).astype(bool)
 
 def predict_networks(prms,rX,cA,CVh):
+    print(rX)
     tau = np.array([ri.tE,ri.tI],dtype=np.float32)
     W = prms['J']*np.array([[1,-prms['gE']],[1./prms['beta'],-prms['gI']/prms['beta']]],dtype=np.float32)
     Ks = np.array([prms['K'],prms['K']/4],dtype=np.float32)
@@ -113,7 +114,7 @@ def predict_networks(prms,rX,cA,CVh):
         return b + (p-b)*np.exp(-0.5*x**2/s2)
     
     if cA == 0:
-        res_dict = dmft.run_first_stage_dmft(prms,bX,CVh,'./../results',ri,Twrm,Tsav,dt,which='base')
+        res_dict = dmft.run_first_stage_dmft(prms,rX,CVh,'./../results',ri,Twrm,Tsav,dt,which='base')
         rb = res_dict['r'][:2]
         rp = res_dict['r'][:2]
         sr2 = 1e4*np.ones(2)
@@ -123,7 +124,7 @@ def predict_networks(prms,rX,cA,CVh):
         normC[:,:] = (res_dict['Cr'][:2,-1]/res_dict['Cr'][:2,0])[:,None]
         conv[:] = res_dict['conv'][:2]
     else:
-        res_dict = dmft.run_first_stage_ring_dmft(prms,bX,cA,CVh,'./../results',ri,Twrm,Tsav,dt,which='base')
+        res_dict = dmft.run_first_stage_ring_dmft(prms,rX,cA,CVh,'./../results',ri,Twrm,Tsav,dt,which='base')
         rb = res_dict['rb'][:2]
         rp = res_dict['rp'][:2]
         sr2 = res_dict['sr'][:2]**2
