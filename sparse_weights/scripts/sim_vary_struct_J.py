@@ -125,10 +125,10 @@ timeouts = np.zeros((len(seeds),2)).astype(bool)
 
 def simulate_networks(prms,rX,cA,CVh):
     N = prms.get('Nori',180) * (prms.get('NE',4) + prms.get('NI',1))
-    rs = np.zeros((len(seeds),2,N,len(T_mask)))
-    mus = np.zeros((len(seeds),2,N,len(T_mask)))
-    muEs = np.zeros((len(seeds),2,N,len(T_mask)))
-    muIs = np.zeros((len(seeds),2,N,len(T_mask)))
+    rs = np.zeros((len(seeds),2,N))
+    mus = np.zeros((len(seeds),2,N))
+    muEs = np.zeros((len(seeds),2,N))
+    muIs = np.zeros((len(seeds),2,N))
     Ls = np.zeros((len(seeds),2))
     TOs = np.zeros((len(seeds),2))
 
@@ -154,7 +154,7 @@ def simulate_networks(prms,rX,cA,CVh):
                                                                rX*(this_B+cA*this_H)*this_EPS,this_LAS,
                                                                net.C_conds[0],base_sol[:,T>=4*Nt],10,2*Nt,2*ri.tE,
                                                                mult_tau=True).cpu().numpy())
-        rs[seed_idx,0] = base_sol[:,mask_time].cpu().numpy()
+        rs[seed_idx,0] = np.mean(base_sol[:,mask_time].cpu().numpy(),-1)
         TOs[seed_idx,0] = base_timeout
 
         print("Integrating base network took ",time.process_time() - start," s")
@@ -168,7 +168,7 @@ def simulate_networks(prms,rX,cA,CVh):
                                                                rX*(this_B+cA*this_H)*this_EPS,this_LAS,
                                                                net.C_conds[0],opto_sol[:,T>=4*Nt],10,2*Nt,2*ri.tE,
                                                                mult_tau=True).cpu().numpy())
-        rs[seed_idx,1] = opto_sol[:,mask_time].cpu().numpy()
+        rs[seed_idx,1] = np.mean(opto_sol[:,mask_time].cpu().numpy(),-1)
         TOs[seed_idx,1] = opto_timeout
 
         print("Integrating opto network took ",time.process_time() - start," s")
@@ -176,21 +176,21 @@ def simulate_networks(prms,rX,cA,CVh):
 
         start = time.process_time()
 
-        muEs[seed_idx,0] = M[:,net.C_all[0]]@rs[seed_idx,0,net.C_all[0],:] + H[:,None]
-        muIs[seed_idx,0] = M[:,net.C_all[1]]@rs[seed_idx,0,net.C_all[1],:]
-        muEs[seed_idx,0,net.C_all[0],:] *= ri.tE
-        muEs[seed_idx,0,net.C_all[1],:] *= ri.tI
-        muIs[seed_idx,0,net.C_all[0],:] *= ri.tE
-        muIs[seed_idx,0,net.C_all[1],:] *= ri.tI
+        muEs[seed_idx,0] = M[:,net.C_all[0]]@rs[seed_idx,0,net.C_all[0]] + H
+        muIs[seed_idx,0] = M[:,net.C_all[1]]@rs[seed_idx,0,net.C_all[1]]
+        muEs[seed_idx,0,net.C_all[0]] *= ri.tE
+        muEs[seed_idx,0,net.C_all[1]] *= ri.tI
+        muIs[seed_idx,0,net.C_all[0]] *= ri.tE
+        muIs[seed_idx,0,net.C_all[1]] *= ri.tI
         mus[seed_idx,0] = muEs[seed_idx,0] + muIs[seed_idx,0]
 
-        muEs[seed_idx,1] = M[:,net.C_all[0]]@rs[seed_idx,1,net.C_all[0],:] + H[:,None]
-        muIs[seed_idx,1] = M[:,net.C_all[1]]@rs[seed_idx,1,net.C_all[1],:]
-        muEs[seed_idx,1,net.C_all[0],:] *= ri.tE
-        muEs[seed_idx,1,net.C_all[1],:] *= ri.tI
-        muIs[seed_idx,1,net.C_all[0],:] *= ri.tE
-        muIs[seed_idx,1,net.C_all[1],:] *= ri.tI
-        muEs[seed_idx,1] = muEs[seed_idx,1] + LAS[:,None]
+        muEs[seed_idx,1] = M[:,net.C_all[0]]@rs[seed_idx,1,net.C_all[0]] + H
+        muIs[seed_idx,1] = M[:,net.C_all[1]]@rs[seed_idx,1,net.C_all[1]]
+        muEs[seed_idx,1,net.C_all[0]] *= ri.tE
+        muEs[seed_idx,1,net.C_all[1]] *= ri.tI
+        muIs[seed_idx,1,net.C_all[0]] *= ri.tE
+        muIs[seed_idx,1,net.C_all[1]] *= ri.tI
+        muEs[seed_idx,1] = muEs[seed_idx,1] + LAS
         mus[seed_idx,1] = muEs[seed_idx,1] + muIs[seed_idx,1]
 
         print("Calculating statistics took ",time.process_time() - start," s")
@@ -206,10 +206,6 @@ this_prms['J'] = newJ
 this_prms['basefrac'] = 1-struct
 
 net,rs,mus,muEs,muIs,Ls,TOs = simulate_networks(this_prms,rX,cA,CVh)
-rs = np.mean(rs,-1)
-mus = np.mean(mus,-1)
-muEs = np.mean(muEs,-1)
-muIs = np.mean(muIs,-1)
 
 start = time.process_time()
 
@@ -338,10 +334,6 @@ print('')
 # this_prms['SoriI'] = np.fmax(SoriI*struct,1e-12)
 
 # net,rs,mus,muEs,muIs,Ls,TOs = simulate_networks(this_prms,rX,cA,CVh)
-# rs = np.mean(rs,-1)
-# mus = np.mean(mus,-1)
-# muEs = np.mean(muEs,-1)
-# muIs = np.mean(muIs,-1)
 
 # start = time.process_time()
 
