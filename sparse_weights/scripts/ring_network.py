@@ -79,7 +79,7 @@ class RingNetwork(network.BaseNetwork):
                 if basefrac==1:
                     W = np.ones((self.Nloc,self.Nloc)) / self.Nloc
                 else:
-                    W_aux = basefrac + (1-basefrac)*self.generate_full_kernel(SoriMat[pstC,preC])
+                    W_aux = basefrac/self.Nloc + (1-basefrac)*self.generate_full_kernel(SoriMat[pstC,preC])
                     if self.normalize_by_mean:
                         W = W_aux/np.mean(W_aux)
                     else:
@@ -115,7 +115,7 @@ class RingNetwork(network.BaseNetwork):
             if basefrac==1:
                 W = np.ones((self.Nloc,self.Nloc)) / self.Nloc
             else:
-                W_aux = basefrac + (1-basefrac)*self.generate_full_kernel(SoriVec[pstC])
+                W_aux = basefrac/self.Nloc + (1-basefrac)*self.generate_full_kernel(SoriVec[pstC])
                 if self.normalize_by_mean:
                     W = W_aux/np.mean(W_aux)
                 else:

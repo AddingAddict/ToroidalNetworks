@@ -144,9 +144,9 @@ class SpatOriNetwork(network.BaseNetwork):
                 if np.isclose(WMat[pstC,preC],0.): continue    # Skip if no connection of this type
 
                 if basefrac==1:
-                    W = np.ones((self.Nloc,self.Nloc))
+                    W = np.ones((self.Nloc,self.Nloc)) / self.Nloc
                 else:
-                    W_aux = basefrac + (1-basefrac)*self.generate_full_kernel(SrfMat[pstC,preC],SoriMat[pstC,preC])
+                    W_aux = basefrac/self.Nloc + (1-basefrac)*self.generate_full_kernel(SrfMat[pstC,preC],SoriMat[pstC,preC])
                     if self.normalize_by_mean:
                         W = W_aux/np.mean(W_aux)
                     else:
@@ -180,9 +180,9 @@ class SpatOriNetwork(network.BaseNetwork):
             if np.isclose(WVec[pstC],0.): continue    # Skip if no connection of this type
 
             if basefrac==1:
-                W = np.ones((self.Nloc,self.Nloc))
+                W = np.ones((self.Nloc,self.Nloc)) / self.Nloc
             else:
-                W_aux = basefrac + (1-basefrac)*self.generate_full_kernel(SrfVec[pstC],SoriVec[pstC])
+                W_aux = basefrac/self.Nloc + (1-basefrac)*self.generate_full_kernel(SrfVec[pstC],SoriVec[pstC])
                 if self.normalize_by_mean:
                     W = W_aux/np.mean(W_aux)
                 else:
