@@ -100,6 +100,85 @@ def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False,max_min=30,method=None):
         timeout = True
     return torch.transpose(rates,0,1),timeout
 
+def calc_lyapunov_exp(rc,T,L,M,H,LAM,E_all,I_all,RATEs,NLE,TWONS,TONS,mult_tau=False,save_time=False,return_Q=False):
+    if len(H) != RATEs.shape[0]:
+        raise("Rates must have shape Ncell x Ntime")
+
+    LAS = LAM*L
+
+    dt = T[1] - T[0]
+    dt_tau_inv = dt*np.ones_like(H)
+    dt_tau_inv[E_all]=dt_tau_inv[E_all]/rc.tE
+    dt_tau_inv[I_all]=dt_tau_inv[I_all]/rc.tI
+    NT = len(T) - 1
+    NWONS = int(np.round(TWONS/dt))
+    NONS = int(np.round(TONS/dt))
+
+    print('NWONS =',NWONS)
+    print('NT =',NT)
+    print('NONS =',NONS)
+
+    if mult_tau:
+        def calc_mu(RATE,MU):
+            MU=np.matmul(M,RATE)+H
+            MU[E_all]=rc.tE*MU[E_all]
+            MU[I_all]=rc.tI*MU[I_all]
+            MU=MU+LAS
+    else:
+        def calc_mu(RATE,MU):
+            MU=np.matmul(M,RATE)+H+LAS
+
+    start = time.process_time()
+
+    # Initialize Q
+    Q,_ = np.linalg.qr(np.random.rand(len(H),len(H)))
+    Q = Q[:,:NLE]
+    R = np.zeros((NLE,NLE))
+    G = np.zeros(len(H))
+    MU = np.zeros(len(H))
+
+    print('Initializing Q took',time.process_time() - start,'s\n')
+
+    if save_time:
+        Ls = np.zeros((NLE,(NT-NWONS)//NONS))
+    else:
+        Ls = np.zeros((NLE))
+
+    start = time.process_time()
+
+    # Evolve Q
+    for i in range(NT):
+        calc_mu(RATEs[:,i+1],MU)
+        G[E_all] = rc.dphiE(MU[E_all])
+        G[I_all] = rc.dphiE(MU[I_all])
+        Q += (-Q*dt_tau_inv[:,None] + G[:,None]*(M@Q)*dt)
+        # Reorthogonalize Q
+        if (i+1) % NONS == 0:
+            Q,R = np.linalg.qr(Q,out=(Q,R))
+            # After warming up, use R to calculate Lyapunov exponents
+            if i > NWONS:
+                if save_time:
+                    Ls[:,(i-NWONS+1)//NONS-1] = np.log(np.abs(np.diag(R)))
+                else:
+                    Ls += np.log(np.abs(np.diag(R)))
+                if np.any(np.isnan(Ls)):
+                    print(R)
+        if i+1 == NWONS:
+            print('Warmup took',time.process_time() - start,'s\n')
+            start = time.process_time()
+
+    print('Full Q evolution took',time.process_time() - start,'s\n')
+
+    if save_time:
+        Ls /= NONS*dt
+    else:
+        Ls /= (NT-NWONS)*dt
+
+    if return_Q:
+        return Ls,Q
+    else:
+        return Ls
+
 def calc_lyapunov_exp_tensor(rc,T,L,M,H,LAM,E_cond,RATEs,NLE,TWONS,TONS,mult_tau=False,save_time=False,return_Q=False):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
