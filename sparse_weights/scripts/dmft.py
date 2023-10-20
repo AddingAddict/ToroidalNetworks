@@ -761,7 +761,7 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
         (np.max(Cdrp_diag[:,-Nsav:],axis=1)-np.min(Cdrp_diag[:,-Nsav:],axis=1))/\
             np.mean(Cdrp_diag[:,-Nsav:],axis=1) < 1e-3
 
-def run_first_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,which='both'):
+def run_first_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,which='both',return_full=False):
     Nsav = round(Tsav/dt)+1
     
     K = prms['K']
@@ -843,9 +843,13 @@ def run_first_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,which='both'):
     
     res_dict['conv'] = conv
     
+    if return_full:
+        res_dict['full_r'] = full_r
+        res_dict['full_Cr'] = full_Cr
+    
     return res_dict
 
-def run_two_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt):
+def run_two_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,return_full=False):
     Nsav = round(Tsav/dt)+1
     
     K = prms['K']
@@ -935,9 +939,14 @@ def run_two_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt):
     res_dict['conv'] = conv
     res_dict['convd'] = convd
     
+    if return_full:
+        res_dict['full_r'] = full_r
+        res_dict['full_Cr'] = full_Cr
+        res_dict['full_Cdr'] = full_Cdr
+    
     return res_dict
 
-def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which='both'):
+def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which='both',return_full=False):
     Nsav = round(Tsav/dt)+1
     
     K = prms['K']
@@ -1077,9 +1086,17 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which
     res_dict['conva'] = conva
     res_dict['convp'] = convp
     
+    if return_full:
+        res_dict['full_rb'] = full_rb
+        res_dict['full_ra'] = full_ra
+        res_dict['full_rp'] = full_rp
+        res_dict['full_Crb'] = full_Crb
+        res_dict['full_Cra'] = full_Cra
+        res_dict['full_Crp'] = full_Crp
+    
     return res_dict
 
-def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15):
+def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_full=False):
     Nsav = round(Tsav/dt)+1
     
     K = prms['K']
@@ -1242,5 +1259,16 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15):
     res_dict['convdb'] = convdb
     res_dict['convda'] = convda
     res_dict['convdp'] = convdp
+    
+    if return_full:
+        res_dict['full_rb'] = full_rb
+        res_dict['full_ra'] = full_ra
+        res_dict['full_rp'] = full_rp
+        res_dict['full_Crb'] = full_Crb
+        res_dict['full_Cra'] = full_Cra
+        res_dict['full_Crp'] = full_Crp
+        res_dict['full_Cdrb'] = full_Cdrb
+        res_dict['full_Cdra'] = full_Cdra
+        res_dict['full_Cdrp'] = full_Cdrp
     
     return res_dict

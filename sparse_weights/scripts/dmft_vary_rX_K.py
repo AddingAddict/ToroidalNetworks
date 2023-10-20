@@ -75,7 +75,6 @@ normCIs = np.zeros((2,Nori))
 convs = np.zeros((2,2)).astype(bool)
 
 def predict_networks(prms,rX,cA,CVh):
-    print(rX)
     tau = np.array([ri.tE,ri.tI],dtype=np.float32)
     W = prms['J']*np.array([[1,-prms['gE']],[1./prms['beta'],-prms['gI']/prms['beta']]],dtype=np.float32)
     Ks = np.array([prms['K'],prms['K']/4],dtype=np.float32)
@@ -96,7 +95,7 @@ def predict_networks(prms,rX,cA,CVh):
     smuH2 = sH2
     SigHb = (muHb*eH)**2
     SigHp = (muHp*eH)**2
-    sSigH2 = sH2
+    sSigH2 = 2*sH2
 
     μrs = np.zeros((2,Nori))
     Σrs = np.zeros((2,Nori))
@@ -151,10 +150,10 @@ def predict_networks(prms,rX,cA,CVh):
     for i in range(2):
         μrs[i] = gauss(oris,rb[i],rp[i],sr2[i])
         Σrs[i] = np.fmax(gauss(oris,Crb[i],Crp[i],sCr2[i]) - gauss(oris,rb[i],rp[i],sr2[i])**2,0)
-        μmuEs[i] = gauss(oris,mub[0,i],mup[0,i],smu2[0,i]) + gauss(oris,muHb[i],muHp[i],smuH2[i])
-        ΣmuEs[i] = gauss(oris,Sigb[0,i],Sigp[0,i],sSig2[0,i]) + gauss(oris,SigHb[i],SigHp[i],sSigH2[i])
-        μmuIs[i] = gauss(oris,mub[1,i],mup[1,i],smu2[1,i])
-        ΣmuIs[i] = gauss(oris,Sigb[1,i],Sigp[1,i],sSig2[1,i])
+        μmuEs[i] = gauss(oris,mub[i,0],mup[i,0],smu2[i,0]) + gauss(oris,muHb[i],muHp[i],smuH2[i])
+        ΣmuEs[i] = gauss(oris,Sigb[i,0],Sigp[i,0],sSig2[i,0]) + gauss(oris,SigHb[i],SigHp[i],sSigH2[i])
+        μmuIs[i] = gauss(oris,mub[i,1],mup[i,1],smu2[i,1])
+        ΣmuIs[i] = gauss(oris,Sigb[i,1],Sigp[i,1],sSig2[i,1])
     μmus = μmuEs + μmuIs
     Σmus = ΣmuEs + ΣmuIs
 
