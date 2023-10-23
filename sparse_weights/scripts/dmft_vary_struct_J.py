@@ -205,7 +205,7 @@ def predict_networks(prms,rX,cA,CVh):
         Σrs[i,0] = np.fmax(gauss(oris,Crvb[i],Crvp[i],sCrv2[i]) - μrs[i,0]**2,0)
         Σrs[i,1] = np.fmax(gauss(oris,Crob[i],Crop[i],sCro2[i]) - μrs[i,1]**2,0)
         Σrs[i,2] = np.fmax(gauss(oris,Cdrb[i],Cdrp[i],sCdr2[i]) - μrs[i,2]**2,0)
-        Σrs[i,3] = 0.5*(Σrs[i,0] + Σrs[i,1] - Σrs[i,2])
+        Σrs[i,3] = 0.5*(Σrs[i,1] - Σrs[i,0] - Σrs[i,2])
         μmuEs[i,0] = gauss(oris,muvb[i,0],muvp[i,0],smuv2[i,0]) + gauss(oris,muHb[i],muHp[i],smuH2[i])
         μmuEs[i,1] = gauss(oris,muob[i,0],muop[i,0],smuo2[i,0]) + gauss(oris,muHb[i],muHp[i],smuH2[i]) + prms['L']*1e-3
         μmuEs[i,2] = μmuEs[i,1] - μmuEs[i,0]
@@ -213,14 +213,14 @@ def predict_networks(prms,rX,cA,CVh):
         ΣmuEs[i,1] = gauss(oris,Sigob[i,0],Sigop[i,0],sSigo2[i,0]) + gauss(oris,SigHb[i],SigHp[i],sSigH2[i]) +\
             (prms['CVL']*prms['L']*1e-3)**2
         ΣmuEs[i,2] = gauss(oris,Sigdb[i,0],Sigdp[i,0],sSigd2[i,0]) + (prms['CVL']*prms['L']*1e-3)**2
-        ΣmuEs[i,3] =  0.5*(ΣmuEs[i,0] + ΣmuEs[i,1] - ΣmuEs[i,2])
+        ΣmuEs[i,3] =  0.5*(ΣmuEs[i,1] - ΣmuEs[i,0] - ΣmuEs[i,2])
         μmuIs[i,0] = gauss(oris,muvb[i,1],muvp[i,1],smuv2[i,1])
         μmuIs[i,1] = gauss(oris,muob[i,1],muop[i,1],smuo2[i,1])
         μmuIs[i,2] = μmuIs[i,1] - μmuIs[i,0]
         ΣmuIs[i,0] = gauss(oris,Sigvb[i,1],Sigvp[i,1],sSigv2[i,1])
         ΣmuIs[i,1] = gauss(oris,Sigob[i,1],Sigop[i,1],sSigo2[i,1])
         ΣmuIs[i,2] = gauss(oris,Sigdb[i,1],Sigdp[i,1],sSigd2[i,1])
-        ΣmuIs[i,3] =  0.5*(ΣmuIs[i,0] + ΣmuIs[i,1] - ΣmuIs[i,2])
+        ΣmuIs[i,3] =  0.5*(ΣmuIs[i,1] - ΣmuIs[i,0] - ΣmuIs[i,2])
     μmus = μmuEs + μmuIs
     Σmus = ΣmuEs + ΣmuIs
 
@@ -258,6 +258,7 @@ normCIs[:] = normC[1]
 convs[:] = conv
 
 oris = np.arange(Nori)*180/Nori
+oris[oris > 90] = 180 - oris[oris > 90]
 vsm_mask = np.abs(oris) < 22.5
 
 all_base_means = 0.8*np.mean(μrEs[0]) + 0.2*np.mean(μrIs[0])
@@ -316,5 +317,5 @@ res_dict['vsm_diff_means'] = vsm_diff_means
 res_dict['vsm_diff_stds'] = vsm_diff_stds
 res_dict['vsm_norm_covs'] = vsm_norm_covs
 
-with open('./../results/dmft_vary_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'wb') as handle:
-    pickle.dump(res_dict,handle)
+# with open('./../results/dmft_vary_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'wb') as handle:
+#     pickle.dump(res_dict,handle)
