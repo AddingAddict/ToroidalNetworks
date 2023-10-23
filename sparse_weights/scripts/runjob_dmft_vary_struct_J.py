@@ -83,8 +83,8 @@ def runjobs():
     
     #--------------------------------------------------------------------------
     # The array of hashes
-    s_Vec=range(10)
-    j_Vec=range(10)
+    s_Vec=range(9)
+    j_Vec=range(9)
     
     for s in s_Vec:
         for j in j_Vec:
