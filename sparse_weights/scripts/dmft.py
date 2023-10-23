@@ -206,28 +206,19 @@ def sparse_dmft(tau,W,K,H,eH,M_fn,C_fn,Twrm,Tsav,dt,r0=None,Cr0=None):
     Mphi = np.empty((Ntyp),dtype=np.float32)
     Cphi = np.empty((Ntyp),dtype=np.float32)
     
+    def drdt(ri,Sigii):
+        mui = muW@ri + muH
+        M_fn(mui,Sigii,Mphi)
+        return tauinv*(-ri + Mphi)
+    
     for i in range(Nint-1):
-        ri = r[:,i]
         Crii = Cr[:,i,i]
-        mui = muW@ri + muH
         Sigii = SigW@Crii + SigH
-        M_fn(mui,Sigii,Mphi)
-        k1 = tauinv*(-ri + Mphi)
         
-        ri = r[:,i] + 0.5*dt*k1
-        mui = muW@ri + muH
-        M_fn(mui,Sigii,Mphi)
-        k2 = tauinv*(-ri + Mphi)
-        
-        ri = r[:,i] + 0.5*dt*k2
-        mui = muW@ri + muH
-        M_fn(mui,Sigii,Mphi)
-        k3 = tauinv*(-ri + Mphi)
-        
-        ri = r[:,i] + dt*k3
-        mui = muW@ri + muH
-        M_fn(mui,Sigii,Mphi)
-        k4 = tauinv*(-ri + Mphi)
+        k1 = drdt(r[:,i]          ,Sigii)
+        k2 = drdt(r[:,i]+0.5*dt*k1,Sigii)
+        k3 = drdt(r[:,i]+0.5*dt*k2,Sigii)
+        k4 = drdt(r[:,i]+    dt*k3,Sigii)
         
         r[:,i+1] = r[:,i] + dt/6*(k1+2*k2+2*k3+k4)
         ri = r[:,i]
@@ -281,7 +272,7 @@ def doub_sparse_dmft(tau,W,K,H,eH,M_fns,C_fns,Twrm,Tsav,dt,rb0=None,Crb0=None):
         
     return sparse_dmft(doub_tau,doub_W,doub_K,doub_H,eH,doub_M,doub_C,Twrm,Tsav,dt,rb0,Crb0)
 
-def diff_sparse_ring_dmft(tau,W,K,H,eH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
+def diff_sparse_dmft(tau,W,K,H,eH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
     Ntyp = len(H)
     Nint = round((Twrm+Tsav)/dt)+1
     Nclc = round(1.5*Tsav/dt)+1
@@ -355,7 +346,10 @@ def diff_sparse_ring_dmft(tau,W,K,H,eH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
             np.mean(Cdr_diag[:,-Nsav:],axis=1) < 1e-3
 
 def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
-                rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None):
+                rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None):
+    if Kb is None:
+        Kb = np.zeros_like(K)
+        
     Ntyp = len(Hb)
     Nint = round((Twrm+Tsav)/dt)+1
     Nclc = round(1.5*Tsav/dt)+1
@@ -389,6 +383,8 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
     sW2 = sW**2
     sH2 = sH**2
         
+    muWb = tau[:,None]*W*Kb
+    SigWb = tau[:,None]**2*W**2*Kb
     muW = tau[:,None]*W*K
     SigW = tau[:,None]**2*W**2*K
     
@@ -436,79 +432,37 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
     Cphia = np.empty((Ntyp),dtype=np.float32)
     Cphip = np.empty((Ntyp),dtype=np.float32)
     
-    for i in range(Nint-1):
-        rbi = rb[:,i]
-        rai = ra[:,i]
-        rpi = rp[:,i]
+    def drdt(rbi,rai,rpi,Sigbii,Sigaii,Sigpii):
         sr2i = 0.5*sa2/np.log(np.fmax(np.abs((rpi-rbi)/(rai-rbi)),1+1e-4))
         sWr2i = sW2+sr2i
+        sri = np.sqrt(sr2i)
+        srdivsWri = np.sqrt(sr2i/sWr2i)
+        mubi = (muW+sri/sr2pi*muWb)@rbi + muHb
+        muai = ((1-srdivsWri*np.exp(-0.5*sa2/sWr2i))*muW+sri/sr2pi*muWb)@rbi +\
+            (srdivsWri*np.exp(-0.5*sa2/sWr2i)*muW)@rpi + muHa
+        mupi = ((1-srdivsWri)*muW+sri/sr2pi*muWb)@rbi + (srdivsWri*muW)@rpi + muHp
+        M_fn(mubi,Sigbii,Mphib)
+        M_fn(muai,Sigaii,Mphia)
+        M_fn(mupi,Sigpii,Mphip)
+        return tauinv*(-rbi + Mphib), tauinv*(-rai + Mphia),  tauinv*(-rpi + Mphip)
+    
+    for i in range(Nint-1):
         Crbii = Crb[:,i,i]
         Craii = Cra[:,i,i]
         Crpii = Crp[:,i,i]
         sCr2ii = 0.5*sa2/np.log(np.fmax(np.abs((Crpii-Crbii)/(Craii-Crbii)),1+1e-4))
         sWCr2ii = sW2+sCr2ii
-        mubi = muW@rbi + muHb
-        muai = ((1-np.sqrt(sr2i/sWr2i)*np.exp(-0.5*sa2/sWr2i))*muW)@rbi +\
-            (np.sqrt(sr2i/sWr2i)*np.exp(-0.5*sa2/sWr2i)*muW)@rpi + muHa
-        mupi = ((1-np.sqrt(sr2i/sWr2i))*muW)@rbi + (np.sqrt(sr2i/sWr2i)*muW)@rpi + muHp
-        Sigbii = SigW@Crbii + SigHb
-        Sigaii = ((1-np.sqrt(sCr2ii/sWCr2ii)*np.exp(-0.5*sa2/sWCr2ii))*SigW)@Crbii +\
-            (np.sqrt(sCr2ii/sWCr2ii)*np.exp(-0.5*sa2/sWCr2ii)*SigW)@Crpii + SigHa
-        Sigpii = ((1-np.sqrt(sCr2ii/sWCr2ii))*SigW)@Crbii + (np.sqrt(sCr2ii/sWCr2ii)*SigW)@Crpii + SigHp
-        M_fn(mubi,Sigbii,Mphib)
-        M_fn(muai,Sigaii,Mphia)
-        M_fn(mupi,Sigpii,Mphip)
-        kb1 = tauinv*(-rbi + Mphib)
-        ka1 = tauinv*(-rai + Mphia)
-        kp1 = tauinv*(-rpi + Mphip)
-        
-        rbi = rb[:,i] + 0.5*dt*kb1
-        rai = ra[:,i] + 0.5*dt*ka1
-        rpi = rp[:,i] + 0.5*dt*kp1
-        sr2i = 0.5*sa2/np.log(np.fmax(np.abs((rpi-rbi)/(rai-rbi)),1+1e-4))
-        sWr2i = sW2+sr2i
-        mubi = muW@rbi + muHb
-        muai = ((1-np.sqrt(sr2i/sWr2i)*np.exp(-0.5*sa2/sWr2i))*muW)@rbi +\
-            (np.sqrt(sr2i/sWr2i)*np.exp(-0.5*sa2/sWr2i)*muW)@rpi + muHa
-        mupi = ((1-np.sqrt(sr2i/sWr2i))*muW)@rbi + (np.sqrt(sr2i/sWr2i)*muW)@rpi + muHp
-        M_fn(mubi,Sigbii,Mphib)
-        M_fn(muai,Sigaii,Mphia)
-        M_fn(mupi,Sigpii,Mphip)
-        kb2 = tauinv*(-rbi + Mphib)
-        ka2 = tauinv*(-rai + Mphia)
-        kp2 = tauinv*(-rpi + Mphip)
-        
-        rbi = rb[:,i] + 0.5*dt*kb2
-        rai = ra[:,i] + 0.5*dt*ka2
-        rpi = rp[:,i] + 0.5*dt*kp2
-        sr2i = 0.5*sa2/np.log(np.fmax(np.abs((rpi-rbi)/(rai-rbi)),1+1e-4))
-        sWr2i = sW2+sr2i
-        mubi = muW@rbi + muHb
-        muai = ((1-np.sqrt(sr2i/sWr2i)*np.exp(-0.5*sa2/sWr2i))*muW)@rbi +\
-            (np.sqrt(sr2i/sWr2i)*np.exp(-0.5*sa2/sWr2i)*muW)@rpi + muHa
-        mupi = ((1-np.sqrt(sr2i/sWr2i))*muW)@rbi + (np.sqrt(sr2i/sWr2i)*muW)@rpi + muHp
-        M_fn(mubi,Sigbii,Mphib)
-        M_fn(muai,Sigaii,Mphia)
-        M_fn(mupi,Sigpii,Mphip)
-        kb3 = tauinv*(-rbi + Mphib)
-        ka3 = tauinv*(-rai + Mphia)
-        kp3 = tauinv*(-rpi + Mphip)
-        
-        rbi = rb[:,i] + dt*kb3
-        rai = ra[:,i] + dt*ka3
-        rpi = rp[:,i] + dt*kp3
-        sr2i = 0.5*sa2/np.log(np.fmax(np.abs((rpi-rbi)/(rai-rbi)),1+1e-4))
-        sWr2i = sW2+sr2i
-        mubi = muW@rbi + muHb
-        muai = ((1-np.sqrt(sr2i/sWr2i)*np.exp(-0.5*sa2/sWr2i))*muW)@rbi +\
-            (np.sqrt(sr2i/sWr2i)*np.exp(-0.5*sa2/sWr2i)*muW)@rpi + muHa
-        mupi = ((1-np.sqrt(sr2i/sWr2i))*muW)@rbi + (np.sqrt(sr2i/sWr2i)*muW)@rpi + muHp
-        M_fn(mubi,Sigbii,Mphib)
-        M_fn(muai,Sigaii,Mphia)
-        M_fn(mupi,Sigpii,Mphip)
-        kb4 = tauinv*(-rbi + Mphib)
-        ka4 = tauinv*(-rai + Mphia)
-        kp4 = tauinv*(-rpi + Mphip)
+        sCrii = np.sqrt(sCr2ii)
+        sCrdivsWCr2ii = np.sqrt(sCr2ii/sWCr2ii)
+        Sigbii = (SigW+(1-sCrii/sr2pi)*SigWb)@Crbii + SigHb
+        Sigaii = ((1-sCrdivsWCr2ii*np.exp(-0.5*sa2/sWCr2ii))*SigW+(1-sCrii/sr2pi)*SigWb)@Crbii +\
+            (sCrdivsWCr2ii*np.exp(-0.5*sa2/sWCr2ii)*SigW)@Crpii + SigHa
+        Sigpii = ((1-sCrdivsWCr2ii)*SigW+(1-sCrii/sr2pi)*SigWb)@Crbii + (sCrdivsWCr2ii*SigW)@Crpii + SigHp
+            
+        kb1,ka1,kp1 = drdt(rb[:,i]           ,ra[:,i]           ,rp[:,i]           ,Sigbii,Sigaii,Sigpii)
+        kb2,ka2,kp2 = drdt(rb[:,i]+0.5*dt*kb1,ra[:,i]+0.5*dt*kb1,rp[:,i]+0.5*dt*kb1,Sigbii,Sigaii,Sigpii)
+        kb3,ka3,kp3 = drdt(rb[:,i]+0.5*dt*kb2,ra[:,i]+0.5*dt*kb2,rp[:,i]+0.5*dt*kb2,Sigbii,Sigaii,Sigpii)
+        kb4,ka4,kp4 = drdt(rb[:,i]+    dt*kb2,ra[:,i]+    dt*kb2,rp[:,i]+    dt*kb2,Sigbii,Sigaii,Sigpii)
         
         rb[:,i+1] = rb[:,i] + dt/6*(kb1+2*kb2+2*kb3+kb4)
         ra[:,i+1] = ra[:,i] + dt/6*(ka1+2*ka2+2*ka3+ka4)
@@ -518,10 +472,12 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
         rpi = rp[:,i]
         sr2i = 0.5*sa2/np.log(np.fmax(np.abs((rpi-rbi)/(rai-rbi)),1+1e-4))
         sWr2i = sW2+sr2i
-        mubi = muW@rbi + muHb
-        muai = ((1-np.sqrt(sr2i/sWr2i)*np.exp(-0.5*sa2/sWr2i))*muW)@rbi +\
-            (np.sqrt(sr2i/sWr2i)*np.exp(-0.5*sa2/sWr2i)*muW)@rpi + muHa
-        mupi = ((1-np.sqrt(sr2i/sWr2i))*muW)@rbi + (np.sqrt(sr2i/sWr2i)*muW)@rpi + muHp
+        sri = np.sqrt(sr2i)
+        srdivsWri = np.sqrt(sr2i/sWr2i)
+        mubi = (muW+sri/sr2pi*muWb)@rbi + muHb
+        muai = ((1-srdivsWri*np.exp(-0.5*sa2/sWr2i))*muW+sri/sr2pi*muWb)@rbi +\
+            (srdivsWri*np.exp(-0.5*sa2/sWr2i)*muW)@rpi + muHa
+        mupi = ((1-srdivsWri)*muW+sri/sr2pi*muWb)@rbi + (srdivsWri*muW)@rpi + muHp
         
         if np.any(np.abs(rb[:,i+1]) > 1e10) or np.any(np.isnan(rb[:,i+1])):
             print("system diverged when integrating rb")
@@ -544,10 +500,12 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
             Crpij = Crp[:,i,j]
             sCr2ij = 0.5*sa2/np.log(np.fmax(np.abs((Crpij-Crbij)/(Craij-Crbij)),1+1e-4))
             sWCr2ij = sW2+sCr2ij
-            Sigbij = SigW@Crbij + SigHb
-            Sigaij = ((1-np.sqrt(sCr2ij/sWCr2ij)*np.exp(-0.5*sa2/sWCr2ij))*SigW)@Crbij +\
-                (np.sqrt(sCr2ij/sWCr2ij)*np.exp(-0.5*sa2/sWCr2ij)*SigW)@Crpij + SigHa
-            Sigpij = ((1-np.sqrt(sCr2ij/sWCr2ij))*SigW)@Crbij + (np.sqrt(sCr2ij/sWCr2ij)*SigW)@Crpij + SigHp
+            sCrij = np.sqrt(sCr2ij)
+            sCrdivsWCr2ij = np.sqrt(sCr2ij/sWCr2ij)
+            Sigbij = (SigW+(1-sCrij/sr2pi)*SigWb)@Crbij + SigHb
+            Sigaij = ((1-sCrdivsWCr2ij*np.exp(-0.5*sa2/sWCr2ij))*SigW+(1-sCrij/sr2pi)*SigWb)@Crbij +\
+                (sCrdivsWCr2ij*np.exp(-0.5*sa2/sWCr2ij)*SigW)@Crpij + SigHa
+            Sigpij = ((1-sCrdivsWCr2ij)*SigW+(1-sCrij/sr2pi)*SigWb)@Crbij + (sCrdivsWCr2ij*SigW)@Crpij + SigHp
             C_fn(mubi,Sigbii,Sigbij,Cphib)
             C_fn(muai,Sigaii,Sigaij,Cphia)
             C_fn(mupi,Sigpii,Sigpij,Cphip)
@@ -589,7 +547,12 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
             np.mean(Crp_diag[:,-Nsav:],axis=1) < 1e-3
 
 def doub_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fns,C_fns,Twrm,Tsav,dt,
-                     rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None):
+                     rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None):
+    if Kb is None:
+        doub_Kb = None
+    else:
+        doub_Kb = doub_vec(Kb)
+        
     Ntyp = len(Hb)
     
     doub_tau = doub_vec(tau)
@@ -609,10 +572,13 @@ def doub_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fns,C_fns,Twrm,Tsav,dt,
         C_fns[1](mui[Ntyp:],Sigii[Ntyp:],Sigij[Ntyp:],out[Ntyp:])
         
     return sparse_ring_dmft(doub_tau,doub_W,doub_K,doub_Hb,doub_Hp,eH,doub_sW,doub_sH,sa,doub_M,doub_C,Twrm,Tsav,dt,
-                      rb0,ra0,rp0,Crb0,Cra0,Crp0)
+                      rb0,ra0,rp0,Crb0,Cra0,Crp0,Kb=doub_Kb)
 
 def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,Crb,Cra,Crp,
-                     Cdrb0=None,Cdra0=None,Cdrp0=None):
+                     Cdrb0=None,Cdra0=None,Cdrp0=None,Kb=None):
+    if Kb is None:
+        Kb = np.zeros_like(K)
+        
     Ntyp = len(Hb)
     Nint = round((Twrm+Tsav)/dt)+1
     Nclc = round(1.5*Tsav/dt)+1
@@ -639,6 +605,8 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
     
     muW = tau[:,None]*W*K
     SigW = tau[:,None]**2*W**2*K
+    muWb = tau[:,None]*W*Kb
+    SigWb = tau[:,None]**2*W**2*Kb
     
     muHb = tau*Hb
     SigHb = (muHb*eH)**2
@@ -648,21 +616,27 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
     SigHp = (muHp*eH)**2
     
     doub_muW = doub_mat(muW)
-    doub_SigW = doub_mat(SigW)
+    doub_SigW = doub_mat(SigW)[:,:,None]
+    doub_muWb = doub_mat(muWb)
+    doub_SigWb = doub_mat(SigWb)[:,:,None]
     
     sr2 = 0.5*sa2/np.log(np.fmax(np.abs((rp-rb)/(ra-rb)),1+1e-4))
     sWr2 = doub_mat(sW2)+sr2
+    sr = np.sqrt(sr2)
+    srdivsWr = np.sqrt(sr2/sWr2)
     sCr2 = 0.5*sa2/np.log(np.fmax(np.abs((Crp-Crb)/(Cra-Crb)),1+1e-4))
     sWCr2 = doub_mat(sW2)[:,:,None]+sCr2[None,:,:]
-    mub = doub_muW@rb + doub_vec(muHb)
-    mua = ((1-np.sqrt(sr2/sWr2)*np.exp(-0.5*sa2/sWr2))*doub_muW)@rb +\
-        (np.sqrt(sr2/sWr2)*np.exp(-0.5*sa2/sWr2)*doub_muW)@rp + doub_vec(muHa)
-    mup = ((1-np.sqrt(sr2/sWr2))*doub_muW)@rb + (np.sqrt(sr2/sWr2)*doub_muW)@rp + doub_vec(muHp)
-    Sigb = doub_SigW@Crb + doub_vec(SigHb)[:,None]
-    Siga = each_matmul((1-np.sqrt(sCr2/sWCr2)*np.exp(-0.5*sa2/sWCr2))*doub_SigW[:,:,None],Crb) +\
-        each_matmul(np.sqrt(sCr2/sWCr2)*np.exp(-0.5*sa2/sWCr2)*doub_SigW[:,:,None],Crp) + doub_vec(SigHa)[:,None]
-    Sigp = each_matmul((1-np.sqrt(sCr2/sWCr2))*doub_SigW[:,:,None],Crb) +\
-        each_matmul(np.sqrt(sCr2/sWCr2)*doub_SigW[:,:,None],Crp) + doub_vec(SigHp)[:,None]
+    sCr = np.sqrt(sCr2)
+    sCrdivsWCr2 = np.sqrt(sCr2/sWCr2)
+    mub = (doub_muW+sr/sr2pi*doub_muWb)@rb + doub_vec(muHb)
+    mua = ((1-srdivsWr*np.exp(-0.5*sa2/sWr2))*doub_muW+sr/sr2pi*doub_muWb)@rb +\
+        (srdivsWr*np.exp(-0.5*sa2/sWr2)*doub_muW)@rp + doub_vec(muHa)
+    mup = ((1-srdivsWr)*doub_muW+sr/sr2pi*doub_muWb)@rb + (srdivsWr*doub_muW)@rp + doub_vec(muHp)
+    Sigb = each_matmul(doub_SigW+(1-sCr/sr2pi)*doub_SigWb,Crb) + doub_vec(SigHb)[:,None]
+    Siga = each_matmul((1-sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2))*doub_SigW+(1-sCr/sr2pi)*doub_SigWb,Crb) +\
+        each_matmul(sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2)*doub_SigW,Crp) + doub_vec(SigHa)[:,None]
+    Sigp = each_matmul((1-sCrdivsWCr2)*doub_SigW+(1-sCr/sr2pi)*doub_SigWb,Crb) +\
+        each_matmul(sCrdivsWCr2*doub_SigW,Crp) + doub_vec(SigHp)[:,None]
     
     NCdr0 = Cdrb0.shape[1]
     if Nclc > NCdr0:
@@ -708,10 +682,12 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
             Cdrpij = Cdrp[:,i,j]
             sCdr2ij = 0.5*sa2/np.log(np.fmax(np.abs((Cdrpij-Cdrbij)/(Cdraij-Cdrbij)),1+1e-4))
             sWCdr2ij = sW2+sCdr2ij
-            Sigdbij = SigW@Cdrbij
-            Sigdaij = ((1-np.sqrt(sCdr2ij/sWCdr2ij)*np.exp(-0.5*sa2/sWCdr2ij))*SigW)@Cdrbij +\
-                (np.sqrt(sCdr2ij/sWCdr2ij)*np.exp(-0.5*sa2/sWCdr2ij)*SigW)@Cdrpij
-            Sigdpij = ((1-np.sqrt(sCdr2ij/sWCdr2ij))*SigW)@Cdrbij + (np.sqrt(sCdr2ij/sWCdr2ij)*SigW)@Cdrpij
+            sCdrij = np.sqrt(sCdr2ij)
+            sCdrdivsWCdr2ij = np.sqrt(sCdr2ij/sWCdr2ij)
+            Sigdbij = (SigW+(1-sCdrij/sr2pi)*SigWb)@Cdrbij
+            Sigdaij = ((1-sCdrdivsWCdr2ij*np.exp(-0.5*sa2/sWCdr2ij))*SigW+(1-sCdrij/sr2pi)*SigWb)@Cdrbij +\
+                (sCdrdivsWCdr2ij*np.exp(-0.5*sa2/sWCdr2ij)*SigW)@Cdrpij
+            Sigdpij = ((1-sCdrdivsWCdr2ij)*SigW+(1-sCdrij/sr2pi)*SigWb)@Cdrbij + (sCdrdivsWCdr2ij*SigW)@Cdrpij
             
             kbij = 0.5*(Sigb[:Ntyp,ij_idx]+Sigb[Ntyp:,ij_idx]-Sigdbij)
             kaij = 0.5*(Siga[:Ntyp,ij_idx]+Siga[Ntyp:,ij_idx]-Sigdaij)
@@ -896,7 +872,7 @@ def run_two_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,return_full=False):
     
     start = time.process_time()
     
-    full_r,full_Cr,conv = doub_sparse_ring_dmft(tau,W,Ks,H,eH,[base_M,opto_M],[base_C,opto_C],Twrm,Tsav,dt)
+    full_r,full_Cr,conv = doub_sparse_dmft(tau,W,Ks,H,eH,[base_M,opto_M],[base_C,opto_C],Twrm,Tsav,dt)
 
     print('integrating first stage took',time.process_time() - start,'s')
 
@@ -914,7 +890,7 @@ def run_two_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,return_full=False):
 
     start = time.process_time()
 
-    full_Cdr,convd = diff_sparse_ring_dmft(tau,W,Ks,H,eH,diff_R,Twrm,Tsav,dt,r,Cr)
+    full_Cdr,convd = diff_sparse_dmft(tau,W,Ks,H,eH,diff_R,Twrm,Tsav,dt,r,Cr)
 
     print('integrating first stage took',time.process_time() - start,'s')
 
@@ -930,6 +906,7 @@ def run_two_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,return_full=False):
     res_dict['r'] = r
     res_dict['Cr'] = Cr
     res_dict['dr'] = dr
+    res_dict['Cdr'] = Cdr
     
     res_dict['mu'] = mu
     res_dict['Sig'] = Sig
@@ -961,12 +938,14 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which
     hI = prms['hI']
     L = prms['L']
     CVL = prms['CVL']
+    basefrac = prms.get('basefrac',0)
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
-    Ks = np.array([K,K/4],dtype=np.float32)
-    Hb = rX*K*J*np.array([hE,hI/beta],dtype=np.float32)
-    Hp = rX*(1+cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Ks = (1-basefrac)*np.array([K,K/4],dtype=np.float32)
+    Kbs =   basefrac *np.array([K,K/4],dtype=np.float32)
+    Hb = rX*(1+   basefrac *cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hp = rX*(1+(1-basefrac)*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
     eH = CVh
     sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
     sH = np.array([SoriF,SoriF],dtype=np.float32)
@@ -1005,14 +984,14 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which
     
     if which=='base':
         full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
-            convb,conva,convp = sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,base_M,base_C,Twrm,Tsav,dt)
+            convb,conva,convp = sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,base_M,base_C,Twrm,Tsav,dt,Kb=Kbs)
     elif which=='opto':
         full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
-            convb,conva,convp = sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,opto_M,opto_C,Twrm,Tsav,dt)
+            convb,conva,convp = sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,opto_M,opto_C,Twrm,Tsav,dt,Kb=Kbs)
     elif which=='both':
         full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
             convb,conva,convp = doub_sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,[base_M,opto_M],[base_C,opto_C],
-                                                      Twrm,Tsav,dt)
+                                                      Twrm,Tsav,dt,Kb=Kbs)
     else:
         raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
         
@@ -1027,42 +1006,49 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which
     
     muW = tau[:,None]*W*Ks
     SigW = tau[:,None]**2*W**2*Ks
+    muWb = tau[:,None]*W*Kbs
+    SigWb = tau[:,None]**2*W**2*Kbs
     
     sr2 = 0.5*sa2/np.log(np.fmax(np.abs((rp-rb)/(ra-rb)),1+1e-4))
+    sr = np.sqrt(sr2)
     sCr2 = 0.5*sa2/np.log(np.fmax(np.abs((Crp-Crb)/(Cra-Crb)),1+1e-4))
+    sCr = np.sqrt(sCr2)
     
     if which in ('base','opto'):
         sWr2 = sW2+sr2
+        srdivsWr = np.sqrt(sr2/sWr2)
         sWCr2 = sW2[:,:,None]+sCr2[None,:,:]
-        mub = muW@rb + muHb
-        mua = ((1-np.sqrt(sr2/sWr2)*np.exp(-0.5*sa2/sWr2))*muW)@rb +\
-            (np.sqrt(sr2/sWr2)*np.exp(-0.5*sa2/sWr2)*muW)@rp + muHa
-        mup = ((1-np.sqrt(sr2/sWr2))*muW)@rb + (np.sqrt(sr2/sWr2)*muW)@rp + muHp
-        Sigb = SigW@Crb + SigHb[:,None]
-        Siga = each_matmul((1-np.sqrt(sCr2/sWCr2)*np.exp(-0.5*sa2/sWCr2))*SigW[:,:,None],Crb) +\
-            each_matmul(np.sqrt(sCr2/sWCr2)*np.exp(-0.5*sa2/sWCr2)*SigW[:,:,None],Crp) + SigHa[:,None]
-        Sigp = each_matmul((1-np.sqrt(sCr2/sWCr2))*SigW[:,:,None],Crb) +\
-            each_matmul(np.sqrt(sCr2/sWCr2)*SigW[:,:,None],Crp) + SigHp[:,None]
+        sCrdivsWCr2 = np.sqrt(sCr2/sWCr2)
+        mub = (muW+sr/sr2pi*muWb)@rb + muHb
+        mua = ((1-srdivsWr*np.exp(-0.5*sa2/sWr2))*muW+sr/sr2pi*muWb)@rb +\
+            (srdivsWr*np.exp(-0.5*sa2/sWr2)*muW)@rp + muHa
+        mup = ((1-srdivsWr)*muW+sr/sr2pi*muWb)@rb + (srdivsWr*muW)@rp + muHp
+        Sigb = each_matmul(SigW[:,:,None]+(1-sCr/sr2pi)*SigWb[:,:,None],Crb) + SigHb[:,None]
+        Siga = each_matmul((1-sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2))*SigW[:,:,None]+(1-sCr/sr2pi)*SigWb[:,:,None],Crb) +\
+            each_matmul(sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2)*SigW[:,:,None],Crp) + SigHa[:,None]
+        Sigp = each_matmul((1-sCrdivsWCr2)*SigW[:,:,None]+(1-sCr/sr2pi)*SigWb[:,:,None],Crb) +\
+            each_matmul(sCrdivsWCr2*SigW[:,:,None],Crp) + SigHp[:,None]
     elif which=='both':
         doub_muW = doub_mat(muW)
-        doub_SigW = doub_mat(SigW)
+        doub_SigW = doub_mat(SigW)[:,:,None]
+        doub_muWb = doub_mat(muWb)
+        doub_SigWb = doub_mat(SigWb)[:,:,None]
         
         sWr2 = doub_mat(sW2)+sr2
+        srdivsWr = np.sqrt(sr2/doub_mat(sW2))
         sWCr2 = doub_mat(sW2)[:,:,None]+sCr2[None,:,:]
-        mub = doub_muW@rb + doub_vec(muHb)
-        mua = ((1-np.sqrt(sr2/sWr2)*np.exp(-0.5*sa2/sWr2))*doub_muW)@rb +\
-            (np.sqrt(sr2/sWr2)*np.exp(-0.5*sa2/sWr2)*doub_muW)@rp + doub_vec(muHa)
-        mup = ((1-np.sqrt(sr2/sWr2))*doub_muW)@rb + (np.sqrt(sr2/sWr2)*doub_muW)@rp + doub_vec(muHp)
-        Sigb = doub_SigW@Crb + doub_vec(SigHb)[:,None]
-        Siga = each_matmul((1-np.sqrt(sCr2/sWCr2)*np.exp(-0.5*sa2/sWCr2))*doub_SigW[:,:,None],Crb) +\
-            each_matmul(np.sqrt(sCr2/sWCr2)*np.exp(-0.5*sa2/sWCr2)*doub_SigW[:,:,None],Crp) + doub_vec(SigHa)[:,None]
-        Sigp = each_matmul((1-np.sqrt(sCr2/sWCr2))*doub_SigW[:,:,None],Crb) +\
-            each_matmul(np.sqrt(sCr2/sWCr2)*doub_SigW[:,:,None],Crp) + doub_vec(SigHp)[:,None]
+        sCrdivsWCr2 = np.sqrt(sCr2/sWCr2)
+        mub = (doub_muW+sr/sr2pi*doub_muWb)@rb + doub_vec(muHb)
+        mua = ((1-srdivsWr*np.exp(-0.5*sa2/sWr2))*doub_muW+sr/sr2pi*doub_muWb)@rb +\
+            (srdivsWr*np.exp(-0.5*sa2/sWr2)*doub_muW)@rp + doub_vec(muHa)
+        mup = ((1-srdivsWr)*doub_muW+sr/sr2pi*doub_muWb)@rb + (srdivsWr*doub_muW)@rp + doub_vec(muHp)
+        Sigb = each_matmul(doub_SigW+(1-sCr/sr2pi)*doub_SigWb,Crb) + doub_vec(SigHb)[:,None]
+        Siga = each_matmul((1-sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2))*doub_SigW+(1-sCr/sr2pi)*doub_SigWb,Crb) +\
+            each_matmul(sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2)*doub_SigW,Crp) + doub_vec(SigHa)[:,None]
+        Sigp = each_matmul((1-sCrdivsWCr2)*doub_SigW+(1-sCr/sr2pi)*doub_SigWb,Crb) +\
+            each_matmul(sCrdivsWCr2*doub_SigW,Crp) + doub_vec(SigHp)[:,None]
     else:
         raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
-    
-    sr = np.sqrt(sr2)
-    sCr = np.sqrt(sCr2)
     
     res_dict = {}
     
@@ -1111,12 +1097,14 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_
     hI = prms['hI']
     L = prms['L']
     CVL = prms['CVL']
+    basefrac = prms.get('basefrac',0)
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
-    Ks = np.array([K,K/4],dtype=np.float32)
-    Hb = rX*K*J*np.array([hE,hI/beta],dtype=np.float32)
-    Hp = rX*(1+cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Ks = (1-basefrac)*np.array([K,K/4],dtype=np.float32)
+    Kbs =   basefrac *np.array([K,K/4],dtype=np.float32)
+    Hb = rX*(1+   basefrac *cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hp = rX*(1+(1-basefrac)*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
     eH = CVh
     sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
     sH = np.array([SoriF,SoriF],dtype=np.float32)
@@ -1172,26 +1160,32 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_
     
     muW = tau[:,None]*W*Ks
     SigW = tau[:,None]**2*W**2*Ks
+    muWb = tau[:,None]*W*Kbs
+    SigWb = tau[:,None]**2*W**2*Kbs
     
     doub_muW = doub_mat(muW)
-    doub_SigW = doub_mat(SigW)
+    doub_SigW = doub_mat(SigW)[:,:,None]
+    doub_muWb = doub_mat(muWb)
+    doub_SigWb = doub_mat(SigWb)[:,:,None]
     
     sr2 = 0.5*sa2/np.log(np.fmax(np.abs((rp-rb)/(ra-rb)),1+1e-4))
     sWr2 = doub_mat(sW2)+sr2
+    sr = np.sqrt(sr2)
+    srdivsWr = np.sqrt(sr2/doub_mat(sW2))
     sCr2 = 0.5*sa2/np.log(np.fmax(np.abs((Crp-Crb)/(Cra-Crb)),1+1e-4))
     sWCr2 = doub_mat(sW2)[:,:,None]+sCr2[None,:,:]
-    mub = doub_muW@rb + doub_vec(muHb)
-    mua = ((1-np.sqrt(sr2/sWr2)*np.exp(-0.5*sa2/sWr2))*doub_muW)@rb +\
-        (np.sqrt(sr2/sWr2)*np.exp(-0.5*sa2/sWr2)*doub_muW)@rp + doub_vec(muHa)
-    mup = ((1-np.sqrt(sr2/sWr2))*doub_muW)@rb + (np.sqrt(sr2/sWr2)*doub_muW)@rp + doub_vec(muHp)
-    Sigb = doub_SigW@Crb + doub_vec(SigHb)[:,None]
-    Siga = each_matmul((1-np.sqrt(sCr2/sWCr2)*np.exp(-0.5*sa2/sWCr2))*doub_SigW[:,:,None],Crb) +\
-        each_matmul(np.sqrt(sCr2/sWCr2)*np.exp(-0.5*sa2/sWCr2)*doub_SigW[:,:,None],Crp) + doub_vec(SigHa)[:,None]
-    Sigp = each_matmul((1-np.sqrt(sCr2/sWCr2))*doub_SigW[:,:,None],Crb) +\
-        each_matmul(np.sqrt(sCr2/sWCr2)*doub_SigW[:,:,None],Crp) + doub_vec(SigHp)[:,None]
-    
-    sr = np.sqrt(sr2)
     sCr = np.sqrt(sCr2)
+    sCrdivsWCr2 = np.sqrt(sCr2/sWCr2)
+    
+    mub = (doub_muW+sr/sr2pi*doub_muWb)@rb + doub_vec(muHb)
+    mua = ((1-srdivsWr*np.exp(-0.5*sa2/sWr2))*doub_muW+sr/sr2pi*doub_muWb)@rb +\
+        (srdivsWr*np.exp(-0.5*sa2/sWr2)*doub_muW)@rp + doub_vec(muHa)
+    mup = ((1-srdivsWr)*doub_muW+sr/sr2pi*doub_muWb)@rb + (srdivsWr*doub_muW)@rp + doub_vec(muHp)
+    Sigb = each_matmul(doub_SigW+(1-sCr/sr2pi)*doub_SigWb,Crb) + doub_vec(SigHb)[:,None]
+    Siga = each_matmul((1-sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2))*doub_SigW+(1-sCr/sr2pi)*doub_SigWb,Crb) +\
+        each_matmul(sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2)*doub_SigW,Crp) + doub_vec(SigHa)[:,None]
+    Sigp = each_matmul((1-sCrdivsWCr2)*doub_SigW+(1-sCr/sr2pi)*doub_SigWb,Crb) +\
+        each_matmul(sCrdivsWCr2*doub_SigW,Crp) + doub_vec(SigHp)[:,None]
 
     start = time.process_time()
 
@@ -1214,13 +1208,13 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_
 
     sCdr2 = 0.5*sa2/np.log(np.fmax(np.abs((Cdrp-Cdrb)/(Cdra-Cdrb)),1+1e-4))
     sWCdr2 = sW2[:,:,None]+sCdr2[None,:,:]
-    Sigdb = SigW@Cdrb
-    Sigda = each_matmul((1-np.sqrt(sCdr2/sWCdr2)*np.exp(-0.5*sa2/sWCdr2))*SigW[:,:,None],Cdrb) +\
-        each_matmul(np.sqrt(sCdr2/sWCdr2)*np.exp(-0.5*sa2/sWCdr2)*SigW[:,:,None],Cdrp)
-    Sigdp = each_matmul((1-np.sqrt(sCdr2/sWCdr2))*SigW[:,:,None],Cdrb) +\
-        each_matmul(np.sqrt(sCdr2/sWCdr2)*SigW[:,:,None],Cdrp)
-        
     sCdr = np.sqrt(sCdr2)
+    sCdrdivsWCdr2 = np.sqrt(sCdr2/sWCdr2)
+    Sigdb = each_matmul(SigW[:,:,None]+(1-sCdr/sr2pi)*SigWb[:,:,None],Cdrb)
+    Sigda = each_matmul((1-sCdrdivsWCdr2*np.exp(-0.5*sa2/sWCdr2))*SigW[:,:,None]+(1-sCdr/sr2pi)*SigWb[:,:,None],Cdrb) +\
+        each_matmul(sCdrdivsWCdr2*np.exp(-0.5*sa2/sWCdr2)*SigW[:,:,None],Cdrp)
+    Sigdp = each_matmul((1-sCdrdivsWCdr2)*SigW[:,:,None]+(1-sCdr/sr2pi)*SigWb[:,:,None],Cdrb) +\
+        each_matmul(sCdrdivsWCdr2*SigW[:,:,None],Cdrp)
     
     res_dict = {}
     
