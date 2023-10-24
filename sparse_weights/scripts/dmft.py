@@ -649,8 +649,8 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
     Crpmb = Crp - Crb
     mub = (doub_muW+doub_muWb)@rb + (sr*sr2pi/S*erf(S/(sr8*sr))*doub_muWb)@rpmb + doub_vec(muHb)
     mua = mub + (srdivsWr*np.exp(-0.5*sa2/sWr2)*doub_muW)@rpmb + doub_vec(muHa-muHb)
-    mup = mub + (srdivsWr*muW)@rpmb + doub_vec(muHp-muHb)
-    Sigb = each_matmul(doub_SigW+doub_SigWb,Crb) + each_matmul(sCr*sr2pi/S*erf(S/(sr8*sCr))*SigWb,Crpmb) +\
+    mup = mub + (srdivsWr*doub_muW)@rpmb + doub_vec(muHp-muHb)
+    Sigb = each_matmul(doub_SigW+doub_SigWb,Crb) + each_matmul(sCr*sr2pi/S*erf(S/(sr8*sCr))*doub_SigWb,Crpmb) +\
         doub_vec(SigHb)[:,None]
     Siga = Sigb + each_matmul(sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2)*doub_SigW,Crpmb) + doub_vec(SigHa-SigHb)[:,None]
     Sigp = Sigb + each_matmul(sCrdivsWCr2*doub_SigW,Crpmb) + doub_vec(SigHp-SigHb)[:,None]
@@ -725,12 +725,15 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
                 dttauinv2*(-Cdrp[:,i,j]+Crp[:Ntyp,ij_idx]+Crp[Ntyp:,ij_idx]-2*Rphip)
             
             if np.any(np.abs(Cdrb[:,i+1,j+1]) > 1e10) or np.any(np.isnan(Cdrb[:,i+1,j+1])):
+                print(Sigdbij,Sigdaij,Sigdpij,sCdrij)
                 print("system diverged when integrating Cdrb")
                 return Cdrb,Cdra,Cdrp,False,False,False
             if np.any(np.abs(Cdra[:,i+1,j+1]) > 1e10) or np.any(np.isnan(Cdra[:,i+1,j+1])):
+                print(Sigdbij,Sigdaij,Sigdpij,sCdrij)
                 print("system diverged when integrating Cdra")
                 return Cdrb,Cdra,Cdrp,False,False,False
             if np.any(np.abs(Cdrp[:,i+1,j+1]) > 1e10) or np.any(np.isnan(Cdrp[:,i+1,j+1])):
+                print(Sigdbij,Sigdaij,Sigdpij,sCdrij)
                 print("system diverged when integrating Cdrp")
                 return Cdrb,Cdra,Cdrp,False,False,False
                 
@@ -941,6 +944,8 @@ def run_two_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,return_full=False):
     return res_dict
 
 def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which='both',return_full=False):
+    S = 180
+    
     Nsav = round(Tsav/dt)+1
     
     K = prms['K']
@@ -1034,17 +1039,16 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which
     if which in ('base','opto'):
         sWr2 = sW2+sr2
         srdivsWr = np.sqrt(sr2/sWr2)
+        rpmb = rp-rb
         sWCr2 = sW2[:,:,None]+sCr2[None,:,:]
         sCrdivsWCr2 = np.sqrt(sCr2/sWCr2)
-        mub = (muW+sr*sr2pi/180*muWb)@rb + muHb
-        mua = ((1-srdivsWr*np.exp(-0.5*sa2/sWr2))*muW+sr*sr2pi/180*muWb)@rb +\
-            (srdivsWr*np.exp(-0.5*sa2/sWr2)*muW)@rp + muHa
-        mup = ((1-srdivsWr)*muW+sr*sr2pi/180*muWb)@rb + (srdivsWr*muW)@rp + muHp
-        Sigb = each_matmul(SigW[:,:,None]+sCr*sr2pi/180*SigWb[:,:,None],Crb) + SigHb[:,None]
-        Siga = each_matmul((1-sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2))*SigW[:,:,None]+sCr*sr2pi/180*SigWb[:,:,None],Crb) +\
-            each_matmul(sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2)*SigW[:,:,None],Crp) + SigHa[:,None]
-        Sigp = each_matmul((1-sCrdivsWCr2)*SigW[:,:,None]+sCr*sr2pi/180*SigWb[:,:,None],Crb) +\
-            each_matmul(sCrdivsWCr2*SigW[:,:,None],Crp) + SigHp[:,None]
+        Crpmb = Crp-Crb
+        mub = (muW+muWb)@rb + (sr*sr2pi/S*erf(S/(sr8*sr))*muWb)@rpmb + muHb
+        mua = mub + (srdivsWr*np.exp(-0.5*sa2/sWr2)*muW)@rpmb + muHa-muHb
+        mup = mub + (srdivsWr*muW)@rpmb + muHp-muHb
+        Sigb = each_matmul(SigW+SigWb,Crb) + each_matmul(sCr*sr2pi/S*erf(S/(sr8*sCr))*SigWb,Crpmb) + (SigHb)[:,None]
+        Siga = Sigb + each_matmul(sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2)*SigW,Crpmb) + (SigHa-SigHb)[:,None]
+        Sigp = Sigb + each_matmul(sCrdivsWCr2*SigW,Crpmb) + (SigHp-SigHb)[:,None]
     elif which=='both':
         doub_muW = doub_mat(muW)
         doub_SigW = doub_mat(SigW)[:,:,None]
@@ -1052,18 +1056,18 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which
         doub_SigWb = doub_mat(SigWb)[:,:,None]
         
         sWr2 = doub_mat(sW2)+sr2
-        srdivsWr = np.sqrt(sr2/doub_mat(sW2))
+        srdivsWr = np.sqrt(sr2/sWr2)
+        rpmb = rp-rb
         sWCr2 = doub_mat(sW2)[:,:,None]+sCr2[None,:,:]
         sCrdivsWCr2 = np.sqrt(sCr2/sWCr2)
-        mub = (doub_muW+sr*sr2pi/180*doub_muWb)@rb + doub_vec(muHb)
-        mua = ((1-srdivsWr*np.exp(-0.5*sa2/sWr2))*doub_muW+sr*sr2pi/180*doub_muWb)@rb +\
-            (srdivsWr*np.exp(-0.5*sa2/sWr2)*doub_muW)@rp + doub_vec(muHa)
-        mup = ((1-srdivsWr)*doub_muW+sr*sr2pi/180*doub_muWb)@rb + (srdivsWr*doub_muW)@rp + doub_vec(muHp)
-        Sigb = each_matmul(doub_SigW+sCr*sr2pi/180*doub_SigWb,Crb) + doub_vec(SigHb)[:,None]
-        Siga = each_matmul((1-sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2))*doub_SigW+sCr*sr2pi/180*doub_SigWb,Crb) +\
-            each_matmul(sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2)*doub_SigW,Crp) + doub_vec(SigHa)[:,None]
-        Sigp = each_matmul((1-sCrdivsWCr2)*doub_SigW+sCr*sr2pi/180*doub_SigWb,Crb) +\
-            each_matmul(sCrdivsWCr2*doub_SigW,Crp) + doub_vec(SigHp)[:,None]
+        Crpmb = Crp-Crb
+        mub = (doub_muW+doub_muWb)@rb + (sr*sr2pi/S*erf(S/(sr8*sr))*doub_muWb)@rpmb + doub_vec(muHb)
+        mua = mub + (srdivsWr*np.exp(-0.5*sa2/sWr2)*doub_muW)@rpmb + doub_vec(muHa-muHb)
+        mup = mub + (srdivsWr*doub_muW)@rpmb + doub_vec(muHp-muHb)
+        Sigb = each_matmul(doub_SigW+doub_SigWb,Crb) + each_matmul(sCr*sr2pi/S*erf(S/(sr8*sCr))*doub_SigWb,Crpmb) +\
+            doub_vec(SigHb)[:,None]
+        Siga = Sigb + each_matmul(sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2)*doub_SigW,Crpmb) + doub_vec(SigHa-SigHb)[:,None]
+        Sigp = Sigb + each_matmul(sCrdivsWCr2*doub_SigW,Crpmb) + doub_vec(SigHp-SigHb)[:,None]
     else:
         raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
     
@@ -1100,6 +1104,8 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which
     return res_dict
 
 def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_full=False):
+    S = 180
+    
     Nsav = round(Tsav/dt)+1
     
     K = prms['K']
@@ -1188,21 +1194,21 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_
     sr2 = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((rp-rb)/(ra-rb)),1+1e-4)))
     sWr2 = doub_mat(sW2)+sr2
     sr = np.sqrt(sr2)
-    srdivsWr = np.sqrt(sr2/doub_mat(sW2))
+    srdivsWr = np.sqrt(sr2/sWr2)
+    rpmb = rp-rb
     sCr2 = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((Crp-Crb)/(Cra-Crb)),1+1e-4)))
     sWCr2 = doub_mat(sW2)[:,:,None]+sCr2[None,:,:]
     sCr = np.sqrt(sCr2)
     sCrdivsWCr2 = np.sqrt(sCr2/sWCr2)
+    Crpmb = Crp-Crb
     
-    mub = (doub_muW+sr*sr2pi/180*doub_muWb)@rb + doub_vec(muHb)
-    mua = ((1-srdivsWr*np.exp(-0.5*sa2/sWr2))*doub_muW+sr*sr2pi/180*doub_muWb)@rb +\
-        (srdivsWr*np.exp(-0.5*sa2/sWr2)*doub_muW)@rp + doub_vec(muHa)
-    mup = ((1-srdivsWr)*doub_muW+sr*sr2pi/180*doub_muWb)@rb + (srdivsWr*doub_muW)@rp + doub_vec(muHp)
-    Sigb = each_matmul(doub_SigW+sCr*sr2pi/180*doub_SigWb,Crb) + doub_vec(SigHb)[:,None]
-    Siga = each_matmul((1-sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2))*doub_SigW+sCr*sr2pi/180*doub_SigWb,Crb) +\
-        each_matmul(sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2)*doub_SigW,Crp) + doub_vec(SigHa)[:,None]
-    Sigp = each_matmul((1-sCrdivsWCr2)*doub_SigW+sCr*sr2pi/180*doub_SigWb,Crb) +\
-        each_matmul(sCrdivsWCr2*doub_SigW,Crp) + doub_vec(SigHp)[:,None]
+    mub = (doub_muW+doub_muWb)@rb + (sr*sr2pi/S*erf(S/(sr8*sr))*doub_muWb)@rpmb + doub_vec(muHb)
+    mua = mub + (srdivsWr*np.exp(-0.5*sa2/sWr2)*doub_muW)@rpmb + doub_vec(muHa-muHb)
+    mup = mub + (srdivsWr*doub_muW)@rpmb + doub_vec(muHp-muHb)
+    Sigb = each_matmul(doub_SigW+doub_SigWb,Crb) + each_matmul(sCr*sr2pi/S*erf(S/(sr8*sCr))*doub_SigWb,Crpmb) +\
+        doub_vec(SigHb)[:,None]
+    Siga = Sigb + each_matmul(sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2)*doub_SigW,Crpmb) + doub_vec(SigHa-SigHb)[:,None]
+    Sigp = Sigb + each_matmul(sCrdivsWCr2*doub_SigW,Crpmb) + doub_vec(SigHp-SigHb)[:,None]
 
     start = time.process_time()
 
@@ -1227,11 +1233,12 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_
     sWCdr2 = sW2[:,:,None]+sCdr2[None,:,:]
     sCdr = np.sqrt(sCdr2)
     sCdrdivsWCdr2 = np.sqrt(sCdr2/sWCdr2)
+    Cdrpmb = Cdrp - Cdrb
+    Sigdb = each_matmul(SigW[:,:,None]+SigWb[:,:,None],Cdrb) +\
+        each_matmul(sCdr*sr2pi/S*erf(S/(sr8*sCdr))*SigWb[:,:,None],Cdrpmb)
+    Sigda = Sigdb + each_matmul(sCdrdivsWCdr2*np.exp(-0.5*sa2/sWCdr2)*SigW[:,:,None],Cdrpmb)
+    Sigdp = Sigdb + each_matmul(sCdrdivsWCdr2*SigW[:,:,None],Cdrpmb)
     Sigdb = each_matmul(SigW[:,:,None]+(1-sCdr*sr2pi/180)*SigWb[:,:,None],Cdrb)
-    Sigda = each_matmul((1-sCdrdivsWCdr2*np.exp(-0.5*sa2/sWCdr2))*SigW[:,:,None]+(1-sCdr*sr2pi/180)*SigWb[:,:,None],Cdrb) +\
-        each_matmul(sCdrdivsWCdr2*np.exp(-0.5*sa2/sWCdr2)*SigW[:,:,None],Cdrp)
-    Sigdp = each_matmul((1-sCdrdivsWCdr2)*SigW[:,:,None]+(1-sCdr*sr2pi/180)*SigWb[:,:,None],Cdrb) +\
-        each_matmul(sCdrdivsWCdr2*SigW[:,:,None],Cdrp)
     
     res_dict = {}
     

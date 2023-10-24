@@ -44,7 +44,7 @@ ri = ric.Ricciardi()
 Twrm = 1.0
 Tsav = 0.25
 Tsim = 4.0
-dt = 0.01/10
+dt = 0.01/20
 
 Nori = 20
 
@@ -317,5 +317,5 @@ res_dict['vsm_diff_means'] = vsm_diff_means
 res_dict['vsm_diff_stds'] = vsm_diff_stds
 res_dict['vsm_norm_covs'] = vsm_norm_covs
 
-# with open('./../results/dmft_vary_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'wb') as handle:
-#     pickle.dump(res_dict,handle)
+with open('./../results/dmft_vary_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'wb') as handle:
+    pickle.dump(res_dict,handle)
