@@ -123,7 +123,7 @@ def predict_networks(prms,rX,cA,CVh):
         return b + (p-b)*np.exp(-0.5*x**2/s2)
     
     if cA == 0 or prms.get('basefrac',0)==1:
-        res_dict = dmft.run_two_stage_dmft(prms,rX+cA,CVh,'./../results',ri,Twrm,Tsav,dt)
+        res_dict = dmft.run_two_stage_dmft(prms,rX*(1+cA),CVh,'./../results',ri,Twrm,Tsav,dt)
         rvb = res_dict['r'][:2]
         rvp = res_dict['r'][:2]
         srv2 = 1e4*np.ones(2)
