@@ -966,8 +966,8 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
     Ks = (1-basefrac)*np.array([K,K/4],dtype=np.float32)
     Kbs =   basefrac *np.array([K,K/4],dtype=np.float32)
-    Hb = rX*(1+   basefrac *cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
-    Hp = rX*(1+(1-basefrac)*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hb = rX*(1+basefrac*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hp = rX*(1+         cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
     eH = CVh
     sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
     sH = np.array([SoriF,SoriF],dtype=np.float32)
@@ -1126,8 +1126,8 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
     Ks = (1-basefrac)*np.array([K,K/4],dtype=np.float32)
     Kbs =   basefrac *np.array([K,K/4],dtype=np.float32)
-    Hb = rX*(1+   basefrac *cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
-    Hp = rX*(1+(1-basefrac)*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hb = rX*(1+basefrac*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hp = rX*(1+         cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
     eH = CVh
     sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
     sH = np.array([SoriF,SoriF],dtype=np.float32)

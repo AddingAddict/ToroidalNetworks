@@ -79,14 +79,14 @@ normCEs = np.zeros((3,Nori))
 normCIs = np.zeros((3,Nori))
 convs = np.zeros((2,3)).astype(bool)
 
-def predict_networks(prms,rX,cA,CVh):    
+def predict_networks(prms,rX,cA,CVh):
     tau = np.array([ri.tE,ri.tI],dtype=np.float32)
     W = prms['J']*np.array([[1,-prms['gE']],[1./prms['beta'],-prms['gI']/prms['beta']]],dtype=np.float32)
     Ks = (1-prms.get('basefrac',0))*np.array([prms['K'],prms['K']/4],dtype=np.float32)
     Kbs =   prms.get('basefrac',0) *np.array([prms['K'],prms['K']/4],dtype=np.float32)
-    Hb = rX*(1+   prms.get('basefrac',0) *cA)*prms['K']*prms['J']*\
+    Hb = rX*(1+prms.get('basefrac',0)*cA)*prms['K']*prms['J']*\
         np.array([prms['hE'],prms['hI']/prms['beta']],dtype=np.float32)
-    Hp = rX*(1+(1-prms.get('basefrac',0))*cA)*prms['K']*prms['J']*\
+    Hp = rX*(1+                       cA)*prms['K']*prms['J']*\
         np.array([prms['hE'],prms['hI']/prms['beta']],dtype=np.float32)
     eH = CVh
     sW = np.array([[prms['SoriE'],prms['SoriI']],[prms['SoriE'],prms['SoriI']]],dtype=np.float32)
@@ -123,7 +123,7 @@ def predict_networks(prms,rX,cA,CVh):
         return b + (p-b)*np.exp(-0.5*x**2/s2)
     
     if cA == 0 or prms.get('basefrac',0)==1:
-        res_dict = dmft.run_two_stage_dmft(prms,rX,CVh,'./../results',ri,Twrm,Tsav,dt)
+        res_dict = dmft.run_two_stage_dmft(prms,rX+cA,CVh,'./../results',ri,Twrm,Tsav,dt)
         rvb = res_dict['r'][:2]
         rvp = res_dict['r'][:2]
         srv2 = 1e4*np.ones(2)
