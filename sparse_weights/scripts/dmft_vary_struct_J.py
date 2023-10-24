@@ -44,7 +44,10 @@ ri = ric.Ricciardi()
 Twrm = 1.0
 Tsav = 0.25
 Tsim = 4.0
-dt = 0.01/20
+if J_idx < 6:
+    dt = 0.01/10
+else:
+    dt = 0.01/20
 
 Nori = 20
 
