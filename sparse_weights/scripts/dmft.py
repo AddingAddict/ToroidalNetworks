@@ -1170,7 +1170,7 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_
     
     full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
         convb,conva,convp = doub_sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,[base_M,opto_M],[base_C,opto_C],
-                                                  Twrm,Tsav,dt)
+                                                  Twrm,Tsav,dt,Kb=Kbs)
 
     print('integrating first stage took',time.process_time() - start,'s')
 
@@ -1214,7 +1214,7 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_
 
     full_Cdrb,full_Cdra,full_Cdrp,\
         convdb,convda,convdp = diff_sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,diff_R,Twrm,Tsav,dt,
-                                                rb,ra,rp,Crb,Cra,Crp)
+                                                rb,ra,rp,Crb,Cra,Crp,Kb=Kbs)
 
     print('integrating second stage took',time.process_time() - start,'s')
 
