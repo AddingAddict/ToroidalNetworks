@@ -454,6 +454,7 @@ print('')
 # print('')
 
 res_dict = {}
+res_dict['rX'] = rX
 res_dict['prms'] = this_prms
 res_dict['μrEs'] = μrEs
 res_dict['μrIs'] = μrIs
