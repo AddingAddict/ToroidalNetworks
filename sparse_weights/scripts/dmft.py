@@ -148,8 +148,14 @@ def doub_vec(A):
 def doub_mat(A):
     return np.block([[A,np.zeros_like(A)],[np.zeros_like(A),A]])
 
-def each_diag(A):
-    return np.einsum('ijj->ij',A)
+def each_diag(A,k=0):
+    if k == 0:
+        return np.einsum('ijj->ij',A)
+    else:
+        out = np.zeros(np.array(A.shape[:2])-[0,k])
+        for i in range(len(A)):
+            out[i] = np.diag(A[i],k)
+        return out
 
 def each_matmul(A,B):
     return np.einsum('ijk,jk->ik',A,B)
@@ -184,7 +190,7 @@ def sparse_dmft(tau,W,K,H,eH,M_fn,C_fn,Twrm,Tsav,dt,r0=None,Cr0=None):
     tauinv = 1/tau
     dttauinv = dt/tau
     dttauinv2 = dttauinv**2
-        
+    
     muW = tau[:,None]*W*K
     SigW = tau[:,None]**2*W**2*K
     
@@ -281,7 +287,8 @@ def diff_sparse_dmft(tau,W,K,H,eH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
     Cdr = np.zeros((Ntyp,Nint,Nint),dtype=np.float32)
     
     if Cdr0 is None:
-        Cdr0 = (r[Ntyp:] - r[:Ntyp]).astype(np.float32)[:,None]**2 + 1e2
+        # Cdr0 = Cr[:Ntyp]
+        Cdr0 = (r[Ntyp:] - r[:Ntyp]).astype(np.float32)[:,None]**2 + 1e3
         
     tauinv = 1/tau
     dttauinv = dt/tau
@@ -606,11 +613,14 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
     Cdrp = np.zeros((Ntyp,Nint,Nint),dtype=np.float32)
     
     if Cdrb0 is None:
-        Cdrb0 = (rb[Ntyp:] - rb[:Ntyp]).astype(np.float32)[:,None]**2 + 1e2
+        # Cdrb0 = Crb[:Ntyp]
+        Cdrb0 = (rb[Ntyp:] - rb[:Ntyp]).astype(np.float32)[:,None]**2 + 1e3
     if Cdra0 is None:
-        Cdra0 = (ra[Ntyp:] - ra[:Ntyp]).astype(np.float32)[:,None]**2 + 4e2
+        # Cdra0 = Cra[:Ntyp]
+        Cdra0 = (ra[Ntyp:] - ra[:Ntyp]).astype(np.float32)[:,None]**2 + 2e3
     if Cdrp0 is None:
-        Cdrp0 = (rp[Ntyp:] - rp[:Ntyp]).astype(np.float32)[:,None]**2 + 9e2
+        # Cdrp0 = Crp[:Ntyp]
+        Cdrp0 = (rp[Ntyp:] - rp[:Ntyp]).astype(np.float32)[:,None]**2 + 5e3
         
     tauinv = 1/tau
     dttauinv = dt/tau
@@ -842,6 +852,75 @@ def run_first_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,which='both',return
     if return_full:
         res_dict['full_r'] = full_r
         res_dict['full_Cr'] = full_Cr
+    
+    return res_dict
+
+def run_second_stage_dmft(first_res_dict,prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,return_full=False):
+    Nsav = round(Tsav/dt)+1
+    
+    K = prms['K']
+    J = prms['J']
+    beta = prms['beta']
+    gE = prms['gE']
+    gI = prms['gI']
+    hE = prms['hE']
+    hI = prms['hI']
+    L = prms['L']
+    CVL = prms['CVL']
+    
+    tau = np.array([rc.tE,rc.tI],dtype=np.float32)
+    W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
+    Ks = np.array([K,K/4],dtype=np.float32)
+    H = rX*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    eH = CVh
+    
+    muH = tau*H
+    SigH = (muH*eH)**2
+    
+    FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
+    FL,ML,CL = opto_itp_moments(res_dir,L,CVL)
+
+    def diff_R(mu1i,mu2i,Sig1ii,Sig2ii,kij,out):
+        out[0] = R_simp(ME,ML,mu1i[0],mu2i[0],Sig1ii[0],Sig2ii[0],kij[0])
+        out[1] = R_simp(MI,MI,mu1i[1],mu2i[1],Sig1ii[1],Sig2ii[1],kij[1])
+
+    r = first_res_dict['r']
+    Cr = first_res_dict['Cr']
+    
+    muW = tau[:,None]*W*Ks
+    SigW = tau[:,None]**2*W**2*Ks
+    
+    doub_muW = doub_mat(muW)
+    doub_SigW = doub_mat(SigW)
+    
+    mu = doub_muW@r + doub_vec(muH)
+    Sig = doub_SigW@Cr + doub_vec(SigH)[:,None]
+
+    start = time.process_time()
+
+    full_Cdr,convd = diff_sparse_dmft(tau,W,Ks,H,eH,diff_R,Twrm,Tsav,dt,r,Cr)
+
+    print('integrating second stage took',time.process_time() - start,'s')
+
+    dr = r[:2] - r[2:]
+    Cdr = full_Cdr[:,-1,-1:-Nsav-1:-1]
+
+    dmu = mu[:2] - mu[2:]
+
+    Sigd = SigW@Cdr
+    
+    res_dict = {}
+    
+    res_dict['dr'] = dr
+    res_dict['Cdr'] = Cdr
+    
+    res_dict['dmu'] = dmu
+    res_dict['Sigd'] = Sigd
+
+    res_dict['convd'] = convd
+    
+    if return_full:
+        res_dict['full_Cdr'] = full_Cdr
     
     return res_dict
 
@@ -1100,6 +1179,147 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which
         res_dict['full_Crb'] = full_Crb
         res_dict['full_Cra'] = full_Cra
         res_dict['full_Crp'] = full_Crp
+    
+    return res_dict
+
+def run_second_stage_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_full=False):
+    S = 180
+    
+    Nsav = round(Tsav/dt)+1
+    
+    K = prms['K']
+    SoriE = prms['SoriE']
+    SoriI = prms['SoriI']
+    SoriF = prms['SoriF']
+    J = prms['J']
+    beta = prms['beta']
+    gE = prms['gE']
+    gI = prms['gI']
+    hE = prms['hE']
+    hI = prms['hI']
+    L = prms['L']
+    CVL = prms['CVL']
+    basefrac = prms.get('basefrac',0)
+    
+    tau = np.array([rc.tE,rc.tI],dtype=np.float32)
+    W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
+    Ks = (1-basefrac)*np.array([K,K/4],dtype=np.float32)
+    Kbs =   basefrac *np.array([K,K/4],dtype=np.float32)
+    Hb = rX*(1+basefrac*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hp = rX*(1+         cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    eH = CVh
+    sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
+    sH = np.array([SoriF,SoriF],dtype=np.float32)
+    
+    sa2 = sa**2
+    sW2 = sW**2
+    sH2 = sH**2
+    
+    muHb = tau*Hb
+    SigHb = (muHb*eH)**2
+    muHa = tau*(Hb+(Hp-Hb)*np.exp(-0.5*sa2/sH2))
+    SigHa = (muHa*eH)**2
+    muHp = tau*Hp
+    SigHp = (muHp*eH)**2
+    
+    FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
+    FL,ML,CL = opto_itp_moments(res_dir,L,CVL)
+
+    def diff_R(mu1i,mu2i,Sig1ii,Sig2ii,kij,out):
+        out[0] = R_simp(ME,ML,mu1i[0],mu2i[0],Sig1ii[0],Sig2ii[0],kij[0])
+        out[1] = R_simp(MI,MI,mu1i[1],mu2i[1],Sig1ii[1],Sig2ii[1],kij[1])
+
+    rb = first_res_dict['rb']
+    ra = first_res_dict['ra']
+    rp = first_res_dict['rp']
+    Crb = first_res_dict['Crb']
+    Cra = first_res_dict['Cra']
+    Crp = first_res_dict['Crp']
+    
+    muW = tau[:,None]*W*Ks
+    SigW = tau[:,None]**2*W**2*Ks
+    muWb = tau[:,None]*W*Kbs
+    SigWb = tau[:,None]**2*W**2*Kbs
+    
+    doub_muW = doub_mat(muW)
+    doub_SigW = doub_mat(SigW)[:,:,None]
+    doub_muWb = doub_mat(muWb)
+    doub_SigWb = doub_mat(SigWb)[:,:,None]
+    
+    sr2 = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((rp-rb)/(ra-rb)),1+1e-4)))
+    sWr2 = doub_mat(sW2)+sr2
+    sr = np.sqrt(sr2)
+    srdivsWr = np.sqrt(sr2/sWr2)
+    rpmb = rp-rb
+    sCr2 = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((Crp-Crb)/(Cra-Crb)),1+1e-4)))
+    sWCr2 = doub_mat(sW2)[:,:,None]+sCr2[None,:,:]
+    sCr = np.sqrt(sCr2)
+    sCrdivsWCr2 = np.sqrt(sCr2/sWCr2)
+    Crpmb = Crp-Crb
+    
+    mub = (doub_muW+doub_muWb)@rb + (sr*sr2pi/S*erf(S/(sr8*sr))*doub_muWb)@rpmb + doub_vec(muHb)
+    mua = mub + (srdivsWr*np.exp(-0.5*sa2/sWr2)*doub_muW)@rpmb + doub_vec(muHa-muHb)
+    mup = mub + (srdivsWr*doub_muW)@rpmb + doub_vec(muHp-muHb)
+    Sigb = each_matmul(doub_SigW+doub_SigWb,Crb) + each_matmul(sCr*sr2pi/S*erf(S/(sr8*sCr))*doub_SigWb,Crpmb) +\
+        doub_vec(SigHb)[:,None]
+    Siga = Sigb + each_matmul(sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2)*doub_SigW,Crpmb) + doub_vec(SigHa-SigHb)[:,None]
+    Sigp = Sigb + each_matmul(sCrdivsWCr2*doub_SigW,Crpmb) + doub_vec(SigHp-SigHb)[:,None]
+
+    start = time.process_time()
+
+    full_Cdrb,full_Cdra,full_Cdrp,\
+        convdb,convda,convdp = diff_sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,diff_R,Twrm,Tsav,dt,
+                                                rb,ra,rp,Crb,Cra,Crp,Kb=Kbs)
+
+    print('integrating second stage took',time.process_time() - start,'s')
+
+    drb = rb[:2] - rb[2:]
+    dra = ra[:2] - ra[2:]
+    drp = rp[:2] - rp[2:]
+    Cdrb = full_Cdrb[:,-1,-1:-Nsav-1:-1]
+    Cdra = full_Cdra[:,-1,-1:-Nsav-1:-1]
+    Cdrp = full_Cdrp[:,-1,-1:-Nsav-1:-1]
+
+    dmub = mub[:2] - mub[2:]
+    dmua = mua[:2] - mua[2:]
+    dmup = mup[:2] - mup[2:]
+
+    sCdr2 = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((Cdrp-Cdrb)/(Cdra-Cdrb)),1+1e-4)))
+    sWCdr2 = sW2[:,:,None]+sCdr2[None,:,:]
+    sCdr = np.sqrt(sCdr2)
+    sCdrdivsWCdr2 = np.sqrt(sCdr2/sWCdr2)
+    Cdrpmb = Cdrp - Cdrb
+    Sigdb = each_matmul(SigW[:,:,None]+SigWb[:,:,None],Cdrb) +\
+        each_matmul(sCdr*sr2pi/S*erf(S/(sr8*sCdr))*SigWb[:,:,None],Cdrpmb)
+    Sigda = Sigdb + each_matmul(sCdrdivsWCdr2*np.exp(-0.5*sa2/sWCdr2)*SigW[:,:,None],Cdrpmb)
+    Sigdp = Sigdb + each_matmul(sCdrdivsWCdr2*SigW[:,:,None],Cdrpmb)
+    Sigdb = each_matmul(SigW[:,:,None]+(1-sCdr*sr2pi/180)*SigWb[:,:,None],Cdrb)
+    
+    res_dict = {}
+    
+    res_dict['drb'] = drb
+    res_dict['dra'] = dra
+    res_dict['drp'] = drp
+    res_dict['Cdrb'] = Cdrb
+    res_dict['Cdra'] = Cdra
+    res_dict['Cdrp'] = Cdrp
+    res_dict['sCdr'] = sCdr
+    
+    res_dict['dmub'] = dmub
+    res_dict['dmua'] = dmua
+    res_dict['dmup'] = dmup
+    res_dict['Sigdb'] = Sigdb
+    res_dict['Sigda'] = Sigda
+    res_dict['Sigdp'] = Sigdp
+
+    res_dict['convdb'] = convdb
+    res_dict['convda'] = convda
+    res_dict['convdp'] = convdp
+    
+    if return_full:
+        res_dict['full_Cdrb'] = full_Cdrb
+        res_dict['full_Cdra'] = full_Cdra
+        res_dict['full_Cdrp'] = full_Cdrp
     
     return res_dict
 
