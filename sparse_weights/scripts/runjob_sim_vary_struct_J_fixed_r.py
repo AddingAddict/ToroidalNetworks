@@ -1,4 +1,5 @@
 import os
+import ast
 import socket
 import argparse
 import numpy as np
@@ -21,7 +22,7 @@ def runjobs():
     parser = argparse.ArgumentParser()
     parser.add_argument("--test", "-t", type=int, default=0)
     parser.add_argument("--cluster_", help=" String", default='burg')
-    parser.add_argument('--fix_r_mode', '-m',  help='whether we are fixing r or simulating', type=bool, default=0)
+    parser.add_argument('--fix_r_mode', '-m',  help='whether we are fixing r or simulating', type=ast.literal_eval, default=0)
     
     args2 = parser.parse_args()
     args = vars(args2)

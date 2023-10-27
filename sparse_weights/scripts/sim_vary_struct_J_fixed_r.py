@@ -1,4 +1,5 @@
 import argparse
+import ast
 import os
 try:
     import pickle5 as pickle
@@ -20,12 +21,12 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--struct_idx', '-s',  help='which structured', type=int, default=0)
 parser.add_argument('--J_idx', '-j',  help='which J', type=int, default=0)
-parser.add_argument('--fix_r_mode', '-m',  help='whether we are fixing r or simulating', type=bool, default=0)
+parser.add_argument('--fix_r_mode', '-m',  help='whether we are fixing r or simulating', type=ast.literal_eval, default=0)
 args = vars(parser.parse_args())
 print(parser.parse_args())
 struct_idx= args['struct_idx']
 J_idx= args['J_idx']
-fix_r_mode= args['fix_r_mode']
+fix_r_mode= bool(args['fix_r_mode'])
 
 id = (133, 0)
 with open('./../results/results_ring_'+str(id[0])+'.pkl', 'rb') as handle:
@@ -237,9 +238,6 @@ if fix_r_mode:
         res_dict = {}
     res_dict['rX'] = rX
     res_dict['ran_fix_r_mode'] = True
-
-    with open('./../results/vary_fixed_r_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'wb') as handle:
-        pickle.dump(res_dict,handle)
 
 else:
     with open('./../results/vary_fixed_r_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'rb') as handle:
@@ -510,5 +508,5 @@ else:
     res_dict['vsm_norm_covs'] = vsm_norm_covs
     res_dict['timeouts'] = timeouts
 
-with open('./../results/vary_fixed_r_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'wb') as handle:
-    pickle.dump(res_dict,handle)
+# with open('./../results/vary_fixed_r_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'wb') as handle:
+#     pickle.dump(res_dict,handle)
