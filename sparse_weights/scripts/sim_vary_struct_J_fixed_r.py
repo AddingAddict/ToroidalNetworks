@@ -236,6 +236,7 @@ if fix_r_mode:
     except:
         res_dict = {}
     res_dict['rX'] = rX
+    res_dict['ran_fix_r_mode'] = True
 
     with open('./../results/vary_fixed_r_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'wb') as handle:
         pickle.dump(res_dict,handle)
@@ -244,6 +245,7 @@ else:
     with open('./../results/vary_fixed_r_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'rb') as handle:
         rX_res_dict = pickle.load(handle)
         rX = rX_res_dict['rX']
+        if not rX_res_dict['ran_fix_r_mode']: raise Exception('Did not run fixed r mode first')
         
     μrEs = np.zeros((len(seeds),3,Nori))
     μrIs = np.zeros((len(seeds),3,Nori))
