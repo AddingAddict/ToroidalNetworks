@@ -20,10 +20,12 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--struct_idx', '-s',  help='which structured', type=int, default=0)
 parser.add_argument('--J_idx', '-j',  help='which J', type=int, default=0)
+parser.add_argument('--fix_r_mode', '-m',  help='whether we are fixing r or simulating', type=bool, default=0)
 args = vars(parser.parse_args())
 print(parser.parse_args())
 struct_idx= args['struct_idx']
 J_idx= args['J_idx']
+fix_r_mode= args['fix_r_mode']
 
 id = (133, 0)
 with open('./../results/results_ring_'+str(id[0])+'.pkl', 'rb') as handle:
@@ -66,7 +68,7 @@ prms['NE'] = NE
 prms['NI'] = NI
 
 seeds = np.arange(50)
-fix_r_seeds = np.arange(5)
+fix_r_seeds = np.arange(20)
 
 r_target = 63.512434943863234
 
@@ -83,45 +85,6 @@ newJ = Js[J_idx]
 
 cA = aXs[-1]/bX
 rX0 = bX
-
-μrEs = np.zeros((len(seeds),3,Nori))
-μrIs = np.zeros((len(seeds),3,Nori))
-ΣrEs = np.zeros((len(seeds),4,Nori))
-ΣrIs = np.zeros((len(seeds),4,Nori))
-μhEs = np.zeros((len(seeds),3,Nori))
-μhIs = np.zeros((len(seeds),3,Nori))
-ΣhEs = np.zeros((len(seeds),4,Nori))
-ΣhIs = np.zeros((len(seeds),4,Nori))
-balEs = np.zeros((len(seeds),2,Nori))
-balIs = np.zeros((len(seeds),2,Nori))
-Lexps = np.zeros((len(seeds),2))
-timeouts = np.zeros((len(seeds),2)).astype(bool)
-# μrEs = np.zeros((2,len(seeds),3,Nori))
-# μrIs = np.zeros((2,len(seeds),3,Nori))
-# ΣrEs = np.zeros((2,len(seeds),4,Nori))
-# ΣrIs = np.zeros((2,len(seeds),4,Nori))
-# μhEs = np.zeros((2,len(seeds),3,Nori))
-# μhIs = np.zeros((2,len(seeds),3,Nori))
-# ΣhEs = np.zeros((2,len(seeds),4,Nori))
-# ΣhIs = np.zeros((2,len(seeds),4,Nori))
-# balEs = np.zeros((2,len(seeds),2,Nori))
-# balIs = np.zeros((2,len(seeds),2,Nori))
-# Lexps = np.zeros((2,len(seeds),2))
-# timeouts = np.zeros((2,len(seeds),2)).astype(bool)
-# all_base_means = np.zeros(2)
-# all_base_stds = np.zeros(2)
-# all_opto_means = np.zeros(2)
-# all_opto_stds = np.zeros(2)
-# all_diff_means = np.zeros(2)
-# all_diff_stds = np.zeros(2)
-# all_norm_covs = np.zeros(2)
-# vsm_base_means = np.zeros(2)
-# vsm_base_stds = np.zeros(2)
-# vsm_opto_means = np.zeros(2)
-# vsm_opto_stds = np.zeros(2)
-# vsm_diff_means = np.zeros(2)
-# vsm_diff_stds = np.zeros(2)
-# vsm_norm_covs = np.zeros(2)
 
 def find_rX_to_fix_r(prms,rX0,cA,CVh):
     rXs = rX0*(np.arange(0,8+1)/8 + 0.5)
@@ -261,227 +224,289 @@ this_prms = prms.copy()
 this_prms['J'] = newJ
 this_prms['basefrac'] = 1-struct
 
-rX = find_rX_to_fix_r(this_prms,bX,cA,CVh)
-print(rX)
-
-net,rs,mus,muEs,muIs,Ls,TOs = simulate_networks(this_prms,rX,cA,CVh)
-
-start = time.process_time()
-
-for nloc in range(Nori):
-    μrEs[:,:2,nloc] = np.mean(rs[:,:,net.C_idxs[0][nloc]],axis=-1)
-    μrIs[:,:2,nloc] = np.mean(rs[:,:,net.C_idxs[1][nloc]],axis=-1)
-    ΣrEs[:,:2,nloc] = np.var(rs[:,:,net.C_idxs[0][nloc]],axis=-1)
-    ΣrIs[:,:2,nloc] = np.var(rs[:,:,net.C_idxs[1][nloc]],axis=-1)
-    μhEs[:,:2,nloc] = np.mean(mus[:,:,net.C_idxs[0][nloc]],axis=-1)
-    μhIs[:,:2,nloc] = np.mean(mus[:,:,net.C_idxs[1][nloc]],axis=-1)
-    ΣhEs[:,:2,nloc] = np.var(mus[:,:,net.C_idxs[0][nloc]],axis=-1)
-    ΣhIs[:,:2,nloc] = np.var(mus[:,:,net.C_idxs[1][nloc]],axis=-1)
-    balEs[:,:,nloc] = np.mean(np.abs(mus[:,:,net.C_idxs[0][nloc]])/muEs[:,:,net.C_idxs[0][nloc]],axis=-1)
-    balIs[:,:,nloc] = np.mean(np.abs(mus[:,:,net.C_idxs[1][nloc]])/muEs[:,:,net.C_idxs[1][nloc]],axis=-1)
-
-    μrEs[:,2,nloc] = np.mean(rs[:,1,net.C_idxs[0][nloc]]-rs[:,0,net.C_idxs[0][nloc]],axis=-1)
-    μrIs[:,2,nloc] = np.mean(rs[:,1,net.C_idxs[1][nloc]]-rs[:,0,net.C_idxs[1][nloc]],axis=-1)
-    ΣrEs[:,2,nloc] = np.var(rs[:,1,net.C_idxs[0][nloc]]-rs[:,0,net.C_idxs[0][nloc]],axis=-1)
-    ΣrIs[:,2,nloc] = np.var(rs[:,1,net.C_idxs[1][nloc]]-rs[:,0,net.C_idxs[1][nloc]],axis=-1)
-    μhEs[:,2,nloc] = np.mean(mus[:,1,net.C_idxs[0][nloc]]-mus[:,0,net.C_idxs[0][nloc]],axis=-1)
-    μhIs[:,2,nloc] = np.mean(mus[:,1,net.C_idxs[1][nloc]]-mus[:,0,net.C_idxs[1][nloc]],axis=-1)
-    ΣhEs[:,2,nloc] = np.var(mus[:,1,net.C_idxs[0][nloc]]-mus[:,0,net.C_idxs[0][nloc]],axis=-1)
-    ΣhIs[:,2,nloc] = np.var(mus[:,1,net.C_idxs[1][nloc]]-mus[:,0,net.C_idxs[1][nloc]],axis=-1)
-
-    for seed_idx in range(len(seeds)):
-        ΣrEs[seed_idx,3,nloc] = np.cov(rs[seed_idx,0,net.C_idxs[0][nloc]],
-                                       rs[seed_idx,1,net.C_idxs[0][nloc]]-rs[seed_idx,0,net.C_idxs[0][nloc]])[0,1]
-        ΣrIs[seed_idx,3,nloc] = np.cov(rs[seed_idx,0,net.C_idxs[1][nloc]],
-                                       rs[seed_idx,1,net.C_idxs[1][nloc]]-rs[seed_idx,0,net.C_idxs[1][nloc]])[0,1]
-Lexps[:,:] = Ls
-timeouts[:,:] = TOs
-
-seed_mask = np.logical_not(np.any(timeouts,axis=-1))
-vsm_mask = net.get_oriented_neurons()[0]
-
-base_rates = rs[:,0,:]
-opto_rates = rs[:,1,:]
-diff_rates = opto_rates - base_rates
-
-all_base_means = np.mean(base_rates[seed_mask,:])
-all_base_stds = np.std(base_rates[seed_mask,:])
-all_opto_means = np.mean(opto_rates[seed_mask,:])
-all_opto_stds = np.std(opto_rates[seed_mask,:])
-all_diff_means = np.mean(diff_rates[seed_mask,:])
-all_diff_stds = np.std(diff_rates[seed_mask,:])
-all_norm_covs = np.cov(base_rates[seed_mask,:].flatten(),
-    diff_rates[seed_mask,:].flatten())[0,1] / all_diff_stds**2
-
-vsm_base_means = np.mean(base_rates[seed_mask,:][:,vsm_mask])
-vsm_base_stds = np.std(base_rates[seed_mask,:][:,vsm_mask])
-vsm_opto_means = np.mean(opto_rates[seed_mask,:][:,vsm_mask])
-vsm_opto_stds = np.std(opto_rates[seed_mask,:][:,vsm_mask])
-vsm_diff_means = np.mean(diff_rates[seed_mask,:][:,vsm_mask])
-vsm_diff_stds = np.std(diff_rates[seed_mask,:][:,vsm_mask])
-vsm_norm_covs = np.cov(base_rates[seed_mask,:][:,vsm_mask].flatten(),
-    diff_rates[seed_mask,:][:,vsm_mask].flatten())[0,1] / vsm_diff_stds**2
-
-print("Saving statistics took ",time.process_time() - start," s")
-print('')
-
-# start = time.process_time()
-
-# for nloc in range(Nori):
-#     μrEs[0,:,:2,nloc] = np.mean(rs[:,:,net.C_idxs[0][nloc]],axis=-1)
-#     μrIs[0,:,:2,nloc] = np.mean(rs[:,:,net.C_idxs[1][nloc]],axis=-1)
-#     ΣrEs[0,:,:2,nloc] = np.var(rs[:,:,net.C_idxs[0][nloc]],axis=-1)
-#     ΣrIs[0,:,:2,nloc] = np.var(rs[:,:,net.C_idxs[1][nloc]],axis=-1)
-#     μhEs[0,:,:2,nloc] = np.mean(mus[:,:,net.C_idxs[0][nloc]],axis=-1)
-#     μhIs[0,:,:2,nloc] = np.mean(mus[:,:,net.C_idxs[1][nloc]],axis=-1)
-#     ΣhEs[0,:,:2,nloc] = np.var(mus[:,:,net.C_idxs[0][nloc]],axis=-1)
-#     ΣhIs[0,:,:2,nloc] = np.var(mus[:,:,net.C_idxs[1][nloc]],axis=-1)
-#     balEs[0,:,:,nloc] = np.mean(np.abs(mus[:,:,net.C_idxs[0][nloc]])/muEs[:,:,net.C_idxs[0][nloc]],axis=-1)
-#     balIs[0,:,:,nloc] = np.mean(np.abs(mus[:,:,net.C_idxs[1][nloc]])/muEs[:,:,net.C_idxs[1][nloc]],axis=-1)
-
-#     μrEs[0,:,2,nloc] = np.mean(rs[:,1,net.C_idxs[0][nloc]]-rs[:,0,net.C_idxs[0][nloc]],axis=-1)
-#     μrIs[0,:,2,nloc] = np.mean(rs[:,1,net.C_idxs[1][nloc]]-rs[:,0,net.C_idxs[1][nloc]],axis=-1)
-#     ΣrEs[0,:,2,nloc] = np.var(rs[:,1,net.C_idxs[0][nloc]]-rs[:,0,net.C_idxs[0][nloc]],axis=-1)
-#     ΣrIs[0,:,2,nloc] = np.var(rs[:,1,net.C_idxs[1][nloc]]-rs[:,0,net.C_idxs[1][nloc]],axis=-1)
-#     μhEs[0,:,2,nloc] = np.mean(mus[:,1,net.C_idxs[0][nloc]]-mus[:,0,net.C_idxs[0][nloc]],axis=-1)
-#     μhIs[0,:,2,nloc] = np.mean(mus[:,1,net.C_idxs[1][nloc]]-mus[:,0,net.C_idxs[1][nloc]],axis=-1)
-#     ΣhEs[0,:,2,nloc] = np.var(mus[:,1,net.C_idxs[0][nloc]]-mus[:,0,net.C_idxs[0][nloc]],axis=-1)
-#     ΣhIs[0,:,2,nloc] = np.var(mus[:,1,net.C_idxs[1][nloc]]-mus[:,0,net.C_idxs[1][nloc]],axis=-1)
-
-#     for seed_idx in range(len(seeds)):
-#         ΣrEs[0,seed_idx,3,nloc] = np.cov(rs[seed_idx,0,net.C_idxs[0][nloc]],
-#                                          rs[seed_idx,1,net.C_idxs[0][nloc]]-rs[seed_idx,0,net.C_idxs[0][nloc]])[0,1]
-#         ΣrIs[0,seed_idx,3,nloc] = np.cov(rs[seed_idx,0,net.C_idxs[1][nloc]],
-#                                          rs[seed_idx,1,net.C_idxs[1][nloc]]-rs[seed_idx,0,net.C_idxs[1][nloc]])[0,1]
-# Lexps[0,:,:] = Ls
-# timeouts[0,:,:] = TOs
-
-# seed_mask = np.logical_not(np.any(timeouts[0],axis=-1))
-# vsm_mask = net.get_oriented_neurons()[0]
-
-# base_rates = rs[:,0,:]
-# opto_rates = rs[:,1,:]
-# diff_rates = opto_rates - base_rates
-
-# all_base_means[0] = np.mean(base_rates[seed_mask,:])
-# all_base_stds[0] = np.std(base_rates[seed_mask,:])
-# all_opto_means[0] = np.mean(opto_rates[seed_mask,:])
-# all_opto_stds[0] = np.std(opto_rates[seed_mask,:])
-# all_diff_means[0] = np.mean(diff_rates[seed_mask,:])
-# all_diff_stds[0] = np.std(diff_rates[seed_mask,:])
-# all_norm_covs[0] = np.cov(base_rates[seed_mask,:].flatten(),
-#     diff_rates[seed_mask,:].flatten())[0,1] / all_diff_stds[0]**2
-
-# vsm_base_means[0] = np.mean(base_rates[seed_mask,:][:,vsm_mask])
-# vsm_base_stds[0] = np.std(base_rates[seed_mask,:][:,vsm_mask])
-# vsm_opto_means[0] = np.mean(opto_rates[seed_mask,:][:,vsm_mask])
-# vsm_opto_stds[0] = np.std(opto_rates[seed_mask,:][:,vsm_mask])
-# vsm_diff_means[0] = np.mean(diff_rates[seed_mask,:][:,vsm_mask])
-# vsm_diff_stds[0] = np.std(diff_rates[seed_mask,:][:,vsm_mask])
-# vsm_norm_covs[0] = np.cov(base_rates[seed_mask,:][:,vsm_mask].flatten(),
-#     diff_rates[seed_mask,:][:,vsm_mask].flatten())[0,1] / vsm_diff_stds[0]**2
-
-# print("Saving statistics took ",time.process_time() - start," s")
-# print('')
-
-# # Simulate network where structure is removed by decreasing recurrent width relative to input width
-# print('simulating baseline fraction network')
-# print('')
-# this_prms = prms.copy()
-# this_prms['J'] = newJ
-# this_prms['SoriE'] = np.fmax(SoriE*struct,1e-12)
-# this_prms['SoriI'] = np.fmax(SoriI*struct,1e-12)
-
-# net,rs,mus,muEs,muIs,Ls,TOs = simulate_networks(this_prms,rX,cA,CVh)
-
-# start = time.process_time()
-
-# for nloc in range(Nori):
-#     μrEs[1,:,:2,nloc] = np.mean(rs[:,:,net.C_idxs[0][nloc]],axis=-1)
-#     μrIs[1,:,:2,nloc] = np.mean(rs[:,:,net.C_idxs[1][nloc]],axis=-1)
-#     ΣrEs[1,:,:2,nloc] = np.var(rs[:,:,net.C_idxs[0][nloc]],axis=-1)
-#     ΣrIs[1,:,:2,nloc] = np.var(rs[:,:,net.C_idxs[1][nloc]],axis=-1)
-#     μhEs[1,:,:2,nloc] = np.mean(mus[:,:,net.C_idxs[0][nloc]],axis=-1)
-#     μhIs[1,:,:2,nloc] = np.mean(mus[:,:,net.C_idxs[1][nloc]],axis=-1)
-#     ΣhEs[1,:,:2,nloc] = np.var(mus[:,:,net.C_idxs[0][nloc]],axis=-1)
-#     ΣhIs[1,:,:2,nloc] = np.var(mus[:,:,net.C_idxs[1][nloc]],axis=-1)
-#     balEs[1,:,:,nloc] = np.mean(np.abs(mus[:,:,net.C_idxs[0][nloc]])/muEs[:,:,net.C_idxs[0][nloc]],axis=-1)
-#     balIs[1,:,:,nloc] = np.mean(np.abs(mus[:,:,net.C_idxs[1][nloc]])/muEs[:,:,net.C_idxs[1][nloc]],axis=-1)
-
-#     μrEs[1,:,2,nloc] = np.mean(rs[:,1,net.C_idxs[0][nloc]]-rs[:,0,net.C_idxs[0][nloc]],axis=-1)
-#     μrIs[1,:,2,nloc] = np.mean(rs[:,1,net.C_idxs[1][nloc]]-rs[:,0,net.C_idxs[1][nloc]],axis=-1)
-#     ΣrEs[1,:,2,nloc] = np.var(rs[:,1,net.C_idxs[0][nloc]]-rs[:,0,net.C_idxs[0][nloc]],axis=-1)
-#     ΣrIs[1,:,2,nloc] = np.var(rs[:,1,net.C_idxs[1][nloc]]-rs[:,0,net.C_idxs[1][nloc]],axis=-1)
-#     μhEs[1,:,2,nloc] = np.mean(mus[:,1,net.C_idxs[0][nloc]]-mus[:,0,net.C_idxs[0][nloc]],axis=-1)
-#     μhIs[1,:,2,nloc] = np.mean(mus[:,1,net.C_idxs[1][nloc]]-mus[:,0,net.C_idxs[1][nloc]],axis=-1)
-#     ΣhEs[1,:,2,nloc] = np.var(mus[:,1,net.C_idxs[0][nloc]]-mus[:,0,net.C_idxs[0][nloc]],axis=-1)
-#     ΣhIs[1,:,2,nloc] = np.var(mus[:,1,net.C_idxs[1][nloc]]-mus[:,0,net.C_idxs[1][nloc]],axis=-1)
-
-#     for seed_idx in range(len(seeds)):
-#         ΣrEs[1,seed_idx,3,nloc] = np.cov(rs[seed_idx,0,net.C_idxs[0][nloc]],
-#                                          rs[seed_idx,1,net.C_idxs[0][nloc]]-rs[seed_idx,0,net.C_idxs[0][nloc]])[0,1]
-#         ΣrIs[1,seed_idx,3,nloc] = np.cov(rs[seed_idx,0,net.C_idxs[1][nloc]],
-#                                          rs[seed_idx,1,net.C_idxs[1][nloc]]-rs[seed_idx,0,net.C_idxs[1][nloc]])[0,1]
-# Lexps[1,:,:] = Ls
-# timeouts[1,:,:] = TOs
-
-# seed_mask = np.logical_not(np.any(timeouts[1],axis=-1))
-# vsm_mask = net.get_oriented_neurons()[0]
-
-# base_rates = rs[:,0,:]
-# opto_rates = rs[:,1,:]
-# diff_rates = opto_rates - base_rates
-
-# all_base_means[1] = np.mean(base_rates[seed_mask,:])
-# all_base_stds[1] = np.std(base_rates[seed_mask,:])
-# all_opto_means[1] = np.mean(opto_rates[seed_mask,:])
-# all_opto_stds[1] = np.std(opto_rates[seed_mask,:])
-# all_diff_means[1] = np.mean(diff_rates[seed_mask,:])
-# all_diff_stds[1] = np.std(diff_rates[seed_mask,:])
-# all_norm_covs[1] = np.cov(base_rates[seed_mask,:].flatten(),
-#     diff_rates[seed_mask,:].flatten())[0,1] / all_diff_stds[1]**2
-
-# vsm_base_means[1] = np.mean(base_rates[seed_mask,:][:,vsm_mask])
-# vsm_base_stds[1] = np.std(base_rates[seed_mask,:][:,vsm_mask])
-# vsm_opto_means[1] = np.mean(opto_rates[seed_mask,:][:,vsm_mask])
-# vsm_opto_stds[1] = np.std(opto_rates[seed_mask,:][:,vsm_mask])
-# vsm_diff_means[1] = np.mean(diff_rates[seed_mask,:][:,vsm_mask])
-# vsm_diff_stds[1] = np.std(diff_rates[seed_mask,:][:,vsm_mask])
-# vsm_norm_covs[1] = np.cov(base_rates[seed_mask,:][:,vsm_mask].flatten(),
-#     diff_rates[seed_mask,:][:,vsm_mask].flatten())[0,1] / vsm_diff_stds[1]**2
-
-# print("Saving statistics took ",time.process_time() - start," s")
-# print('')
-
 res_dict = {}
-res_dict['rX'] = rX
-res_dict['prms'] = this_prms
-res_dict['μrEs'] = μrEs
-res_dict['μrIs'] = μrIs
-res_dict['ΣrEs'] = ΣrEs
-res_dict['ΣrIs'] = ΣrIs
-res_dict['μhEs'] = μhEs
-res_dict['μhIs'] = μhIs
-res_dict['ΣhEs'] = ΣhEs
-res_dict['ΣhIs'] = ΣhIs
-res_dict['balEs'] = balEs
-res_dict['balIs'] = balIs
-res_dict['Lexps'] = Lexps
-res_dict['all_base_means'] = all_base_means
-res_dict['all_base_stds'] = all_base_stds
-res_dict['all_opto_means'] = all_opto_means
-res_dict['all_opto_stds'] = all_opto_stds
-res_dict['all_diff_means'] = all_diff_means
-res_dict['all_diff_stds'] = all_diff_stds
-res_dict['all_norm_covs'] = all_norm_covs
-res_dict['vsm_base_means'] = vsm_base_means
-res_dict['vsm_base_stds'] = vsm_base_stds
-res_dict['vsm_opto_means'] = vsm_opto_means
-res_dict['vsm_opto_stds'] = vsm_opto_stds
-res_dict['vsm_diff_means'] = vsm_diff_means
-res_dict['vsm_diff_stds'] = vsm_diff_stds
-res_dict['vsm_norm_covs'] = vsm_norm_covs
-res_dict['timeouts'] = timeouts
+
+if fix_r_mode:
+    rX = find_rX_to_fix_r(this_prms,bX,cA,CVh)
+    print(rX)
+    
+    try:
+        with open('./../results/vary_fixed_r_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'rb') as handle:
+            res_dict = pickle.load(handle)
+    except:
+        res_dict = {}
+    res_dict['rX'] = rX
+
+    with open('./../results/vary_fixed_r_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'wb') as handle:
+        pickle.dump(res_dict,handle)
+
+else:
+    with open('./../results/vary_fixed_r_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'rb') as handle:
+        rX_res_dict = pickle.load(handle)
+        rX = rX_res_dict['rX']
+        
+    μrEs = np.zeros((len(seeds),3,Nori))
+    μrIs = np.zeros((len(seeds),3,Nori))
+    ΣrEs = np.zeros((len(seeds),4,Nori))
+    ΣrIs = np.zeros((len(seeds),4,Nori))
+    μhEs = np.zeros((len(seeds),3,Nori))
+    μhIs = np.zeros((len(seeds),3,Nori))
+    ΣhEs = np.zeros((len(seeds),4,Nori))
+    ΣhIs = np.zeros((len(seeds),4,Nori))
+    balEs = np.zeros((len(seeds),2,Nori))
+    balIs = np.zeros((len(seeds),2,Nori))
+    Lexps = np.zeros((len(seeds),2))
+    timeouts = np.zeros((len(seeds),2)).astype(bool)
+    # μrEs = np.zeros((2,len(seeds),3,Nori))
+    # μrIs = np.zeros((2,len(seeds),3,Nori))
+    # ΣrEs = np.zeros((2,len(seeds),4,Nori))
+    # ΣrIs = np.zeros((2,len(seeds),4,Nori))
+    # μhEs = np.zeros((2,len(seeds),3,Nori))
+    # μhIs = np.zeros((2,len(seeds),3,Nori))
+    # ΣhEs = np.zeros((2,len(seeds),4,Nori))
+    # ΣhIs = np.zeros((2,len(seeds),4,Nori))
+    # balEs = np.zeros((2,len(seeds),2,Nori))
+    # balIs = np.zeros((2,len(seeds),2,Nori))
+    # Lexps = np.zeros((2,len(seeds),2))
+    # timeouts = np.zeros((2,len(seeds),2)).astype(bool)
+    # all_base_means = np.zeros(2)
+    # all_base_stds = np.zeros(2)
+    # all_opto_means = np.zeros(2)
+    # all_opto_stds = np.zeros(2)
+    # all_diff_means = np.zeros(2)
+    # all_diff_stds = np.zeros(2)
+    # all_norm_covs = np.zeros(2)
+    # vsm_base_means = np.zeros(2)
+    # vsm_base_stds = np.zeros(2)
+    # vsm_opto_means = np.zeros(2)
+    # vsm_opto_stds = np.zeros(2)
+    # vsm_diff_means = np.zeros(2)
+    # vsm_diff_stds = np.zeros(2)
+    # vsm_norm_covs = np.zeros(2)
+
+    net,rs,mus,muEs,muIs,Ls,TOs = simulate_networks(this_prms,rX,cA,CVh)
+
+    start = time.process_time()
+
+    for nloc in range(Nori):
+        μrEs[:,:2,nloc] = np.mean(rs[:,:,net.C_idxs[0][nloc]],axis=-1)
+        μrIs[:,:2,nloc] = np.mean(rs[:,:,net.C_idxs[1][nloc]],axis=-1)
+        ΣrEs[:,:2,nloc] = np.var(rs[:,:,net.C_idxs[0][nloc]],axis=-1)
+        ΣrIs[:,:2,nloc] = np.var(rs[:,:,net.C_idxs[1][nloc]],axis=-1)
+        μhEs[:,:2,nloc] = np.mean(mus[:,:,net.C_idxs[0][nloc]],axis=-1)
+        μhIs[:,:2,nloc] = np.mean(mus[:,:,net.C_idxs[1][nloc]],axis=-1)
+        ΣhEs[:,:2,nloc] = np.var(mus[:,:,net.C_idxs[0][nloc]],axis=-1)
+        ΣhIs[:,:2,nloc] = np.var(mus[:,:,net.C_idxs[1][nloc]],axis=-1)
+        balEs[:,:,nloc] = np.mean(np.abs(mus[:,:,net.C_idxs[0][nloc]])/muEs[:,:,net.C_idxs[0][nloc]],axis=-1)
+        balIs[:,:,nloc] = np.mean(np.abs(mus[:,:,net.C_idxs[1][nloc]])/muEs[:,:,net.C_idxs[1][nloc]],axis=-1)
+
+        μrEs[:,2,nloc] = np.mean(rs[:,1,net.C_idxs[0][nloc]]-rs[:,0,net.C_idxs[0][nloc]],axis=-1)
+        μrIs[:,2,nloc] = np.mean(rs[:,1,net.C_idxs[1][nloc]]-rs[:,0,net.C_idxs[1][nloc]],axis=-1)
+        ΣrEs[:,2,nloc] = np.var(rs[:,1,net.C_idxs[0][nloc]]-rs[:,0,net.C_idxs[0][nloc]],axis=-1)
+        ΣrIs[:,2,nloc] = np.var(rs[:,1,net.C_idxs[1][nloc]]-rs[:,0,net.C_idxs[1][nloc]],axis=-1)
+        μhEs[:,2,nloc] = np.mean(mus[:,1,net.C_idxs[0][nloc]]-mus[:,0,net.C_idxs[0][nloc]],axis=-1)
+        μhIs[:,2,nloc] = np.mean(mus[:,1,net.C_idxs[1][nloc]]-mus[:,0,net.C_idxs[1][nloc]],axis=-1)
+        ΣhEs[:,2,nloc] = np.var(mus[:,1,net.C_idxs[0][nloc]]-mus[:,0,net.C_idxs[0][nloc]],axis=-1)
+        ΣhIs[:,2,nloc] = np.var(mus[:,1,net.C_idxs[1][nloc]]-mus[:,0,net.C_idxs[1][nloc]],axis=-1)
+
+        for seed_idx in range(len(seeds)):
+            ΣrEs[seed_idx,3,nloc] = np.cov(rs[seed_idx,0,net.C_idxs[0][nloc]],
+                                        rs[seed_idx,1,net.C_idxs[0][nloc]]-rs[seed_idx,0,net.C_idxs[0][nloc]])[0,1]
+            ΣrIs[seed_idx,3,nloc] = np.cov(rs[seed_idx,0,net.C_idxs[1][nloc]],
+                                        rs[seed_idx,1,net.C_idxs[1][nloc]]-rs[seed_idx,0,net.C_idxs[1][nloc]])[0,1]
+    Lexps[:,:] = Ls
+    timeouts[:,:] = TOs
+
+    seed_mask = np.logical_not(np.any(timeouts,axis=-1))
+    vsm_mask = net.get_oriented_neurons()[0]
+
+    base_rates = rs[:,0,:]
+    opto_rates = rs[:,1,:]
+    diff_rates = opto_rates - base_rates
+
+    all_base_means = np.mean(base_rates[seed_mask,:])
+    all_base_stds = np.std(base_rates[seed_mask,:])
+    all_opto_means = np.mean(opto_rates[seed_mask,:])
+    all_opto_stds = np.std(opto_rates[seed_mask,:])
+    all_diff_means = np.mean(diff_rates[seed_mask,:])
+    all_diff_stds = np.std(diff_rates[seed_mask,:])
+    all_norm_covs = np.cov(base_rates[seed_mask,:].flatten(),
+        diff_rates[seed_mask,:].flatten())[0,1] / all_diff_stds**2
+
+    vsm_base_means = np.mean(base_rates[seed_mask,:][:,vsm_mask])
+    vsm_base_stds = np.std(base_rates[seed_mask,:][:,vsm_mask])
+    vsm_opto_means = np.mean(opto_rates[seed_mask,:][:,vsm_mask])
+    vsm_opto_stds = np.std(opto_rates[seed_mask,:][:,vsm_mask])
+    vsm_diff_means = np.mean(diff_rates[seed_mask,:][:,vsm_mask])
+    vsm_diff_stds = np.std(diff_rates[seed_mask,:][:,vsm_mask])
+    vsm_norm_covs = np.cov(base_rates[seed_mask,:][:,vsm_mask].flatten(),
+        diff_rates[seed_mask,:][:,vsm_mask].flatten())[0,1] / vsm_diff_stds**2
+
+    print("Saving statistics took ",time.process_time() - start," s")
+    print('')
+
+    # start = time.process_time()
+
+    # for nloc in range(Nori):
+    #     μrEs[0,:,:2,nloc] = np.mean(rs[:,:,net.C_idxs[0][nloc]],axis=-1)
+    #     μrIs[0,:,:2,nloc] = np.mean(rs[:,:,net.C_idxs[1][nloc]],axis=-1)
+    #     ΣrEs[0,:,:2,nloc] = np.var(rs[:,:,net.C_idxs[0][nloc]],axis=-1)
+    #     ΣrIs[0,:,:2,nloc] = np.var(rs[:,:,net.C_idxs[1][nloc]],axis=-1)
+    #     μhEs[0,:,:2,nloc] = np.mean(mus[:,:,net.C_idxs[0][nloc]],axis=-1)
+    #     μhIs[0,:,:2,nloc] = np.mean(mus[:,:,net.C_idxs[1][nloc]],axis=-1)
+    #     ΣhEs[0,:,:2,nloc] = np.var(mus[:,:,net.C_idxs[0][nloc]],axis=-1)
+    #     ΣhIs[0,:,:2,nloc] = np.var(mus[:,:,net.C_idxs[1][nloc]],axis=-1)
+    #     balEs[0,:,:,nloc] = np.mean(np.abs(mus[:,:,net.C_idxs[0][nloc]])/muEs[:,:,net.C_idxs[0][nloc]],axis=-1)
+    #     balIs[0,:,:,nloc] = np.mean(np.abs(mus[:,:,net.C_idxs[1][nloc]])/muEs[:,:,net.C_idxs[1][nloc]],axis=-1)
+
+    #     μrEs[0,:,2,nloc] = np.mean(rs[:,1,net.C_idxs[0][nloc]]-rs[:,0,net.C_idxs[0][nloc]],axis=-1)
+    #     μrIs[0,:,2,nloc] = np.mean(rs[:,1,net.C_idxs[1][nloc]]-rs[:,0,net.C_idxs[1][nloc]],axis=-1)
+    #     ΣrEs[0,:,2,nloc] = np.var(rs[:,1,net.C_idxs[0][nloc]]-rs[:,0,net.C_idxs[0][nloc]],axis=-1)
+    #     ΣrIs[0,:,2,nloc] = np.var(rs[:,1,net.C_idxs[1][nloc]]-rs[:,0,net.C_idxs[1][nloc]],axis=-1)
+    #     μhEs[0,:,2,nloc] = np.mean(mus[:,1,net.C_idxs[0][nloc]]-mus[:,0,net.C_idxs[0][nloc]],axis=-1)
+    #     μhIs[0,:,2,nloc] = np.mean(mus[:,1,net.C_idxs[1][nloc]]-mus[:,0,net.C_idxs[1][nloc]],axis=-1)
+    #     ΣhEs[0,:,2,nloc] = np.var(mus[:,1,net.C_idxs[0][nloc]]-mus[:,0,net.C_idxs[0][nloc]],axis=-1)
+    #     ΣhIs[0,:,2,nloc] = np.var(mus[:,1,net.C_idxs[1][nloc]]-mus[:,0,net.C_idxs[1][nloc]],axis=-1)
+
+    #     for seed_idx in range(len(seeds)):
+    #         ΣrEs[0,seed_idx,3,nloc] = np.cov(rs[seed_idx,0,net.C_idxs[0][nloc]],
+    #                                          rs[seed_idx,1,net.C_idxs[0][nloc]]-rs[seed_idx,0,net.C_idxs[0][nloc]])[0,1]
+    #         ΣrIs[0,seed_idx,3,nloc] = np.cov(rs[seed_idx,0,net.C_idxs[1][nloc]],
+    #                                          rs[seed_idx,1,net.C_idxs[1][nloc]]-rs[seed_idx,0,net.C_idxs[1][nloc]])[0,1]
+    # Lexps[0,:,:] = Ls
+    # timeouts[0,:,:] = TOs
+
+    # seed_mask = np.logical_not(np.any(timeouts[0],axis=-1))
+    # vsm_mask = net.get_oriented_neurons()[0]
+
+    # base_rates = rs[:,0,:]
+    # opto_rates = rs[:,1,:]
+    # diff_rates = opto_rates - base_rates
+
+    # all_base_means[0] = np.mean(base_rates[seed_mask,:])
+    # all_base_stds[0] = np.std(base_rates[seed_mask,:])
+    # all_opto_means[0] = np.mean(opto_rates[seed_mask,:])
+    # all_opto_stds[0] = np.std(opto_rates[seed_mask,:])
+    # all_diff_means[0] = np.mean(diff_rates[seed_mask,:])
+    # all_diff_stds[0] = np.std(diff_rates[seed_mask,:])
+    # all_norm_covs[0] = np.cov(base_rates[seed_mask,:].flatten(),
+    #     diff_rates[seed_mask,:].flatten())[0,1] / all_diff_stds[0]**2
+
+    # vsm_base_means[0] = np.mean(base_rates[seed_mask,:][:,vsm_mask])
+    # vsm_base_stds[0] = np.std(base_rates[seed_mask,:][:,vsm_mask])
+    # vsm_opto_means[0] = np.mean(opto_rates[seed_mask,:][:,vsm_mask])
+    # vsm_opto_stds[0] = np.std(opto_rates[seed_mask,:][:,vsm_mask])
+    # vsm_diff_means[0] = np.mean(diff_rates[seed_mask,:][:,vsm_mask])
+    # vsm_diff_stds[0] = np.std(diff_rates[seed_mask,:][:,vsm_mask])
+    # vsm_norm_covs[0] = np.cov(base_rates[seed_mask,:][:,vsm_mask].flatten(),
+    #     diff_rates[seed_mask,:][:,vsm_mask].flatten())[0,1] / vsm_diff_stds[0]**2
+
+    # print("Saving statistics took ",time.process_time() - start," s")
+    # print('')
+
+    # # Simulate network where structure is removed by decreasing recurrent width relative to input width
+    # print('simulating baseline fraction network')
+    # print('')
+    # this_prms = prms.copy()
+    # this_prms['J'] = newJ
+    # this_prms['SoriE'] = np.fmax(SoriE*struct,1e-12)
+    # this_prms['SoriI'] = np.fmax(SoriI*struct,1e-12)
+
+    # net,rs,mus,muEs,muIs,Ls,TOs = simulate_networks(this_prms,rX,cA,CVh)
+
+    # start = time.process_time()
+
+    # for nloc in range(Nori):
+    #     μrEs[1,:,:2,nloc] = np.mean(rs[:,:,net.C_idxs[0][nloc]],axis=-1)
+    #     μrIs[1,:,:2,nloc] = np.mean(rs[:,:,net.C_idxs[1][nloc]],axis=-1)
+    #     ΣrEs[1,:,:2,nloc] = np.var(rs[:,:,net.C_idxs[0][nloc]],axis=-1)
+    #     ΣrIs[1,:,:2,nloc] = np.var(rs[:,:,net.C_idxs[1][nloc]],axis=-1)
+    #     μhEs[1,:,:2,nloc] = np.mean(mus[:,:,net.C_idxs[0][nloc]],axis=-1)
+    #     μhIs[1,:,:2,nloc] = np.mean(mus[:,:,net.C_idxs[1][nloc]],axis=-1)
+    #     ΣhEs[1,:,:2,nloc] = np.var(mus[:,:,net.C_idxs[0][nloc]],axis=-1)
+    #     ΣhIs[1,:,:2,nloc] = np.var(mus[:,:,net.C_idxs[1][nloc]],axis=-1)
+    #     balEs[1,:,:,nloc] = np.mean(np.abs(mus[:,:,net.C_idxs[0][nloc]])/muEs[:,:,net.C_idxs[0][nloc]],axis=-1)
+    #     balIs[1,:,:,nloc] = np.mean(np.abs(mus[:,:,net.C_idxs[1][nloc]])/muEs[:,:,net.C_idxs[1][nloc]],axis=-1)
+
+    #     μrEs[1,:,2,nloc] = np.mean(rs[:,1,net.C_idxs[0][nloc]]-rs[:,0,net.C_idxs[0][nloc]],axis=-1)
+    #     μrIs[1,:,2,nloc] = np.mean(rs[:,1,net.C_idxs[1][nloc]]-rs[:,0,net.C_idxs[1][nloc]],axis=-1)
+    #     ΣrEs[1,:,2,nloc] = np.var(rs[:,1,net.C_idxs[0][nloc]]-rs[:,0,net.C_idxs[0][nloc]],axis=-1)
+    #     ΣrIs[1,:,2,nloc] = np.var(rs[:,1,net.C_idxs[1][nloc]]-rs[:,0,net.C_idxs[1][nloc]],axis=-1)
+    #     μhEs[1,:,2,nloc] = np.mean(mus[:,1,net.C_idxs[0][nloc]]-mus[:,0,net.C_idxs[0][nloc]],axis=-1)
+    #     μhIs[1,:,2,nloc] = np.mean(mus[:,1,net.C_idxs[1][nloc]]-mus[:,0,net.C_idxs[1][nloc]],axis=-1)
+    #     ΣhEs[1,:,2,nloc] = np.var(mus[:,1,net.C_idxs[0][nloc]]-mus[:,0,net.C_idxs[0][nloc]],axis=-1)
+    #     ΣhIs[1,:,2,nloc] = np.var(mus[:,1,net.C_idxs[1][nloc]]-mus[:,0,net.C_idxs[1][nloc]],axis=-1)
+
+    #     for seed_idx in range(len(seeds)):
+    #         ΣrEs[1,seed_idx,3,nloc] = np.cov(rs[seed_idx,0,net.C_idxs[0][nloc]],
+    #                                          rs[seed_idx,1,net.C_idxs[0][nloc]]-rs[seed_idx,0,net.C_idxs[0][nloc]])[0,1]
+    #         ΣrIs[1,seed_idx,3,nloc] = np.cov(rs[seed_idx,0,net.C_idxs[1][nloc]],
+    #                                          rs[seed_idx,1,net.C_idxs[1][nloc]]-rs[seed_idx,0,net.C_idxs[1][nloc]])[0,1]
+    # Lexps[1,:,:] = Ls
+    # timeouts[1,:,:] = TOs
+
+    # seed_mask = np.logical_not(np.any(timeouts[1],axis=-1))
+    # vsm_mask = net.get_oriented_neurons()[0]
+
+    # base_rates = rs[:,0,:]
+    # opto_rates = rs[:,1,:]
+    # diff_rates = opto_rates - base_rates
+
+    # all_base_means[1] = np.mean(base_rates[seed_mask,:])
+    # all_base_stds[1] = np.std(base_rates[seed_mask,:])
+    # all_opto_means[1] = np.mean(opto_rates[seed_mask,:])
+    # all_opto_stds[1] = np.std(opto_rates[seed_mask,:])
+    # all_diff_means[1] = np.mean(diff_rates[seed_mask,:])
+    # all_diff_stds[1] = np.std(diff_rates[seed_mask,:])
+    # all_norm_covs[1] = np.cov(base_rates[seed_mask,:].flatten(),
+    #     diff_rates[seed_mask,:].flatten())[0,1] / all_diff_stds[1]**2
+
+    # vsm_base_means[1] = np.mean(base_rates[seed_mask,:][:,vsm_mask])
+    # vsm_base_stds[1] = np.std(base_rates[seed_mask,:][:,vsm_mask])
+    # vsm_opto_means[1] = np.mean(opto_rates[seed_mask,:][:,vsm_mask])
+    # vsm_opto_stds[1] = np.std(opto_rates[seed_mask,:][:,vsm_mask])
+    # vsm_diff_means[1] = np.mean(diff_rates[seed_mask,:][:,vsm_mask])
+    # vsm_diff_stds[1] = np.std(diff_rates[seed_mask,:][:,vsm_mask])
+    # vsm_norm_covs[1] = np.cov(base_rates[seed_mask,:][:,vsm_mask].flatten(),
+    #     diff_rates[seed_mask,:][:,vsm_mask].flatten())[0,1] / vsm_diff_stds[1]**2
+
+    # print("Saving statistics took ",time.process_time() - start," s")
+    # print('')
+
+    try:
+        with open('./../results/vary_fixed_r_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'rb') as handle:
+            res_dict = pickle.load(handle)
+    except:
+        res_dict = {}
+        
+    res_dict['rX'] = rX
+    res_dict['prms'] = this_prms
+    res_dict['μrEs'] = μrEs
+    res_dict['μrIs'] = μrIs
+    res_dict['ΣrEs'] = ΣrEs
+    res_dict['ΣrIs'] = ΣrIs
+    res_dict['μhEs'] = μhEs
+    res_dict['μhIs'] = μhIs
+    res_dict['ΣhEs'] = ΣhEs
+    res_dict['ΣhIs'] = ΣhIs
+    res_dict['balEs'] = balEs
+    res_dict['balIs'] = balIs
+    res_dict['Lexps'] = Lexps
+    res_dict['all_base_means'] = all_base_means
+    res_dict['all_base_stds'] = all_base_stds
+    res_dict['all_opto_means'] = all_opto_means
+    res_dict['all_opto_stds'] = all_opto_stds
+    res_dict['all_diff_means'] = all_diff_means
+    res_dict['all_diff_stds'] = all_diff_stds
+    res_dict['all_norm_covs'] = all_norm_covs
+    res_dict['vsm_base_means'] = vsm_base_means
+    res_dict['vsm_base_stds'] = vsm_base_stds
+    res_dict['vsm_opto_means'] = vsm_opto_means
+    res_dict['vsm_opto_stds'] = vsm_opto_stds
+    res_dict['vsm_diff_means'] = vsm_diff_means
+    res_dict['vsm_diff_stds'] = vsm_diff_stds
+    res_dict['vsm_norm_covs'] = vsm_norm_covs
+    res_dict['timeouts'] = timeouts
 
 with open('./../results/vary_fixed_r_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)

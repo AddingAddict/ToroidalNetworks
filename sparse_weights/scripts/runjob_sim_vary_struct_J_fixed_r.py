@@ -21,9 +21,11 @@ def runjobs():
     parser = argparse.ArgumentParser()
     parser.add_argument("--test", "-t", type=int, default=0)
     parser.add_argument("--cluster_", help=" String", default='burg')
+    parser.add_argument('--fix_r_mode', '-m',  help='whether we are fixing r or simulating', type=bool, default=0)
     
     args2 = parser.parse_args()
     args = vars(args2)
+    fix_r_mode = args['fix_r_mode']
     
     hostname = socket.gethostname()
     if 'ax' in hostname:
@@ -94,9 +96,9 @@ def runjobs():
             #--------------------------------------------------------------------------
             # Make SBTACH
             inpath = currwd + "/sim_vary_struct_J_fixed_r.py"
-            c1 = "{:s} -s {:d} -j {:d}".format(inpath,s,j)
+            c1 = "{:s} -s {:d} -j {:d} -m {:d}".format(inpath,s,j,fix_r_mode)
             
-            jobname="sim_vary_struct_J_fixed_r"+"-s-{:d}-j-{:d}".format(s,j)
+            jobname="sim_vary_struct_J_fixed_r"+"-s-{:d}-j-{:d}-m-{:d}".format(s,j,fix_r_mode)
             
             if not args2.test:
                 jobnameDir=os.path.join(ofilesdir, jobname)
