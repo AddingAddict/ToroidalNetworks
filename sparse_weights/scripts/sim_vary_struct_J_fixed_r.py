@@ -88,7 +88,7 @@ cA = aXs[-1]/bX
 rX0 = bX
 
 def find_rX_to_fix_r(prms,rX0,cA,CVh):
-    rXs = rX0*(np.arange(0,8+1)/8 + 0.5)
+    rXs = rX0*(0.4*np.arange(0,8+1)/8 + 0.7)
     vsm_rs = np.zeros((len(rXs),len(fix_r_seeds)))
 
     for rX_idx,rX in enumerate(rXs):
