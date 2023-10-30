@@ -241,9 +241,9 @@ if fix_r_mode:
 
 else:
     with open('./../results/vary_fixed_r_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'rb') as handle:
-        rX_res_dict = pickle.load(handle)
-        rX = rX_res_dict['rX']
-        if not rX_res_dict['ran_fix_r_mode']: raise Exception('Did not run fixed r mode first')
+        res_dict = pickle.load(handle)
+    rX = res_dict['rX']
+    if not res_dict['ran_fix_r_mode']: raise Exception('Did not run fixed r mode first')
         
     μrEs = np.zeros((len(seeds),3,Nori))
     μrIs = np.zeros((len(seeds),3,Nori))
@@ -472,14 +472,7 @@ else:
 
     # print("Saving statistics took ",time.process_time() - start," s")
     # print('')
-
-    try:
-        with open('./../results/vary_fixed_r_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'rb') as handle:
-            res_dict = pickle.load(handle)
-    except:
-        res_dict = {}
         
-    res_dict['rX'] = rX
     res_dict['prms'] = this_prms
     res_dict['μrEs'] = μrEs
     res_dict['μrIs'] = μrIs
