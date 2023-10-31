@@ -120,20 +120,20 @@ def opto_itp_moments(res_dir,L,CVL):
 
 def R(M1,M2,mu1,mu2,Sig1,Sig2,k):
     c = np.sign(k)*np.fmin(np.abs(k)/np.sqrt(Sig1*Sig2),1)
-    sig1 = np.sign(c)*np.sqrt(Sig1*np.abs(c))
-    sig2 = np.sqrt(Sig2*np.abs(c))
-    Del1 = Sig1*(1-np.abs(c))
-    Del2 = Sig2*(1-np.abs(c))
+    sig1 = np.sign(c)*np.sqrt(np.sqrt(Sig1*Sig2)*np.abs(c))
+    sig2 = np.sqrt(np.sqrt(Sig1*Sig2)*np.abs(c))
+    Del1 = Sig1-np.sqrt(Sig1*Sig2)*np.abs(c)
+    Del2 = Sig2-np.sqrt(Sig1*Sig2)*np.abs(c)
     return quad(lambda x: np.exp(-0.5*x**2)/sr2pi*\
                 M1(mu1+sig1*x,Del1)*\
                 M2(mu2+sig2*x,Del2),-8,8)[0]
 
 def R_int(M1,M2,mu1,mu2,Sig1,Sig2,k,x):
     c = np.sign(k)*np.fmin(np.abs(k)/np.sqrt(Sig1*Sig2),1)
-    sig1 = np.sign(c)*np.sqrt(Sig1*np.abs(c))
-    sig2 = np.sqrt(Sig2*np.abs(c))
-    Del1 = Sig1*(1-np.abs(c))
-    Del2 = Sig2*(1-np.abs(c))
+    sig1 = np.sign(c)*np.sqrt(np.sqrt(Sig1*Sig2)*np.abs(c))
+    sig2 = np.sqrt(np.sqrt(Sig1*Sig2)*np.abs(c))
+    Del1 = Sig1-np.sqrt(Sig1*Sig2)*np.abs(c)
+    Del2 = Sig2-np.sqrt(Sig1*Sig2)*np.abs(c)
     return np.exp(-0.5*x**2)/sr2pi*\
                 M1(mu1+sig1*x,Del1)*\
                 M2(mu2+sig2*x,Del2)
