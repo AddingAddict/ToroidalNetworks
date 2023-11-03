@@ -243,6 +243,8 @@ def sparse_dmft(tau,W,K,H,eH,M_fn,C_fn,Twrm,Tsav,dt,r0=None,Cr0=None):
             C_fn(mui,Sigii,Sigij,Cphi)
             Cr[:,i+1,j+1] = Cr[:,i,j+1]+Cr[:,i+1,j]-Cr[:,i,j] +\
                 dttauinv*(-Cr[:,i+1,j]-Cr[:,i,j+1]+2*Cr[:,i,j]) + dttauinv2*(-Cr[:,i,j]+Cphi)
+                
+            Cr[:,i+1,j+1] = np.maximum(Cr[:,i+1,j+1],ri**2)
             
             if np.any(np.abs(Cr[:,i+1,j+1]) > 1e10) or np.any(np.isnan(Cr[:,i+1,j+1])):
                 print("system diverged when integrating Cr")
@@ -284,11 +286,13 @@ def diff_sparse_dmft(tau,W,K,H,eH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
     Nclc = round(1.5*Tsav/dt)+1
     Nsav = round(Tsav/dt)+1
     
+    dr = r[Ntyp:] - r[:Ntyp]
+    
     Cdr = np.zeros((Ntyp,Nint,Nint),dtype=np.float32)
     
     if Cdr0 is None:
         # Cdr0 = Cr[:Ntyp]
-        Cdr0 = (r[Ntyp:] - r[:Ntyp]).astype(np.float32)[:,None]**2 + 1e3
+        Cdr0 = dr.astype(np.float32)[:,None]**2 + 1e3
         
     tauinv = 1/tau
     dttauinv = dt/tau
@@ -335,6 +339,8 @@ def diff_sparse_dmft(tau,W,K,H,eH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
             Cdr[:,i+1,j+1] = Cdr[:,i,j+1]+Cdr[:,i+1,j]-Cdr[:,i,j] +\
                 dttauinv*(-Cdr[:,i+1,j]-Cdr[:,i,j+1]+2*Cdr[:,i,j]) +\
                 dttauinv2*(-Cdr[:,i,j]+Cr[:Ntyp,ij_idx]+Cr[Ntyp:,ij_idx]-2*Rphi)
+                
+            Cdr[:,i+1,j+1] = np.maximum(Cdr[:,i+1,j+1],dr**2)
             
             if np.any(np.abs(Cdr[:,i+1,j+1]) > 1e10) or np.any(np.isnan(Cdr[:,i+1,j+1])):
                 print("system diverged when integrating Cdr")
@@ -529,6 +535,10 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
                 dttauinv*(-Cra[:,i+1,j]-Cra[:,i,j+1]+2*Cra[:,i,j]) + dttauinv2*(-Cra[:,i,j]+Cphia)
             Crp[:,i+1,j+1] = Crp[:,i,j+1]+Crp[:,i+1,j]-Crp[:,i,j] +\
                 dttauinv*(-Crp[:,i+1,j]-Crp[:,i,j+1]+2*Crp[:,i,j]) + dttauinv2*(-Crp[:,i,j]+Cphip)
+                
+            Crb[:,i+1,j+1] = np.maximum(Crb[:,i+1,j+1],rbi**2)
+            Cra[:,i+1,j+1] = np.maximum(Cra[:,i+1,j+1],rai**2)
+            Crp[:,i+1,j+1] = np.maximum(Crp[:,i+1,j+1],rpi**2)
             
             if np.any(np.abs(Crb[:,i+1,j+1]) > 1e10) or np.any(np.isnan(Crb[:,i+1,j+1])):
                 print(mubi,muai,mupi,sri)
@@ -607,6 +617,10 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
     Nint = round((Twrm+Tsav)/dt)+1
     Nclc = round(1.5*Tsav/dt)+1
     Nsav = round(Tsav/dt)+1
+    
+    drb = rb[Ntyp:] - rb[:Ntyp]
+    dra = ra[Ntyp:] - ra[:Ntyp]
+    drp = rp[Ntyp:] - rp[:Ntyp]
     
     Cdrb = np.zeros((Ntyp,Nint,Nint),dtype=np.float32)
     Cdra = np.zeros((Ntyp,Nint,Nint),dtype=np.float32)
@@ -733,6 +747,10 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
             Cdrp[:,i+1,j+1] = Cdrp[:,i,j+1]+Cdrp[:,i+1,j]-Cdrp[:,i,j] +\
                 dttauinv*(-Cdrp[:,i+1,j]-Cdrp[:,i,j+1]+2*Cdrp[:,i,j]) +\
                 dttauinv2*(-Cdrp[:,i,j]+Crp[:Ntyp,ij_idx]+Crp[Ntyp:,ij_idx]-2*Rphip)
+                
+            Cdrb[:,i+1,j+1] = np.maximum(Cdrb[:,i+1,j+1],drb**2)
+            Cdra[:,i+1,j+1] = np.maximum(Cdra[:,i+1,j+1],dra**2)
+            Cdrp[:,i+1,j+1] = np.maximum(Cdrp[:,i+1,j+1],drp**2)
             
             if np.any(np.abs(Cdrb[:,i+1,j+1]) > 1e10) or np.any(np.isnan(Cdrb[:,i+1,j+1])):
                 print(Sigdbij,Sigdaij,Sigdpij,sCdrij)
