@@ -54,7 +54,7 @@ else:
 Nori = 20
 
 structs = np.arange(0,8+1)/8
-Js = prms['J']*3**(np.arange(0,8+1)/8)
+Js = prms['J']*10**(np.arange(0,8+1)/8-0.5)
 
 print('simulating struct # '+str(struct_idx+1))
 print('')

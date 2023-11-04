@@ -413,5 +413,5 @@ res_dict['vsm_diff_stds'] = vsm_diff_stds
 res_dict['vsm_norm_covs'] = vsm_norm_covs
 res_dict['timeouts'] = timeouts
 
-with open('./../results/vary_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'wb') as handle:
+with open('./../results/vary_struct_toy_model_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)

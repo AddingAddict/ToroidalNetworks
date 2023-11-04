@@ -44,7 +44,7 @@ ri = ric.Ricciardi()
 Twrm = 1.0
 Tsav = 0.25
 Tsim = 4.0
-if J_idx < 4:
+if J_idx < 5:
     dt = 0.01/5
 elif J_idx < 7:
     dt = 0.01/10
@@ -54,7 +54,7 @@ else:
 Nori = 20
 
 structs = np.arange(0,8+1)/8
-Js = prms['J']*3**(np.arange(0,8+1)/8)
+Js = prms['J']*10**(np.arange(0,8+1)/8-0.5)
 
 print('simulating struct # '+str(struct_idx+1))
 print('')

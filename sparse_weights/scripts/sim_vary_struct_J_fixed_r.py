@@ -74,7 +74,7 @@ fix_r_seeds = np.arange(20)
 r_target = 63.512434943863234
 
 structs = np.arange(0,8+1)/8
-Js = J*3**(np.arange(0,8+1)/8)
+Js = J*10**(np.arange(0,8+1)/8-0.5)
 
 print('simulating struct # '+str(struct_idx+1))
 print('')
