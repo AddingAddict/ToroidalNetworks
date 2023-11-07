@@ -37,9 +37,9 @@ prms['SoriE'] = 30
 prms['SoriI'] = 25
 prms['SoriF'] = 25
 
-CVh = 0.2
-rX = 30
+CVh = np.sqrt((0.2+1)/500)
 cA = 2
+rX = 30/(1+cA)
 
 ri = ric.Ricciardi()
 ri.set_up_nonlinearity('./phi_int')
@@ -413,5 +413,5 @@ res_dict['vsm_diff_stds'] = vsm_diff_stds
 res_dict['vsm_norm_covs'] = vsm_norm_covs
 res_dict['timeouts'] = timeouts
 
-with open('./../results/vary_struct_toy_model_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'wb') as handle:
+with open('./../results/vary_toy_model_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)
