@@ -228,7 +228,9 @@ this_prms['basefrac'] = 1-struct
 res_dict = {}
 
 if fix_r_mode:
-    if J_idx <= 4:
+    if J_idx <= 1:
+        rX = find_rX_to_fix_r(this_prms,bX,cA,CVh,1.3,1.7)
+    elif J_idx <= 4:
         rX = find_rX_to_fix_r(this_prms,bX,cA,CVh,1.0,1.4)
     else:
         rX = find_rX_to_fix_r(this_prms,bX,cA,CVh)
