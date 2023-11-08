@@ -229,7 +229,7 @@ def calc_lyapunov_exp_tensor(rc,T,L,M,H,LAM,E_cond,RATEs,NLE,TWONS,TONS,mult_tau
     # Evolve Q
     for i in range(NT):
         calc_mu(RATEs[:,i+1],MU)
-        torch.where(E_cond,rc.dphiE_tensor(MU),rc.dphiI_tensor(MU),out=G)
+        G=torch.where(E_cond,rc.dphiE_tensor(MU),rc.dphiI_tensor(MU))#,out=G)
         Q += (-Q*dt_tau_inv[:,None] + G[:,None]*torch.matmul(M,Q)*dt)
         # Reorthogonalize Q
         if (i+1) % NONS == 0:
