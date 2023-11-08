@@ -87,8 +87,8 @@ newJ = Js[J_idx]
 cA = aXs[-1]/bX
 rX0 = bX
 
-def find_rX_to_fix_r(prms,rX0,cA,CVh):
-    rXs = rX0*(0.4*np.arange(0,8+1)/8 + 0.7)
+def find_rX_to_fix_r(prms,rX0,cA,CVh,min_fact=0.7,max_fact=1.1):
+    rXs = rX0*((max_fact-min_fact)*np.arange(0,8+1)/8 + min_fact)
     vsm_rs = np.zeros((len(rXs),len(fix_r_seeds)))
 
     for rX_idx,rX in enumerate(rXs):
@@ -228,7 +228,10 @@ this_prms['basefrac'] = 1-struct
 res_dict = {}
 
 if fix_r_mode:
-    rX = find_rX_to_fix_r(this_prms,bX,cA,CVh)
+    if J_idx <= 4:
+        rX = find_rX_to_fix_r(this_prms,bX,cA,CVh,1.0,1.4)
+    else:
+        rX = find_rX_to_fix_r(this_prms,bX,cA,CVh)
     print(rX)
     
     try:
