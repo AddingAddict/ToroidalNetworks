@@ -199,14 +199,14 @@ def calc_lyapunov_exp_tensor(rc,T,L,M,H,LAM,E_cond,RATEs,NLE,TWONS,TONS,mult_tau
 
     if mult_tau:
         def calc_mu(RATE,MU):
-            torch.matmul(M,RATE,out=MU)
-            torch.add(MU,H,out=MU)
-            torch.where(E_cond,rc.tE*MU,rc.tI*MU,out=MU)
-            torch.add(MU,LAS,out=MU)
+            MU=torch.matmul(M,RATE)#,out=MU)
+            MU=torch.add(MU,H)#,out=MU)
+            MU=torch.where(E_cond,rc.tE*MU,rc.tI*MU)#,out=MU)
+            MU=torch.add(MU,LAS)#,out=MU)
     else:
         def calc_mu(RATE,MU):
-            torch.matmul(M,RATE,out=MU)
-            torch.add(MU,H + LAS,out=MU)
+            MU=torch.matmul(M,RATE)#,out=MU)
+            MU=torch.add(MU,H + LAS)#,out=MU)
 
     start = time.process_time()
 
