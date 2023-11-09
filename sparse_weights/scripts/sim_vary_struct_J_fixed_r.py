@@ -135,7 +135,7 @@ def find_rX_to_fix_r(prms,rX0,cA,CVh,min_fact=0.7,max_fact=1.1):
     
     xmin = (rXs[0])
     xmax = (rXs[-1])
-    x0 = rX0
+    x0 = 0.5*(rXs[0]+rXs[-1])
     results = least_squares(residuals,x0,bounds=(xmin,xmax))
     
     print('best fit rX =',results.x[0])
