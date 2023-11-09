@@ -228,12 +228,24 @@ this_prms['basefrac'] = 1-struct
 res_dict = {}
 
 if fix_r_mode:
-    if J_idx <= 1:
-        rX = find_rX_to_fix_r(this_prms,bX,cA,CVh,1.3,1.7)
-    elif J_idx <= 4:
-        rX = find_rX_to_fix_r(this_prms,bX,cA,CVh,1.0,1.4)
+    if J_idx == 0:
+        rX = find_rX_to_fix_r(this_prms,bX,cA,CVh,1.6,1.7)
+    elif J_idx == 1:
+        rX = find_rX_to_fix_r(this_prms,bX,cA,CVh,1.3,1.5)
+    elif J_idx == 2:
+        rX = find_rX_to_fix_r(this_prms,bX,cA,CVh,1.1,1.3)
+    elif J_idx == 3:
+        rX = find_rX_to_fix_r(this_prms,bX,cA,CVh,1.0,1.2)
+    elif J_idx == 4:
+        rX = find_rX_to_fix_r(this_prms,bX,cA,CVh,0.92,1.12)
+    elif J_idx == 5:
+        rX = find_rX_to_fix_r(this_prms,bX,cA,CVh,0.85,1.05)
+    elif J_idx == 6:
+        rX = find_rX_to_fix_r(this_prms,bX,cA,CVh,0.8,1.0)
+    elif J_idx == 7:
+        rX = find_rX_to_fix_r(this_prms,bX,cA,CVh,0.75,0.95)
     else:
-        rX = find_rX_to_fix_r(this_prms,bX,cA,CVh)
+        rX = find_rX_to_fix_r(this_prms,bX,cA,CVh,0.72,0.92)
     print(rX)
     
     try:
