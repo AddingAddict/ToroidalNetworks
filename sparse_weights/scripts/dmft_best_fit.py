@@ -39,10 +39,10 @@ with open('./../results/results_ring_'+str(id[0])+'.pkl', 'rb') as handle:
 
 ri = ric.Ricciardi()
 
-Twrm = 1.0
-Tsav = 0.25
+Twrm = 1.6
+Tsav = 0.4
 Tsim = 4.0
-dt = 0.01/10
+dt = 0.01/15
 
 Nori = 20
 
