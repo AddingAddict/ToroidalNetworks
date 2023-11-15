@@ -355,7 +355,7 @@ for idx_rep in range(first_rep,max_nrep):
             return res.ravel()
         xmin = np.concatenate(([bXs[ 0]],aXs[ 0]*np.ones(mous_nc-1)))
         xmax = np.concatenate(([bXs[-1]],aXs[-1]*np.ones(mous_nc-1)))
-        x0 = np.concatenate(([fit_bX],np.linspace(fit_aXs[1],fit_aXs[-1],monk_nc-1)))
+        x0 = np.concatenate(([fit_bX],np.linspace(fit_aXs[1],fit_aXs[-1],mous_nc-1)))
         results = least_squares(residuals,x0,bounds=(xmin,xmax))
         this_bX = results.x[0]
         this_aXs = np.concatenate(([0],results.x[1:]))
