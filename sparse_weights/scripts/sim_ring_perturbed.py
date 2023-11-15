@@ -32,6 +32,9 @@ ntry= args['ntry']
 with open('./../results/results_ring_'+str(njob)+'.pkl', 'rb') as handle:
     res_dict = pickle.load(handle)[nrep]
     fit_prms = res_dict['prms']
+    fit_eX = res_dict['best_monk_eX']
+    fit_bX = res_dict['best_monk_bX']
+    fit_aXs = res_dict['best_monk_aXs']
 
 ri = ric.Ricciardi()
 ri.set_up_nonlinearity('./phi_int')
@@ -42,9 +45,9 @@ NtE = 75
 T = torch.linspace(0,NtE*ri.tE,round(NtE*ri.tE/(ri.tI/3))+1)
 mask_time = T>(NtE/2*ri.tE)
 
-aXs = np.arange(0,30+2,2)
-bXs = np.arange(1,19+2,2)
-eXs = np.arange(0,0.6+0.05,0.05)
+aXs = np.linspace(0.7*fit_aXs[0],1.3*fit_aXs[-1],11)
+bXs = np.linspace(0.7*fit_bX,1.3*fit_bX,7)
+eXs = np.linspace(0.7*fit_eX,1.3*fit_eX,7)
 
 net = network.RingNetwork(seed=0,NC=[4,1],Nori=1200)
 
