@@ -171,8 +171,8 @@ class RingNetwork(network.BaseNetwork):
         H_mean_full,H_var_full = self.generate_full_input(H,np.zeros((self.n)),SHori,basefrac,vis_ori)
         return H_mean_full+np.random.normal(size=(self.N))*np.sqrt(H_var_full)
 
-    # def generate_disorder(self,W,SWori,WX,SWoriX,K,basefrac):
-    def generate_disorder(self,W,SWori,H,SHori,K,basefrac):
+    # def generate_disorder(self,W,SWori,WX,SWoriX,K,basefrac=0):
+    def generate_disorder(self,W,SWori,H,SHori,K,basefrac=0):
         self.M = self.generate_M(W,SWori,K,basefrac)
         # self.MX = self.generate_MX(W,SWori,K,basefrac)
         self.H = self.generate_H(H,SHori,basefrac)

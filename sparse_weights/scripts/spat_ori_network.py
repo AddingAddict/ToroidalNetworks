@@ -238,7 +238,7 @@ class SpatOriNetwork(network.BaseNetwork):
         H_mean_full,H_var_full = self.generate_full_input(H,np.zeros((self.n)),SHrf,SHori,basefrac,vis_loc,vis_ori)
         return H_mean_full+np.random.normal(size=(self.N))*np.sqrt(H_var_full)
 
-    # def generate_disorder(self,W,SWrf,SWori,WX,SWrfX,SWoriX,K):
+    # def generate_disorder(self,W,SWrf,SWori,WX,SWrfX,SWoriX,K,basefrac=0):
     def generate_disorder(self,W,SWrf,SWori,H,SHrf,SHori,K,basefrac=0):
         self.M = self.generate_M(W,SWrf,SWori,K,basefrac)
         # self.MX = self.generate_MX(W,SWrf,SWori,K,basefrac)
