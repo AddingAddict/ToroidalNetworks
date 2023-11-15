@@ -86,19 +86,11 @@ def runjobs():
     
     
     #--------------------------------------------------------------------------
-    # The array of hashes
-    ntry_Vec=range(100)
-    
-    for ntry in ntry_Vec:
-
-        time.sleep(0.2)
-        
-        #--------------------------------------------------------------------------
-        # Make SBTACH
+    if cluster=='axon':
         inpath = currwd + "/sim_ring_perturbed.py"
-        c1 = "{:s} -nj {:d} -nr {:d} -nt {:d}".format(inpath,njob,nrep,ntry)
+        c1 = "{:s} -nj {:d} -nr {:d} -nt $SLURM_ARRAY_TASK_ID".format(inpath,njob,nrep)
         
-        jobname="sim_ring_perturbed"+"-njob-{:d}-nrep-{:d}-ntry-{:d}".format(njob,nrep,ntry)
+        jobname="sim_ring_perturbed"+"-njob-{:d}-nrep-{:d}".format(njob,nrep)
         
         if not args2.test:
             jobnameDir=os.path.join(ofilesdir, jobname)
@@ -108,23 +100,58 @@ def runjobs():
             if cluster=='haba' or cluster=='moto' or cluster=='burg':
                 text_file.write("#SBATCH --account=theory \n")
             text_file.write("#SBATCH --job-name="+jobname+ "\n")
+            text_file.write("#SBATCH --array=0-99\n")
             text_file.write("#SBATCH -t 0-11:59  \n")
             text_file.write("#SBATCH --mem-per-cpu=8gb \n")
             text_file.write("#SBATCH --gres=gpu\n")
             text_file.write("#SBATCH -c 1 \n")
-            text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
-            text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
+            text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%A_%a.o # STDOUT \n")
+            text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%A_%a.e # STDERR \n")
             text_file.write("python  -W ignore " + c1+" \n")
             text_file.write("echo $PATH  \n")
             text_file.write("exit 0  \n")
             text_file.close()
-
-            if cluster=='axon':
-                os.system("sbatch -p burst " +jobnameDir);
-            else:
-                os.system("sbatch " +jobnameDir);
+            
+            os.system("sbatch " +jobnameDir);
         else:
             print (c1)
+    else:
+        # The array of hashes
+        ntry_Vec=range(100)
+        
+        for ntry in ntry_Vec:
+
+            time.sleep(0.2)
+            
+            #--------------------------------------------------------------------------
+            # Make SBTACH
+            inpath = currwd + "/sim_ring_perturbed.py"
+            c1 = "{:s} -nj {:d} -nr {:d} -nt {:d}".format(inpath,njob,nrep,ntry)
+            
+            jobname="sim_ring_perturbed"+"-njob-{:d}-nrep-{:d}-ntry-{:d}".format(njob,nrep,ntry)
+            
+            if not args2.test:
+                jobnameDir=os.path.join(ofilesdir, jobname)
+                text_file=open(jobnameDir, "w");
+                os.system("chmod u+x "+ jobnameDir)
+                text_file.write("#!/bin/sh \n")
+                if cluster=='haba' or cluster=='moto' or cluster=='burg':
+                    text_file.write("#SBATCH --account=theory \n")
+                text_file.write("#SBATCH --job-name="+jobname+ "\n")
+                text_file.write("#SBATCH -t 0-11:59  \n")
+                text_file.write("#SBATCH --mem-per-cpu=8gb \n")
+                text_file.write("#SBATCH --gres=gpu\n")
+                text_file.write("#SBATCH -c 1 \n")
+                text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
+                text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
+                text_file.write("python  -W ignore " + c1+" \n")
+                text_file.write("echo $PATH  \n")
+                text_file.write("exit 0  \n")
+                text_file.close()
+                
+                os.system("sbatch " +jobnameDir);
+            else:
+                print (c1)
 
 
 
