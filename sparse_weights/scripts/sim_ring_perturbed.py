@@ -45,7 +45,7 @@ NtE = 75
 T = torch.linspace(0,NtE*ri.tE,round(NtE*ri.tE/(ri.tI/3))+1)
 mask_time = T>(NtE/2*ri.tE)
 
-aXs = np.linspace(0.7*fit_aXs[0],1.3*fit_aXs[-1],11)
+aXs = np.linspace(0,1.3*fit_aXs[-1],11)
 bXs = np.linspace(0.7*fit_bX,1.3*fit_bX,7)
 eXs = np.linspace(0.7*fit_eX,1.3*fit_eX,7)
 
@@ -372,7 +372,7 @@ for idx_rep in range(first_rep,max_nrep):
             _,_,_,_,_,_,_,_,_,cost = fit_best_mous_inputs(x[0])
             return [cost]
         xmin,xmax = (eXs[0]),(eXs[-1])
-        x0 = np.array([0.2])
+        x0 = np.array([fit_eX])
         results = least_squares(residuals,x0,bounds=(xmin,xmax))
         return (results.x[0],*fit_best_mous_inputs(results.x[0]))
 
@@ -397,7 +397,7 @@ for idx_rep in range(first_rep,max_nrep):
             return res.ravel()
         xmin = np.concatenate(([bXs[ 0]],aXs[ 0]*np.ones(monk_nc-1)))
         xmax = np.concatenate(([bXs[-1]],aXs[-1]*np.ones(monk_nc-1)))
-        x0 = np.concatenate(([2],np.linspace(1,12,monk_nc-1)))
+        x0 = np.concatenate(([fit_bX],np.linspace(fit_aXs[1],fit_aXs[-1],monk_nc-1)))
         results = least_squares(residuals,x0,bounds=(xmin,xmax))
         this_bX = results.x[0]
         this_aXs = np.concatenate(([0],results.x[1:]))
