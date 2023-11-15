@@ -23,11 +23,11 @@ def runjobs():
     parser.add_argument("--cluster_", help=" String", default='burg')
     parser.add_argument('--njob', '-nj',  help='which number job', type=int, default=0)
     parser.add_argument('--nrep', '-nr',  help='which number repetition', type=int, default=0)
-    njob= args['njob']
-    nrep= args['nrep']
     
     args2 = parser.parse_args()
     args = vars(args2)
+    njob= args['njob']
+    nrep= args['nrep']
     
     hostname = socket.gethostname()
     if 'ax' in hostname:
