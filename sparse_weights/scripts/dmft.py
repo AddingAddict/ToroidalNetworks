@@ -3,7 +3,7 @@ import pickle
 import numpy as np
 from scipy.linalg import toeplitz
 from scipy.interpolate import RegularGridInterpolator
-from scipy.integrate import quad,simpson
+from scipy.integrate import quad#,simpson
 from scipy.special import erf
 import time
 
@@ -138,9 +138,9 @@ def R_int(M1,M2,mu1,mu2,Sig1,Sig2,k,x):
                 M1(mu1+sig1*x,Del1)*\
                 M2(mu2+sig2*x,Del2)
 
-def R_simp(M1,M2,mu1,mu2,Sig1,Sig2,k):
-    xs = np.linspace(-8,8,1001)
-    return simpson(R_int(M1,M2,mu1,mu2,Sig1,Sig2,k,xs),xs)
+# def R_simp(M1,M2,mu1,mu2,Sig1,Sig2,k):
+#     xs = np.linspace(-8,8,1001)
+#     return simpson(R_int(M1,M2,mu1,mu2,Sig1,Sig2,k,xs),xs)
 
 def doub_vec(A):
     return np.concatenate([A,A])
