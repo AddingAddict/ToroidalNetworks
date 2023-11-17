@@ -24,7 +24,7 @@ args = vars(parser.parse_args())
 print(parser.parse_args())
 c_idx= args['c_idx']
 
-id = (133, 0, 15, 0)
+id = (133, 0, 52, 0)
 with open('./../results/results_ring_perturb_njob-{:d}_nrep-{:d}_ntry-{:d}.pkl'.format(
         id[0],id[1],id[2]), 'rb') as handle:
     res_dict = pickle.load(handle)[id[-1]]
