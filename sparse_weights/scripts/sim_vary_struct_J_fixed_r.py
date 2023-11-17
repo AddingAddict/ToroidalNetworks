@@ -28,9 +28,10 @@ struct_idx= args['struct_idx']
 J_idx= args['J_idx']
 fix_r_mode= bool(args['fix_r_mode'])
 
-id = (133, 0)
-with open('./../results/results_ring_'+str(id[0])+'.pkl', 'rb') as handle:
-    res_dict = pickle.load(handle)[id[1]]
+id = (133, 0, 15, 0)
+with open('./../results/results_ring_perturb_njob-{:d}_nrep-{:d}_ntry-{:d}.pkl'.format(
+        id[0],id[1],id[2]), 'rb') as handle:
+    res_dict = pickle.load(handle)[id[-1]]
     prms = res_dict['prms']
     CVh = res_dict['best_monk_eX']
     bX = res_dict['best_monk_bX']
