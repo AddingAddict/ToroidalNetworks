@@ -21,7 +21,7 @@ def runjobs():
     parser = argparse.ArgumentParser()
     parser.add_argument("--test", "-t", type=int, default=0)
     parser.add_argument("--cluster_", help=" String", default='burg')
-    parser.add_argument('--njob', '-nj',  help='which number job', type=int, default=0)
+    parser.add_argument('--njob', '-nj',  help='which number job', type=int, default=133)
     parser.add_argument('--nrep', '-nr',  help='which number repetition', type=int, default=0)
     
     args2 = parser.parse_args()
