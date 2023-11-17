@@ -69,6 +69,7 @@ seeds = np.arange(50)
 
 print('simulating contrast # '+str(c_idx+1))
 print('')
+aXs = np.concatenate([aXs,aXs[-1]*np.arange(1.0+0.2,2.0+0.2,0.2)])
 aX = aXs[c_idx]
 
 cA = aX/bX
