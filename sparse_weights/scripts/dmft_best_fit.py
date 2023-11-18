@@ -17,26 +17,34 @@ args = vars(parser.parse_args())
 print(parser.parse_args())
 c_idx= args['c_idx']
 
-id = (133, 0, 15, 0)
-with open('./../results/results_ring_perturb_njob-{:d}_nrep-{:d}_ntry-{:d}.pkl'.format(
-        id[0],id[1],id[2]), 'rb') as handle:
-    res_dict = pickle.load(handle)[id[-1]]
-    prms = res_dict['prms']
-    CVh = res_dict['best_monk_eX']
-    bX = res_dict['best_monk_bX']
-    aXs = res_dict['best_monk_aXs']
-    # K = prms['K']
-    # SoriE = prms['SoriE']
-    # SoriI = prms['SoriI']
-    # SoriF = prms['SoriF']
-    # J = prms['J']
-    # beta = prms['beta']
-    # gE = prms['gE']
-    # gI = prms['gI']
-    # hE = prms['hE']
-    # hI = prms['hI']
-    # L = prms['L']
-    # CVL = prms['CVL']
+id = None
+if id is None:
+    with open('./../results/best_fit.pkl', 'rb') as handle:
+        res_dict = pickle.load(handle)
+elif len(id)==2:
+    with open('./../results/results_ring_{:d}.pkl'.format(
+            id[0]), 'rb') as handle:
+        res_dict = pickle.load(handle)[id[-1]]
+else:
+    with open('./../results/results_ring_perturb_njob-{:d}_nrep-{:d}_ntry-{:d}.pkl'.format(
+            id[0],id[1],id[2]), 'rb') as handle:
+        res_dict = pickle.load(handle)[id[-1]]
+prms = res_dict['prms']
+CVh = res_dict['best_monk_eX']
+bX = res_dict['best_monk_bX']
+aXs = res_dict['best_monk_aXs']
+K = prms['K']
+SoriE = prms['SoriE']
+SoriI = prms['SoriI']
+# SoriF = prms['SoriF']
+# J = prms['J']
+# beta = prms['beta']
+# gE = prms['gE']
+# gI = prms['gI']
+# hE = prms['hE']
+# hI = prms['hI']
+# L = prms['L']
+# CVL = prms['CVL']
 
 ri = ric.Ricciardi()
 

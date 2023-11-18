@@ -144,20 +144,20 @@ def CI_vecμ(μ,Σ,k):
     c = torch.sign(k)*torch.fmin(torch.abs(k)/Σ,torch.tensor(1))
     return CI_itp(torch.stack((c*torch.ones_like(μ),1e3*torch.sqrt(Σ)*torch.ones_like(μ),μtox_torch(1e3*μ)),dim=0))
 
-Nint = 100001
+Nint = 500001
 # Nint = 101
 
 def φLint(μ):
     return simp.integrate(lambda x: torch.exp(-0.5*((torch.log(x)-LNμ)/LNσ)**2)/(sr2π*LNσ*x)*φE(μ+x),
-        dim=1,N=Nint,integration_domain=[[1e-12,50*λL]],backend='torch').cpu().numpy()
+        dim=1,N=Nint,integration_domain=[[1e-12,200*λL]],backend='torch').cpu().numpy()
 
 def MLint(μ,Σ):
     return simp.integrate(lambda x: torch.exp(-0.5*((torch.log(x)-LNμ)/LNσ)**2)/(sr2π*LNσ*x)*ME_vecμ(μ+x,Σ),
-        dim=1,N=Nint,integration_domain=[[1e-12,50*λL]],backend='torch').cpu().numpy()
+        dim=1,N=Nint,integration_domain=[[1e-12,200*λL]],backend='torch').cpu().numpy()
 
 def CLint(μ,Σ,k):
     return simp.integrate(lambda x: torch.exp(-0.5*((torch.log(x)-LNμ)/LNσ)**2)/(sr2π*LNσ*x)*CE_vecμ(μ+x,Σ,k),
-        dim=1,N=Nint,integration_domain=[[1e-12,50*λL]],backend='torch').cpu().numpy()
+        dim=1,N=Nint,integration_domain=[[1e-12,200*λL]],backend='torch').cpu().numpy()
 
 print("Interpolating base moments took ",time.process_time() - start," s")
 print('')
