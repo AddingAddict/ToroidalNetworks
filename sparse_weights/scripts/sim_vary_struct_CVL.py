@@ -59,7 +59,7 @@ ri.set_up_nonlinearity_tensor()
 NtE = 50
 Nt = NtE*ri.tE
 dt = ri.tI/5
-T = torch.linspace(0,8*Nt,round(8*Nt/dt)+1)
+T = torch.linspace(0,5*Nt,round(5*Nt/dt)+1)
 mask_time = T>(4*Nt)
 T_mask = T.cpu().numpy()[mask_time]
 

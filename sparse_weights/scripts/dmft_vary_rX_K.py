@@ -43,7 +43,7 @@ ri = ric.Ricciardi()
 
 Twrm = 2.0
 Tsav = 0.5
-Tsim = 4.0
+Tsim = 1.0
 dt = 0.01/10
 
 Nori = 20
