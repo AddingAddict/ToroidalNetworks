@@ -144,9 +144,9 @@ for frac_idx,frac in enumerate(basefracs):
         ΣrEs[frac_idx,:,nloc] = np.var(rates[:,net.C_idxs[0][nloc]],axis=-1)
         ΣrIs[frac_idx,:,nloc] = np.var(rates[:,net.C_idxs[1][nloc]],axis=-1)
         
-    in_corrs[frac_idx,:] = np.sum(mean_inps[None,:]*inps,axis=-1)/\
+    in_corrs[frac_idx,:] = 1 - np.sum(mean_inps[None,:]*inps,axis=-1)/\
         (np.linalg.norm(mean_inps)*np.linalg.norm(inps,axis=-1))
-    out_corrs[frac_idx,:] = np.sum(mean_rates[None,:]*rates,axis=-1)/\
+    out_corrs[frac_idx,:] = 1 - np.sum(mean_rates[None,:]*rates,axis=-1)/\
         (np.linalg.norm(mean_rates)*np.linalg.norm(rates,axis=-1))
         
     Lexps[frac_idx,:] = Ls
