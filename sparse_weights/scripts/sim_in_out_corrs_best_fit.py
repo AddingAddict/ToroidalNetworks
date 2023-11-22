@@ -62,7 +62,7 @@ prms['Nori'] = Nori
 prms['NE'] = NE
 prms['NI'] = NI
 
-net,this_M,this_H,this_B,_,_ = su.gen_ring_disorder_tensor(0,prms,1)
+net,this_M,this_H,this_B,_,orig_EPS = su.gen_ring_disorder_tensor(0,prms,1)
 rX = bX + aXs[-1]
 
 basefracs = np.arange(8+1)/8
@@ -85,9 +85,14 @@ def simulate_networks(basefrac):
     Ls = np.zeros((len(seeds)))
     TOs = np.zeros((len(seeds)))
     
-    mean_inps = rX*(basefrac*this_B + (1-basefrac)*this_H)
+    start = time.process_time()
+    
+    mean_inps = rX*(basefrac*this_B + (1-basefrac)*this_H)*orig_EPS
     sol,timeout = integ.sim_dyn_tensor(ri,T,0.0,this_M,mean_inps,this_H,net.C_conds[0],mult_tau=True,max_min=30)
     mean_rates = np.mean(sol[:,mask_time].cpu().numpy(),-1)
+
+    print("Simulating mean network took ",time.process_time() - start," s")
+    print('')
 
     for seed_idx,seed in enumerate(seeds):
         print('simulating seed # '+str(seed_idx+1))
@@ -180,5 +185,5 @@ res_dict['out_corrs'] = out_corrs
 res_dict['Lexps'] = Lexps
 res_dict['timeouts'] = timeouts
 
-with open('./../results/in_out_corrs_{:d}'.format(c_idx)+'.pkl', 'wb') as handle:
+with open('./../results/in_out_corrs_best_fit_{:d}'.format(c_idx)+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)
