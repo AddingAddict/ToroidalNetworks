@@ -49,6 +49,7 @@ net.generate_disorder(1e-3*np.array([[0.15,-1],[0.8,-3]]),
                       np.array([20,20]),500)
 net.generate_tensors()
 rX = 20
+this_B = torch.where(net.C_conds[0],0.25,0.20)
 
 basefracs = np.arange(8+1)/8
 seeds = np.arange(5)
@@ -73,9 +74,8 @@ def simulate_networks(basefrac):
     this_M = net.M_torch
     this_H = net.H_torch
     
-    mean_inps = rX*torch.from_numpy(basefrac*np.max(net.H) + (1-basefrac)*net.H).to(device)
-    sol,timeout = integ.sim_dyn_tensor(ri,T,0.0,this_M,mean_inps,
-                                                    this_H,net.C_conds[0],mult_tau=True,max_min=30)
+    mean_inps = rX*(basefrac*this_B + (1-basefrac)*this_H)
+    sol,timeout = integ.sim_dyn_tensor(ri,T,0.0,this_M,mean_inps,this_H,net.C_conds[0],mult_tau=True,max_min=30)
     mean_rates = np.mean(sol[:,mask_time].cpu().numpy(),-1)
 
     for seed_idx,seed in enumerate(seeds):
@@ -95,8 +95,8 @@ def simulate_networks(basefrac):
 
         start = time.process_time()
 
-        sol,timeout = integ.sim_dyn_tensor(ri,T,0.0,this_M,mean_inps*this_EPS,
-                                                     this_H,net.C_conds[0],mult_tau=True,max_min=30)
+        sol,timeout = integ.sim_dyn_tensor(ri,T,0.0,this_M,mean_inps*this_EPS,this_H,net.C_conds[0],
+                                           mult_tau=True,max_min=30)
         Ls[seed_idx] = np.max(integ.calc_lyapunov_exp_tensor(ri,T[T>=3*Nt],0.0,this_M,
                                                                mean_inps*this_EPS,this_H,
                                                                net.C_conds[0],sol[:,T>=3*Nt],10,1*Nt,2*ri.tE,
