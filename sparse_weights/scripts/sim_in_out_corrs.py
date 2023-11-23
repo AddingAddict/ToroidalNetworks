@@ -42,17 +42,11 @@ Nori = 20
 NE = 4*(N//Nori)//5
 NI = 1*(N//Nori)//5
 
-net = network.RingNetwork(NC=[NE,NI],Nori=Nori)
-net.generate_disorder(1e-3*np.array([[0.15,-1],[0.8,-3]]),
-                      np.array([[30,20],[30,20]]),
-                      np.array([0.25,0.20]),
-                      np.array([20,20]),500)
-net.generate_tensors()
-rX = 20
-this_B = torch.where(net.C_conds[0],0.25,0.20)
-
 basefracs = np.arange(8+1)/8
+disords = 50**(np.arange(0,8+1)/8)
 seeds = np.arange(5)
+
+rX = 20
 
 corrs = np.linspace(0,1,21)[1:-1]
 cvs = np.sqrt(1/(1-corrs)**2 - 1)
@@ -65,7 +59,15 @@ cv = cvs[c_idx]
 shape = 1/cv**2
 scale = 1/shape
 
-def simulate_networks(basefrac):
+def simulate_networks(basefrac,disord):
+    net = network.RingNetwork(NC=[NE,NI],Nori=Nori)
+    net.generate_disorder(disord*1e-3*np.array([[0.15,-1],[0.8,-3]]),
+                        np.array([[30,20],[30,20]]),
+                        np.array([0.25,0.20]),
+                        np.array([20,20]),500/disord)
+    net.generate_tensors()
+    this_B = torch.where(net.C_conds[0],0.25,0.20)
+    
     inps = np.zeros((len(seeds),N))
     rates = np.zeros((len(seeds),N))
     Ls = np.zeros((len(seeds)))
@@ -74,9 +76,14 @@ def simulate_networks(basefrac):
     this_M = net.M_torch
     this_H = net.H_torch
     
+    start = time.process_time()
+    
     mean_inps = rX*(basefrac*this_B + (1-basefrac)*this_H)
     sol,timeout = integ.sim_dyn_tensor(ri,T,0.0,this_M,mean_inps,this_H,net.C_conds[0],mult_tau=True,max_min=30)
     mean_rates = np.mean(sol[:,mask_time].cpu().numpy(),-1)
+
+    print("Simulating mean network took ",time.process_time() - start," s")
+    print('')
 
     for seed_idx,seed in enumerate(seeds):
         print('simulating seed # '+str(seed_idx+1))
@@ -115,45 +122,48 @@ def simulate_networks(basefrac):
     mean_inps = mean_inps.cpu().numpy()
 
     # return mean_inps,rates,mus,muXs,muEs,muIs,Ls,TOs
-    return mean_inps,mean_rates,inps,rates,Ls,TOs
+    return net,mean_inps,mean_rates,inps,rates,Ls,TOs
 
 # Simulate network where structure is removed by increasing baseline fraction
 print('simulating baseline fraction network')
 print('')
         
-μrEs = np.zeros((len(basefracs),len(seeds),Nori))
-μrIs = np.zeros((len(basefracs),len(seeds),Nori))
-ΣrEs = np.zeros((len(basefracs),len(seeds),Nori))
-ΣrIs = np.zeros((len(basefracs),len(seeds),Nori))
-in_corrs = np.zeros((len(basefracs),len(seeds)))
-out_corrs = np.zeros((len(basefracs),len(seeds)))
-Lexps = np.zeros((len(basefracs),len(seeds)))
-timeouts = np.zeros((len(basefracs),len(seeds))).astype(bool)
+μrEs = np.zeros((len(basefracs),len(disords),len(seeds),Nori))
+μrIs = np.zeros((len(basefracs),len(disords),len(seeds),Nori))
+ΣrEs = np.zeros((len(basefracs),len(disords),len(seeds),Nori))
+ΣrIs = np.zeros((len(basefracs),len(disords),len(seeds),Nori))
+in_corrs = np.zeros((len(basefracs),len(disords),len(seeds)))
+out_corrs = np.zeros((len(basefracs),len(disords),len(seeds)))
+Lexps = np.zeros((len(basefracs),len(disords),len(seeds)))
+timeouts = np.zeros((len(basefracs),len(disords),len(seeds))).astype(bool)
 
 for frac_idx,frac in enumerate(basefracs):
     print('simulating basefrac # '+str(frac_idx+1))
     print('')
-    
-    mean_inps,mean_rates,inps,rates,Ls,TOs = simulate_networks(frac)
+    for dis_idx,dis in enumerate(disords):
+        print('simulating disord # '+str(dis_idx+1))
+        print('')
 
-    start = time.process_time()
+        net,mean_inps,mean_rates,inps,rates,Ls,TOs = simulate_networks(frac,dis)
 
-    for nloc in range(Nori):
-        μrEs[frac_idx,:,nloc] = np.mean(rates[:,net.C_idxs[0][nloc]],axis=-1)
-        μrIs[frac_idx,:,nloc] = np.mean(rates[:,net.C_idxs[1][nloc]],axis=-1)
-        ΣrEs[frac_idx,:,nloc] = np.var(rates[:,net.C_idxs[0][nloc]],axis=-1)
-        ΣrIs[frac_idx,:,nloc] = np.var(rates[:,net.C_idxs[1][nloc]],axis=-1)
-        
-    in_corrs[frac_idx,:] = 1 - np.sum(mean_inps[None,:]*inps,axis=-1)/\
-        (np.linalg.norm(mean_inps)*np.linalg.norm(inps,axis=-1))
-    out_corrs[frac_idx,:] = 1 - np.sum(mean_rates[None,:]*rates,axis=-1)/\
-        (np.linalg.norm(mean_rates)*np.linalg.norm(rates,axis=-1))
-        
-    Lexps[frac_idx,:] = Ls
-    timeouts[frac_idx,:] = TOs
+        start = time.process_time()
 
-    print("Saving statistics took ",time.process_time() - start," s")
-    print('')
+        for nloc in range(Nori):
+            μrEs[frac_idx,dis_idx,:,nloc] = np.mean(rates[:,net.C_idxs[0][nloc]],axis=-1)
+            μrIs[frac_idx,dis_idx,:,nloc] = np.mean(rates[:,net.C_idxs[1][nloc]],axis=-1)
+            ΣrEs[frac_idx,dis_idx,:,nloc] = np.var(rates[:,net.C_idxs[0][nloc]],axis=-1)
+            ΣrIs[frac_idx,dis_idx,:,nloc] = np.var(rates[:,net.C_idxs[1][nloc]],axis=-1)
+            
+        in_corrs[frac_idx,dis_idx,:] = 1 - np.sum(mean_inps[None,:]*inps,axis=-1)/\
+            (np.linalg.norm(mean_inps)*np.linalg.norm(inps,axis=-1))
+        out_corrs[frac_idx,dis_idx,:] = 1 - np.sum(mean_rates[None,:]*rates,axis=-1)/\
+            (np.linalg.norm(mean_rates)*np.linalg.norm(rates,axis=-1))
+            
+        Lexps[frac_idx,dis_idx,:] = Ls
+        timeouts[frac_idx,dis_idx,:] = TOs
+
+        print("Saving statistics took ",time.process_time() - start," s")
+        print('')
 
 res_dict = {}
 
