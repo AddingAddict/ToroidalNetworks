@@ -96,7 +96,7 @@ class SpatOriNetwork(network.BaseNetwork):
         else:
             idxs = slice(0,self.N)
         rf_xdiff = network.make_periodic(np.abs(self.XY[idxs,0] - self.XY[idxs,0][:,None]),self.Lrf/2)
-        rf_ydiff = network.make_periodic(np.abs(self.XY[idxs,1] - self.XY[idxs,0][:,None]),self.Lrf/2)
+        rf_ydiff = network.make_periodic(np.abs(self.XY[idxs,1] - self.XY[idxs,1][:,None]),self.Lrf/2)
         if return_mag:
             return np.sqrt(rf_xdiff**2+rf_ydiff**2)
         else:
@@ -229,7 +229,7 @@ class SpatOriNetwork(network.BaseNetwork):
             SWrf,SWori,K,basefrac,True)
         return C_full*(W_mean_full+np.random.normal(size=(self.N,self.N))*np.sqrt(W_var_full))
 
-    def generate_MX(self,W,SWrf,SWori,K,basefrac=0):
+    def generate_MX(self,WX,SWrfX,SWoriX,K,basefrac=0):
         CX_full, WX_mean_full,WX_var_full = self.generate_full_ff_conn(WX,np.zeros(self.n),
             SWrfX,SWoriX,K,basefrac,True)
         return CX_full*(WX_mean_full+np.random.normal(size=(self.N,self.NX*self.Nloc))*np.sqrt(WX_var_full))
@@ -264,5 +264,3 @@ class SpatOriNetwork(network.BaseNetwork):
         self.M_torch = self.M_torch.to(device)
         # self.MX_torch = self.MX_torch.to(device)
         self.H_torch = self.H_torch.to(device)
-
-

@@ -142,6 +142,7 @@ def predict_networks(prms,rX,cA,CVh):
         conv[:,0] = res_dict['conv'][:2]
         conv[:,1] = res_dict['conv'][2:]
         conv[:,2] = res_dict['convd']
+        dmft_res = res_dict.copy()
     else:
         res_dict = dmft.run_two_stage_ring_dmft(prms,rX,cA,CVh,'./../results',ri,Twrm,Tsav,dt)
         rvb = res_dict['rb'][:2]
@@ -174,6 +175,7 @@ def predict_networks(prms,rX,cA,CVh):
         conv[:,0] = res_dict['convp'][:2]
         conv[:,1] = res_dict['convp'][2:]
         conv[:,2] = res_dict['convdp']
+        dmft_res = res_dict.copy()
         
     sWrv2 = sW2+srv2
     sWCrv2 = sW2+sCrv2
@@ -224,7 +226,7 @@ def predict_networks(prms,rX,cA,CVh):
     μmus = μmuEs + μmuIs
     Σmus = ΣmuEs + ΣmuIs
 
-    return μrs,Σrs,μmus,Σmus,μmuEs,ΣmuEs,μmuIs,ΣmuIs,normC,conv
+    return μrs,Σrs,μmus,Σmus,μmuEs,ΣmuEs,μmuIs,ΣmuIs,normC,conv,dmft_res
 
 def calc_bal(μmuE,μmuI,ΣmuE,ΣmuI,N=10000):
     muEs = np.fmax(μmuE + np.sqrt(ΣmuE)*np.random.randn(N),1e-12)
@@ -235,7 +237,7 @@ def calc_bal(μmuE,μmuI,ΣmuE,ΣmuI,N=10000):
 print('simulating baseline fraction network')
 print('')
 
-μrs,Σrs,μmus,Σmus,μmuEs,ΣmuEs,μmuIs,ΣmuIs,normC,conv = predict_networks(prms,rX,cA,CVh)
+μrs,Σrs,μmus,Σmus,μmuEs,ΣmuEs,μmuIs,ΣmuIs,normC,conv,dmft_res = predict_networks(prms,rX,cA,CVh)
 
 start = time.process_time()
 
@@ -313,6 +315,7 @@ res_dict['vsm_opto_stds'] = vsm_opto_stds
 res_dict['vsm_diff_means'] = vsm_diff_means
 res_dict['vsm_diff_stds'] = vsm_diff_stds
 res_dict['vsm_norm_covs'] = vsm_norm_covs
+res_dict['dmft_res'] = dmft_res
 
 with open('./../results/dmft_best_fit_c_{:d}'.format(c_idx)+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)

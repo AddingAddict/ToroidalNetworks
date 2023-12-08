@@ -197,4 +197,3 @@ class RingNetwork(network.BaseNetwork):
         self.M_torch = self.M_torch.to(device)
         # self.MX_torch = self.MX_torch.to(device)
         self.H_torch = self.H_torch.to(device)
-
