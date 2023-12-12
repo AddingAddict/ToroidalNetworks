@@ -130,10 +130,10 @@ def runjobs():
                 
                 #--------------------------------------------------------------------------
                 # Make SBTACH
-                inpath = currwd + "/sim_ring_perturbed.py"
+                inpath = currwd + "/{:s}.py".format(script)
                 c1 = "{:s} -nj {:d} -nr {:d} -nt {:d}".format(inpath,njob,nrep,ntry)
                 
-                jobname="sim_ring_perturbed"+"-njob-{:d}-nrep-{:d}-ntry-{:d}".format(njob,nrep,ntry)
+                jobname="{:s}".format(script)+"-njob-{:d}-nrep-{:d}-ntry-{:d}".format(njob,nrep,ntry)
                 
                 if not args2.test:
                     jobnameDir=os.path.join(ofilesdir, jobname)

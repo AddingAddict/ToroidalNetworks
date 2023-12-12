@@ -29,7 +29,7 @@ njob= args['njob']
 nrep= args['nrep']
 ntry= args['ntry']
 
-with open('./../results/results_ring_'+str(njob)+'.pkl', 'rb') as handle:
+with open('./../results/results_ring_'+str(200+njob)+'.pkl', 'rb') as handle:
     res_dict = pickle.load(handle)[nrep]
     fit_prms = res_dict['prms']
     fit_eX = res_dict['best_monk_eX']
