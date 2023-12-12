@@ -29,7 +29,7 @@ njob= args['njob']
 nrep= args['nrep']
 ntry= args['ntry']
 
-with open('./../results/results_ring_'+str(200+njob)+'.pkl', 'rb') as handle:
+with open('./../results/results_ring_'+str(njob)+'.pkl', 'rb') as handle:
     res_dict = pickle.load(handle)[nrep]
     fit_prms = res_dict['prms']
     fit_eX = res_dict['best_monk_eX']
@@ -151,7 +151,7 @@ def gen_disorder(prm_dict):
     return net,net.M_torch,net.H_torch,B,LAS
 
 resultsdir='./../results/'
-name_results='results_ring_perturb_njob-'+str(njob)+'_nrep-'+str(nrep)+'_ntry-'+str(ntry)+'.pkl'
+name_results='results_ring_perturb_njob-'+str(njob)+'_nrep-'+str(nrep)+'_ntry-'+str(200+ntry)+'.pkl'
 this_results=resultsdir+name_results
 print('Saving all results in '+  name_results)
 print(' ')
