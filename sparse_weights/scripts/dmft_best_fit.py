@@ -17,7 +17,8 @@ args = vars(parser.parse_args())
 print(parser.parse_args())
 c_idx= args['c_idx']
 
-id = None
+# id = None
+id = (133,0,79,3)
 if id is None:
     with open('./../results/best_fit.pkl', 'rb') as handle:
         res_dict = pickle.load(handle)
@@ -317,5 +318,5 @@ res_dict['vsm_diff_stds'] = vsm_diff_stds
 res_dict['vsm_norm_covs'] = vsm_norm_covs
 res_dict['dmft_res'] = dmft_res
 
-with open('./../results/dmft_best_fit_c_{:d}'.format(c_idx)+'.pkl', 'wb') as handle:
+with open('./../results/dmft_best_fit_id_{:s}_c_{:d}'.format(str(id),c_idx)+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)
