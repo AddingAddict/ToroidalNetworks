@@ -24,8 +24,8 @@ args = vars(parser.parse_args())
 print(parser.parse_args())
 c_idx= args['c_idx']
 
-# id = None
-id = (133,0,79,3)
+id = None
+# id = (133,0,79,3)
 if id is None:
     with open('./../results/best_fit.pkl', 'rb') as handle:
         res_dict = pickle.load(handle)
