@@ -20,14 +20,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 parser = argparse.ArgumentParser(description=('This python script takes results from sampled spatial model parameters, '
     'trains a net to interpolate the results, and finds parameters that best fit the experimental results'))
 
-parser.add_argument('--njob', '-nj',  help='which number job', type=int, default=0)
-parser.add_argument('--nrep', '-nr',  help='which number repetition', type=int, default=0)
-parser.add_argument('--ntry', '-nt',  help='which number try', type=int, default=0)
+parser.add_argument('--CVh_mult', '-h',  help='which number job', type=float, default=1.0)
+parser.add_argument('--CVL_mult', '-l',  help='which number repetition', type=float, default=1.0)
 args = vars(parser.parse_args())
 print(parser.parse_args())
-njob= args['njob']
-nrep= args['nrep']
-ntry= args['ntry']
+CVh_mult= args['CVh_mult']
+CVL_mult= args['CVL_mult']
 
 id = None
 # id = (133,0,79,3)
@@ -43,7 +41,7 @@ else:
             id[0],id[1],id[2]), 'rb') as handle:
         res_dict = pickle.load(handle)[id[-1]]
 fit_prms = res_dict['prms']
-fit_eX = res_dict['best_monk_eX']
+fit_CVh = res_dict['best_monk_eX']
 fit_bX = res_dict['best_monk_bX']
 fit_aXs = res_dict['best_monk_aXs']
 
@@ -68,11 +66,12 @@ prms['Nori'] = Nori
 prms['NE'] = NE
 prms['NI'] = NI
 
-seeds = np.arange(6)
+seeds = np.arange(10)
 
 aXs = np.linspace(0,1.1*fit_aXs[-1],9)
 bXs = np.linspace(0.8*fit_bX,1.2*fit_bX,5)
-eX = fit_eX
+CVh = fit_CVh*CVh_mult
+CVL = fit_prms['CVL']*CVL_mult
 
 monk_base_means =       np.array([20.38, 43.32, 54.76, 64.54, 70.97, 72.69])
 monk_base_stds =        np.array([17.06, 32.41, 38.93, 42.76, 45.17, 48.61])
@@ -183,7 +182,7 @@ for aX_idx,aX in enumerate(aXs):
             
             start = time.process_time()
 
-            net,this_M,this_H,this_B,this_LAS,this_EPS = su.gen_ring_disorder_tensor(seed,prms,eX)
+            net,this_M,this_H,this_B,this_LAS,this_EPS = su.gen_ring_disorder_tensor(seed,prms,CVh)
             M = this_M.cpu().numpy()
             H = (rX*(this_B+cA*this_H)*this_EPS).cpu().numpy()
             LAS = this_LAS.cpu().numpy()
@@ -243,7 +242,7 @@ all_opto_means = np.mean(all_opto_means,-1)
 all_opto_stds = np.sqrt(np.mean(all_opto_stds**2,-1))
 all_diff_means = np.mean(all_diff_means,-1)
 all_diff_stds = np.sqrt(np.mean(all_diff_stds**2,-1))
-all_norm_covs = all_norm_covs / all_diff_stds
+all_norm_covs = all_norm_covs / all_diff_stds**2
 vsm_norm_covs = np.mean(vsm_norm_covs*vsm_diff_stds**2,-1)
 vsm_base_means = np.mean(vsm_base_means,-1)
 vsm_base_stds = np.sqrt(np.mean(vsm_base_stds**2,-1))
@@ -251,7 +250,7 @@ vsm_opto_means = np.mean(vsm_opto_means,-1)
 vsm_opto_stds = np.sqrt(np.mean(vsm_opto_stds**2,-1))
 vsm_diff_means = np.mean(vsm_diff_means,-1)
 vsm_diff_stds = np.sqrt(np.mean(vsm_diff_stds**2,-1))
-vsm_norm_covs = vsm_norm_covs / vsm_diff_stds
+vsm_norm_covs = vsm_norm_covs / vsm_diff_stds**2
 
 start = time.process_time()
 
@@ -271,6 +270,7 @@ res_dict['vsm_opto_stds'] = vsm_opto_stds
 res_dict['vsm_diff_means'] = vsm_diff_means
 res_dict['vsm_diff_stds'] = vsm_diff_stds
 res_dict['vsm_norm_covs'] = vsm_norm_covs
+res_dict['timeouts'] = timeouts
 
 all_base_mean_itp = RegularGridInterpolator((aXs,bXs), all_base_means)
 all_base_std_itp = RegularGridInterpolator((aXs,bXs), all_base_stds)
@@ -325,7 +325,8 @@ best_monk_bX,best_monk_aXs,best_monk_base_means,best_monk_base_stds,\
     best_monk_opto_means,best_monk_opto_stds,best_monk_diff_means,best_monk_diff_stds,\
     best_monk_norm_covs,best_monk_cost = fit_best_monk_inputs()
 
-res_dict['best_monk_eX'] = eX
+res_dict['best_monk_eX'] = CVh
+res_dict['best_monk_eL'] = CVL
 res_dict['best_monk_bX'] = best_monk_bX
 res_dict['best_monk_aXs'] = best_monk_aXs
 res_dict['best_monk_base_means'] = best_monk_base_means
@@ -343,5 +344,6 @@ print(res_dict)
 print(best_monk_cost)
 print('')
 
-with open('./../results/refit_inputs_id_{:s}'.format(str(id))+'.pkl', 'wb') as handle:
+with open('./../results/refit_inputs_id_{:s}_CVhmult_{:.1f}_CVLmult_{:.1f}'.format(str(id),CVh_mult,CVL_mult)+'.pkl',
+          'wb') as handle:
     pickle.dump(res_dict,handle)
