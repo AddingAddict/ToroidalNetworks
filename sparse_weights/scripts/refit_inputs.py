@@ -20,8 +20,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 parser = argparse.ArgumentParser(description=('This python script takes results from sampled spatial model parameters, '
     'trains a net to interpolate the results, and finds parameters that best fit the experimental results'))
 
-parser.add_argument('--CVh_mult', '-h',  help='which number job', type=float, default=1.0)
-parser.add_argument('--CVL_mult', '-l',  help='which number repetition', type=float, default=1.0)
+parser.add_argument('--CVh_mult', '-CVhm',  help='which number job', type=float, default=1.0)
+parser.add_argument('--CVL_mult', '-CVLm',  help='which number repetition', type=float, default=1.0)
 args = vars(parser.parse_args())
 print(parser.parse_args())
 CVh_mult= args['CVh_mult']

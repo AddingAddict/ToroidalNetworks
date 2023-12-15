@@ -106,7 +106,7 @@ def runjobs():
                     text_file.write("#SBATCH --account=theory \n")
                 text_file.write("#SBATCH --job-name="+jobname+ "\n")
                 text_file.write("#SBATCH -t 0-11:59  \n")
-                text_file.write("#SBATCH --mem-per-cpu=40gb \n")
+                text_file.write("#SBATCH --mem-per-cpu=15gb \n")
                 text_file.write("#SBATCH --gres=gpu\n")
                 text_file.write("#SBATCH -c 1 \n")
                 text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
