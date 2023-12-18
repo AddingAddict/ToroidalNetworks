@@ -72,6 +72,7 @@ aXs = np.linspace(0,1.1*fit_aXs[-1],9)
 bXs = np.linspace(0.8*fit_bX,1.2*fit_bX,5)
 CVh = fit_CVh*CVh_mult
 CVL = fit_prms['CVL']*CVL_mult
+prms['CVL'] = CVL
 
 monk_base_means =       np.array([20.38, 43.32, 54.76, 64.54, 70.97, 72.69])
 monk_base_stds =        np.array([17.06, 32.41, 38.93, 42.76, 45.17, 48.61])
@@ -344,6 +345,6 @@ print(res_dict)
 print(best_monk_cost)
 print('')
 
-with open('./../results/refit_inputs_id_{:s}_CVhmult_{:.1f}_CVLmult_{:.1f}'.format(str(id),CVh_mult,CVL_mult)+'.pkl',
+with open('./../results/refit_inputs_id_{:s}_CVhmult_{:.2f}_CVLmult_{:.2f}'.format(str(id),CVh_mult,CVL_mult)+'.pkl',
           'wb') as handle:
     pickle.dump(res_dict,handle)
