@@ -83,20 +83,20 @@ def runjobs():
     
     #--------------------------------------------------------------------------
     # The array of hashes
-    c1_Vec=range(5)
-    c2_Vec=range(5)
+    con1_Vec=range(5)
+    con2_Vec=range(5)
     
-    for c1 in c1_Vec:
-        for c2 in c2_Vec:
+    for con1 in con1_Vec:
+        for con2 in con2_Vec:
 
             time.sleep(0.2)
             
             #--------------------------------------------------------------------------
             # Make SBTACH
             inpath = currwd + "/sim_normalization.py"
-            c1 = "{:s} -c1 {:d} -c2 {:d}".format(inpath,c1,c2)
+            c1 = "{:s} -c1 {:d} -c2 {:d}".format(inpath,con1,con2)
             
-            jobname="sim_normalization"+"-c1-{:d}-c2-{:d}".format(c1,c2)
+            jobname="sim_normalization"+"-c1-{:d}-c2-{:d}".format(con1,con2)
             
             if not args2.test:
                 jobnameDir=os.path.join(ofilesdir, jobname)
