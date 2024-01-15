@@ -88,6 +88,8 @@ def runjobs():
     
     for con1 in con1_Vec:
         for con2 in con2_Vec:
+            if con2 > con1:
+                continue
 
             time.sleep(0.2)
             
