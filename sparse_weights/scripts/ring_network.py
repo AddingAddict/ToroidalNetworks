@@ -16,7 +16,7 @@ class RingNetwork(network.BaseNetwork):
         self.Nori = int(Nori)
         self.Nloc = self.Nori
 
-        super().__init__(seed=seed, n=n, NC=NC, Nloc=self.Nloc, profile='gaussian', normalize_by_mean=False)
+        super().__init__(seed=seed, n=n, NC=NC, Nloc=self.Nloc, profile='wrapgauss', normalize_by_mean=False)
 
         self.set_Z()
 
@@ -49,12 +49,12 @@ class RingNetwork(network.BaseNetwork):
         ori_dist = self.get_ori_dist(vis_ori)
         return np.where(ori_dist < delta_ori)
 
-    def generate_full_vector(self,Sori,kernel="nonnormgaussian",byloc=True,vis_ori=None):
+    def generate_full_vector(self,Sori,kernel="basesubwrapgauss",byloc=True,vis_ori=None):
         ori_dist = self.get_ori_dist(vis_ori=vis_ori,byloc=byloc)
         full_vector = network.apply_kernel(ori_dist,Sori,self.Lori,kernel=kernel)
         return full_vector
 
-    def generate_full_kernel(self,Sori,kernel="gaussian",byloc=True):
+    def generate_full_kernel(self,Sori,kernel="wrapgauss",byloc=True):
         ori_diff = self.get_ori_diff(byloc=byloc)
         full_kernel = network.apply_kernel(ori_diff,Sori,self.Lori,self.Lori/self.Nori,kernel=kernel)
         full_kernel /= np.sum(full_kernel,1)[:,None]

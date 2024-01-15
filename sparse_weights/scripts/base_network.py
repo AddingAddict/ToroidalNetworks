@@ -6,6 +6,9 @@ from scipy.special import erf, erfi
 from mpmath import fp
 
 jtheta = np.vectorize(fp.jtheta, 'D')
+
+def wrapnormdens(x,S):
+    return np.real(jtheta(3,x/2,np.exp(-S**2/2)))/(2*np.pi)
         
 def make_periodic(x,halfL):
     '''
@@ -56,20 +59,29 @@ def apply_kernel(x,S,L,dx=None,kernel='gaussian'):
         out = np.exp(-x**2/(2*S**2))
     elif kernel == 'exponential':
         out = np.exp(-np.abs(x)/S)/S
+    elif kernel == 'nonnormexponential':
+        out = np.exp(-np.abs(x)/S)
     elif kernel == 'vonmisses':
         x_rad=x/(L/2)*np.pi
         S_rad=S/(L/2)*np.pi
         d_rad=np.pi/(L/2)
         out = np.exp(np.cos(x_rad)/S_rad)/(2*np.pi*i0(1/S_rad))*d_rad
-    elif kernel == 'jtheta':
+    elif kernel == 'wrapgauss':
         x_rad=x/(L/2)*np.pi
         S_rad=S/(L/2)*np.pi
         d_rad=np.pi/(L/2)
-        out = np.real(jtheta(3,x_rad/2,np.exp(-S_rad**2/2)))/(2*np.pi)*d_rad
-    elif kernel == 'nonnormjtheta':
+        out = wrapnormdens(x_rad,S_rad)*d_rad
+    elif kernel == 'nonnormwrapgauss':
         x_rad=x/(L/2)*np.pi
         S_rad=S/(L/2)*np.pi
-        out = np.real(jtheta(3,dori_rad/2,np.exp(-S_rad**2/2)))/np.real(jtheta(3,0,np.exp(-S_rad**2/2)))
+        d_rad=np.pi/(L/2)
+        out = wrapnormdens(x_rad,S_rad)/wrapnormdens(0,S_rad)
+    elif kernel == 'basesubwrapgauss':
+        x_rad=x/(L/2)*np.pi
+        S_rad=S/(L/2)*np.pi
+        d_rad=np.pi/(L/2)
+        out = (wrapnormdens(x_rad,S_rad)-wrapnormdens(np.pi,S_rad))/\
+            (wrapnormdens(0,S_rad)-wrapnormdens(np.pi,S_rad))
     else:
         raise Exception('kernel not implemented')
     if dx is None:

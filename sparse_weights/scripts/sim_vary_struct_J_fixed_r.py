@@ -179,9 +179,9 @@ def simulate_networks(prms,rX,cA,CVh):
 
         base_sol,base_timeout = integ.sim_dyn_tensor(ri,T,0.0,this_M,rX*(this_B+cA*this_H)*this_EPS,
                                                      this_LAS,net.C_conds[0],mult_tau=True,max_min=30)
-        Ls[seed_idx,0] = np.max(integ.calc_lyapunov_exp_tensor(ri,T[T>=4*Nt],0.0,this_M,
+        Ls[seed_idx,0] = np.max(integ.calc_lyapunov_exp_tensor(ri,T[T>=3*Nt],0.0,this_M,
                                                                rX*(this_B+cA*this_H)*this_EPS,this_LAS,
-                                                               net.C_conds[0],base_sol[:,T>=4*Nt],10,2*Nt,2*ri.tE,
+                                                               net.C_conds[0],base_sol[:,T>=3*Nt],10,1*Nt,2*ri.tE,
                                                                mult_tau=True).cpu().numpy())
         rs[seed_idx,0] = np.mean(base_sol[:,mask_time].cpu().numpy(),-1)
         TOs[seed_idx,0] = base_timeout
@@ -193,9 +193,9 @@ def simulate_networks(prms,rX,cA,CVh):
         
         opto_sol,opto_timeout = integ.sim_dyn_tensor(ri,T,1.0,this_M,rX*(this_B+cA*this_H)*this_EPS,
                                                      this_LAS,net.C_conds[0],mult_tau=True,max_min=30)
-        Ls[seed_idx,1] = np.max(integ.calc_lyapunov_exp_tensor(ri,T[T>=4*Nt],1.0,this_M,
+        Ls[seed_idx,1] = np.max(integ.calc_lyapunov_exp_tensor(ri,T[T>=3*Nt],1.0,this_M,
                                                                rX*(this_B+cA*this_H)*this_EPS,this_LAS,
-                                                               net.C_conds[0],opto_sol[:,T>=4*Nt],10,2*Nt,2*ri.tE,
+                                                               net.C_conds[0],opto_sol[:,T>=3*Nt],10,1*Nt,2*ri.tE,
                                                                mult_tau=True).cpu().numpy())
         rs[seed_idx,1] = np.mean(opto_sol[:,mask_time].cpu().numpy(),-1)
         TOs[seed_idx,1] = opto_timeout
