@@ -23,6 +23,8 @@ print(parser.parse_args())
 c1_idx= args['c1_idx']
 c2_idx= args['c2_idx']
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 id = None
 if id is None:
     with open('./../results/best_fit.pkl', 'rb') as handle:
@@ -114,7 +116,7 @@ def simulate_networks(prms,rX,cA1,cA2,CVh):
         start = time.process_time()
 
         net,this_M,this_H1,this_B,this_LAS,this_EPS = su.gen_ring_disorder_tensor(seed,prms,CVh)
-        this_H2 = np.roll(this_H1,N//2)
+        this_H2 = torch.roll(this_H1,N//2).to(device)
         M = this_M.cpu().numpy()
         H = (rX*(this_B+cA1*this_H1+cA2*this_H2)*this_EPS).cpu().numpy()
         LAS = this_LAS.cpu().numpy()
