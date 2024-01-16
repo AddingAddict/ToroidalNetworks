@@ -81,7 +81,7 @@ cons = np.arange(0,4+1)/4
 print('simulating contrast # '+str(c1_idx+1)+' for peak 1, contrast # '+str(c2_idx+1)+' for peak 2')
 print('')
 con1 = cons[c1_idx]
-con2 = cons[c1_idx]
+con2 = cons[c2_idx]
 
 cA1 = con1*aXs[-1]/bX
 cA2 = con2*aXs[-1]/bX

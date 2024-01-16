@@ -16,10 +16,6 @@ from mpmath import fp
 sr2 = np.sqrt(2)
 sr2pi = np.sqrt(2*np.pi)
 srpi = np.sqrt(np.pi)
-inv3 = 1./3.
-
-def algsig(x,k):
-    return x/(1+np.abs(x)**k)**(1/k)
 
 def expval(fun,us,sigs):
     if np.isscalar(us):
