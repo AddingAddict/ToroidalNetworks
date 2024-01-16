@@ -21,6 +21,8 @@ args = vars(parser.parse_args())
 print(parser.parse_args())
 tune_idx= args['tune_idx']
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 id = None
 if id is None:
     with open('./../results/best_fit.pkl', 'rb') as handle:
@@ -112,7 +114,14 @@ def simulate_networks(prms,rX,cA,CVh):
         net,this_M,this_H,this_B,this_LAS,this_EPS = su.gen_ring_disorder_tensor(seed,prms,CVh)
         M = this_M.cpu().numpy()
         H = (rX*(this_B+cA*this_H)*this_EPS).cpu().numpy()
+        
+        # build LAS
         LAS = this_LAS.cpu().numpy()
+        doris = net.get_ori_dist(byloc=True)
+        Lfacts = (1-tune) + tune*base_net.apply_kernel(doris,prms['SoriF'],net.Lori,kernel='basesubwrapgauss')
+        for nloc in range(Nori):
+            LAS[net.C_idxs[0][nloc]] *= Lfacts[nloc]
+        this_LAS = torch.from_numpy(LAS).to(device)
 
         print("Generating disorder took ",time.process_time() - start," s")
         print('')
@@ -173,8 +182,6 @@ def simulate_networks(prms,rX,cA,CVh):
 print('simulating baseline fraction network')
 print('')
 this_prms = prms.copy()
-this_prms['CVL'] = newCVL
-this_prms['basefrac'] = 1-struct
 
 net,rs,mus,muEs,muIs,Ls,TOs = simulate_networks(this_prms,rX,cA,CVh)
 
@@ -211,6 +218,7 @@ timeouts[:,:] = TOs
 
 seed_mask = np.logical_not(np.any(timeouts,axis=-1))
 vsm_mask = net.get_oriented_neurons()[0]
+osm_mask = net.get_oriented_neurons(vis_ori=90)[0]
 
 base_rates = rs[:,0,:]
 opto_rates = rs[:,1,:]
@@ -233,6 +241,15 @@ vsm_diff_means = np.mean(diff_rates[seed_mask,:][:,vsm_mask])
 vsm_diff_stds = np.std(diff_rates[seed_mask,:][:,vsm_mask])
 vsm_norm_covs = np.cov(base_rates[seed_mask,:][:,vsm_mask].flatten(),
     diff_rates[seed_mask,:][:,vsm_mask].flatten())[0,1] / vsm_diff_stds**2
+
+osm_base_means = np.mean(base_rates[seed_mask,:][:,osm_mask])
+osm_base_stds = np.std(base_rates[seed_mask,:][:,osm_mask])
+osm_opto_means = np.mean(opto_rates[seed_mask,:][:,osm_mask])
+osm_opto_stds = np.std(opto_rates[seed_mask,:][:,osm_mask])
+osm_diff_means = np.mean(diff_rates[seed_mask,:][:,osm_mask])
+osm_diff_stds = np.std(diff_rates[seed_mask,:][:,osm_mask])
+osm_norm_covs = np.cov(base_rates[seed_mask,:][:,osm_mask].flatten(),
+    diff_rates[seed_mask,:][:,osm_mask].flatten())[0,1] / osm_diff_stds**2
 
 print("Saving statistics took ",time.process_time() - start," s")
 print('')
@@ -264,7 +281,14 @@ res_dict['vsm_opto_stds'] = vsm_opto_stds
 res_dict['vsm_diff_means'] = vsm_diff_means
 res_dict['vsm_diff_stds'] = vsm_diff_stds
 res_dict['vsm_norm_covs'] = vsm_norm_covs
+res_dict['osm_base_means'] = osm_base_means
+res_dict['osm_base_stds'] = osm_base_stds
+res_dict['osm_opto_means'] = osm_opto_means
+res_dict['osm_opto_stds'] = osm_opto_stds
+res_dict['osm_diff_means'] = osm_diff_means
+res_dict['osm_diff_stds'] = osm_diff_stds
+res_dict['osm_norm_covs'] = osm_norm_covs
 res_dict['timeouts'] = timeouts
 
-with open('./../results/vary_id_{:s}_struct_{:d}_CVL_{:d}'.format(str(id),struct_idx,CVL_idx)+'.pkl', 'wb') as handle:
+with open('./../results/vary_id_{:s}_tune_{:d}'.format(str(id),tune_idx)+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)
