@@ -86,6 +86,7 @@ def runjobs():
     with open('./../notebooks/candidate_prms.txt', 'r') as f:
         id_list = f.read().split('\n')
         max_njobs = len(id_list)
+    print('total number of jobs: {:d}'.format(max_njobs))
 
     if cluster=='axon':
         njob_skip = 20
@@ -127,43 +128,43 @@ def runjobs():
                     os.system("sbatch " +jobnameDir);
             else:
                 print (c1)
-        else:
-            # The array of hashes
-            njob_Vec=range(max_njobs)
-            
-            for njob in njob_Vec:
+    else:
+        # The array of hashes
+        njob_Vec=range(max_njobs)
+        
+        for njob in njob_Vec:
 
-                time.sleep(0.2)
+            time.sleep(0.2)
+            
+            #--------------------------------------------------------------------------
+            # Make SBTACH
+            inpath = currwd + "/refit_candidate_prms.py"
+            c1 = "{:s} -n {:d}".format(inpath,njob)
+            
+            jobname="refit_candidate_prms"
+            
+            if not args2.test:
+                jobnameDir=os.path.join(ofilesdir, jobname)
+                text_file=open(jobnameDir, "w");
+                os.system("chmod u+x "+ jobnameDir)
+                text_file.write("#!/bin/sh \n")
+                if cluster=='haba' or cluster=='moto' or cluster=='burg':
+                    text_file.write("#SBATCH --account=theory \n")
+                text_file.write("#SBATCH --job-name="+jobname+ "\n")
+                text_file.write("#SBATCH -t 0-11:59  \n")
+                text_file.write("#SBATCH --mem-per-cpu=15gb \n")
+                text_file.write("#SBATCH --gres=gpu\n")
+                text_file.write("#SBATCH -c 1 \n")
+                text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
+                text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
+                text_file.write("python  -W ignore " + c1+" \n")
+                text_file.write("echo $PATH  \n")
+                text_file.write("exit 0  \n")
+                text_file.close()
                 
-                #--------------------------------------------------------------------------
-                # Make SBTACH
-                inpath = currwd + "/refit_candidate_prms.py"
-                c1 = "{:s} -n {:d}".format(inpath,njob)
-                
-                jobname="refit_candidate_prms"
-                
-                if not args2.test:
-                    jobnameDir=os.path.join(ofilesdir, jobname)
-                    text_file=open(jobnameDir, "w");
-                    os.system("chmod u+x "+ jobnameDir)
-                    text_file.write("#!/bin/sh \n")
-                    if cluster=='haba' or cluster=='moto' or cluster=='burg':
-                        text_file.write("#SBATCH --account=theory \n")
-                    text_file.write("#SBATCH --job-name="+jobname+ "\n")
-                    text_file.write("#SBATCH -t 0-11:59  \n")
-                    text_file.write("#SBATCH --mem-per-cpu=15gb \n")
-                    text_file.write("#SBATCH --gres=gpu\n")
-                    text_file.write("#SBATCH -c 1 \n")
-                    text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
-                    text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
-                    text_file.write("python  -W ignore " + c1+" \n")
-                    text_file.write("echo $PATH  \n")
-                    text_file.write("exit 0  \n")
-                    text_file.close()
-                    
-                    os.system("sbatch " +jobnameDir);
-                else:
-                    print (c1)
+                os.system("sbatch " +jobnameDir);
+            else:
+                print (c1)
 
 
 
