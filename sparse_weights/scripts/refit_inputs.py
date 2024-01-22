@@ -27,8 +27,8 @@ print(parser.parse_args())
 CVh_mult= args['CVh_mult']
 CVL_mult= args['CVL_mult']
 
-id = None
-# id = (133,0,79,3)
+# id = None
+id = (291,0,297,2)
 if id is None:
     with open('./../results/best_fit.pkl', 'rb') as handle:
         res_dict = pickle.load(handle)
@@ -229,7 +229,7 @@ for aX_idx,aX in enumerate(aXs):
                 all_norm_covs[aX_idx,bX_idx,seed_idx] = 1000
                 vsm_norm_covs[aX_idx,bX_idx,seed_idx] = 1000
 
-            timeout = timeout or all_base_means[aX_idx,bX_idx,seed_idx] > 200
+            timeout = timeout or vsm_base_means[aX_idx,bX_idx,seed_idx] > 100
             
             timeouts[aX_idx,bX_idx,seed_idx] = timeout
 
