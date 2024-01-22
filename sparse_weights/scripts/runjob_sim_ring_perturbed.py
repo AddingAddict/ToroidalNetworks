@@ -86,7 +86,7 @@ def runjobs():
     
     
     #--------------------------------------------------------------------------
-    for script in ('sim_ring_perturbed','sim_ring_perturbed_large'):
+    for script in ('sim_ring_perturbed_large','sim_ring_perturbed'):
         if cluster=='axon':
             ntry_skip = 10
             ntry_Vec=range(0,100,ntry_skip)

@@ -122,10 +122,7 @@ def runjobs():
                 text_file.write("exit 0  \n")
                 text_file.close()
 
-                if cluster=='axon':
-                    os.system("sbatch -p burst " +jobnameDir);
-                else:
-                    os.system("sbatch " +jobnameDir);
+                os.system("sbatch " +jobnameDir);
             else:
                 print (c1)
     else:
