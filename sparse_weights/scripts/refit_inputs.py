@@ -28,7 +28,7 @@ CVh_mult= args['CVh_mult']
 CVL_mult= args['CVL_mult']
 
 # id = None
-id = (291,0,297,2)
+id = (291,1,297,2)
 if id is None:
     with open('./../results/best_fit.pkl', 'rb') as handle:
         res_dict = pickle.load(handle)
@@ -304,7 +304,7 @@ def fit_best_monk_inputs():
                         (pred_base_stds-monk_base_stds)/monk_base_stds_err,
                         (pred_opto_means-monk_opto_means)/monk_opto_means_err,
                         (pred_opto_stds-monk_opto_stds)/monk_opto_stds_err,
-                        (pred_diff_means-monk_diff_means)/monk_diff_means_err,
+                        # (pred_diff_means-monk_diff_means)/monk_diff_means_err,
                         (pred_diff_stds-monk_diff_stds)/monk_diff_stds_err,
                         (pred_norm_covs-monk_norm_covs)/monk_norm_covs_err])
         return res.ravel()

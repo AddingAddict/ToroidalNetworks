@@ -84,7 +84,7 @@ def runjobs():
     #--------------------------------------------------------------------------
     # The array of hashes
     CVh_mult_vec = np.array([1.0,])
-    CVL_mult_vec = 10**(0.5*np.arange(8+1)/8 - 0.5)
+    CVL_mult_vec = 10**(0.5*np.arange(4+1)/4)
 
     for CVh_mult in CVh_mult_vec:
         for CVL_mult in CVL_mult_vec:
@@ -93,7 +93,7 @@ def runjobs():
             #--------------------------------------------------------------------------
             # Make SBTACH
             inpath = currwd + "/refit_inputs.py"
-            c1 = "{:s} -h {:f} -l {:f}".format(inpath,CVh_mult,CVL_mult)
+            c1 = "{:s} -CVhm {:f} -CVLm {:f}".format(inpath,CVh_mult,CVL_mult)
             
             jobname="refit_inputs"
             
