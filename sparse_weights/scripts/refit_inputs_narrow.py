@@ -28,7 +28,7 @@ CVh_mult= args['CVh_mult']
 CVL_mult= args['CVL_mult']
 
 # id = None
-id = (291,1,297,2)
+id = (291,1,255,3)
 if id is None:
     with open('./../results/best_fit.pkl', 'rb') as handle:
         res_dict = pickle.load(handle)
@@ -88,7 +88,7 @@ monk_opto_means_err =   np.array([ 5.03,  5.86,  6.16,  6.74,  6.50,  7.15])
 monk_opto_stds_err =    np.array([ 7.73,  6.47,  5.90,  6.20,  4.93,  4.74])
 monk_diff_means_err =   np.array([ 5.28,  5.90,  5.84,  6.28,  5.75,  5.76])
 monk_diff_stds_err =    np.array([ 8.36,  8.74,  8.01, 10.04,  8.51,  8.94])
-monk_norm_covs_err =0.5*np.array([ 0.1075,  0.1354,  0.1579,  0.1496,  0.1717,  0.1665])
+monk_norm_covs_err =    np.array([ 0.1075,  0.1354,  0.1579,  0.1496,  0.1717,  0.1665])
 
 monk_nc = len(monk_base_means)
 
@@ -216,14 +216,14 @@ for aX_idx,aX in enumerate(aXs):
             all_norm_covs[aX_idx,bX_idx,seed_idx] = np.cov(base_rates,
                 diff_rates)[0,1] / all_diff_stds[aX_idx,bX_idx,seed_idx]**2
 
-            vsm_base_means[aX_idx,bX_idx,seed_idx] = np.mean(base_rates[net.get_oriented_neurons(delta_ori=10)])
-            vsm_base_stds[aX_idx,bX_idx,seed_idx] = np.std(base_rates[net.get_oriented_neurons(delta_ori=10)])
-            vsm_opto_means[aX_idx,bX_idx,seed_idx] = np.mean(opto_rates[net.get_oriented_neurons(delta_ori=10)])
-            vsm_opto_stds[aX_idx,bX_idx,seed_idx] = np.std(opto_rates[net.get_oriented_neurons(delta_ori=10)])
-            vsm_diff_means[aX_idx,bX_idx,seed_idx] = np.mean(diff_rates[net.get_oriented_neurons(delta_ori=10)])
-            vsm_diff_stds[aX_idx,bX_idx,seed_idx] = np.std(diff_rates[net.get_oriented_neurons(delta_ori=10)])
-            vsm_norm_covs[aX_idx,bX_idx,seed_idx] = np.cov(base_rates[net.get_oriented_neurons(delta_ori=10)],
-                diff_rates[net.get_oriented_neurons(delta_ori=10)])[0,1] / vsm_diff_stds[aX_idx,bX_idx,seed_idx]**2
+            vsm_base_means[aX_idx,bX_idx,seed_idx] = np.mean(base_rates[net.get_oriented_neurons(delta_ori=4.5)])
+            vsm_base_stds[aX_idx,bX_idx,seed_idx] = np.std(base_rates[net.get_oriented_neurons(delta_ori=4.5)])
+            vsm_opto_means[aX_idx,bX_idx,seed_idx] = np.mean(opto_rates[net.get_oriented_neurons(delta_ori=4.5)])
+            vsm_opto_stds[aX_idx,bX_idx,seed_idx] = np.std(opto_rates[net.get_oriented_neurons(delta_ori=4.5)])
+            vsm_diff_means[aX_idx,bX_idx,seed_idx] = np.mean(diff_rates[net.get_oriented_neurons(delta_ori=4.5)])
+            vsm_diff_stds[aX_idx,bX_idx,seed_idx] = np.std(diff_rates[net.get_oriented_neurons(delta_ori=4.5)])
+            vsm_norm_covs[aX_idx,bX_idx,seed_idx] = np.cov(base_rates[net.get_oriented_neurons(delta_ori=4.5)],
+                diff_rates[net.get_oriented_neurons(delta_ori=4.5)])[0,1] / vsm_diff_stds[aX_idx,bX_idx,seed_idx]**2
             
             if timeout:
                 all_norm_covs[aX_idx,bX_idx,seed_idx] = 1000
