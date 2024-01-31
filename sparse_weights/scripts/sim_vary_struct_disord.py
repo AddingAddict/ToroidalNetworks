@@ -124,7 +124,8 @@ for seed_idx,seed in enumerate(seeds):
     timeouts[seed_idx] = base_timeout or opto_timeout
 
 seed_mask = np.logical_not(timeouts)
-vsm_mask = net.get_oriented_neurons()[0]
+vsm_mask = net.get_oriented_neurons(delta_ori=4.5)[0]
+osm_mask = net.get_oriented_neurons(delta_ori=4.5,vis_ori=90)[0]
 
 all_base_means = np.mean(base_rates[seed_mask,:])
 all_base_stds = np.std(base_rates[seed_mask,:])
@@ -144,6 +145,15 @@ vsm_diff_stds = np.std(diff_rates[seed_mask,:][:,vsm_mask])
 vsm_norm_covs = np.cov(base_rates[seed_mask,:][:,vsm_mask].flatten(),
     diff_rates[seed_mask,:][:,vsm_mask].flatten())[0,1] / vsm_diff_stds**2
 
+osm_base_means = np.mean(base_rates[seed_mask,:][:,osm_mask])
+osm_base_stds = np.std(base_rates[seed_mask,:][:,osm_mask])
+osm_opto_means = np.mean(opto_rates[seed_mask,:][:,osm_mask])
+osm_opto_stds = np.std(opto_rates[seed_mask,:][:,osm_mask])
+osm_diff_means = np.mean(diff_rates[seed_mask,:][:,osm_mask])
+osm_diff_stds = np.std(diff_rates[seed_mask,:][:,osm_mask])
+osm_norm_covs = np.cov(base_rates[seed_mask,:][:,osm_mask].flatten(),
+    diff_rates[seed_mask,:][:,osm_mask].flatten())[0,1] / osm_diff_stds**2
+
 res_dict = {}
 res_dict['prms'] = this_prms
 res_dict['all_base_means'] = all_base_means
@@ -160,6 +170,13 @@ res_dict['vsm_opto_stds'] = vsm_opto_stds
 res_dict['vsm_diff_means'] = vsm_diff_means
 res_dict['vsm_diff_stds'] = vsm_diff_stds
 res_dict['vsm_norm_covs'] = vsm_norm_covs
+res_dict['osm_base_means'] = osm_base_means
+res_dict['osm_base_stds'] = osm_base_stds
+res_dict['osm_opto_means'] = osm_opto_means
+res_dict['osm_opto_stds'] = osm_opto_stds
+res_dict['osm_diff_means'] = osm_diff_means
+res_dict['osm_diff_stds'] = osm_diff_stds
+res_dict['osm_norm_covs'] = osm_norm_covs
 res_dict['timeouts'] = timeouts
 
 with open('./../results/vary_id_{:s}_struct_{:d}_disord_{:d}'.format(str(id),struct_idx,disord_idx)+'.pkl', 'wb') as handle:

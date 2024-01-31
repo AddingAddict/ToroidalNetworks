@@ -28,6 +28,10 @@ id = None
 if id is None:
     with open('./../results/best_fit.pkl', 'rb') as handle:
         res_dict = pickle.load(handle)
+elif len(id)==1:
+    with open('./../results/refit_candidate_prms_{:d}.pkl'.format(
+            id[0]), 'rb') as handle:
+        res_dict = pickle.load(handle)
 elif len(id)==2:
     with open('./../results/results_ring_{:d}.pkl'.format(
             id[0]), 'rb') as handle:
@@ -243,7 +247,8 @@ Lexps[:,:] = Ls
 timeouts[:,:] = TOs
 
 seed_mask = np.logical_not(np.any(timeouts,axis=-1))
-vsm_mask = net.get_oriented_neurons()[0]
+vsm_mask = net.get_oriented_neurons(delta_ori=4.5)[0]
+osm_mask = net.get_oriented_neurons(delta_ori=4.5,vis_ori=90)[0]
 
 base_rates = rs[:,0,:]
 opto_rates = rs[:,1,:]
@@ -272,6 +277,18 @@ vsm_norm_covs = np.cov(base_rates[seed_mask,:][:,vsm_mask].flatten(),
 vsm_bals = np.mean(np.abs(mus[seed_mask,0,:][:,vsm_mask])/muEs[seed_mask,0,:][:,vsm_mask])
 vsm_oves = np.mean((muXs[seed_mask,1,:][:,vsm_mask]-muXs[seed_mask,0,:][:,vsm_mask])/muEs[seed_mask,0,:][:,vsm_mask])
 vsm_ovxs = np.mean(muXs[seed_mask,1,:][:,vsm_mask]/muXs[seed_mask,0,:][:,vsm_mask]-1)
+
+osm_base_means = np.mean(base_rates[seed_mask,:][:,osm_mask])
+osm_base_stds = np.std(base_rates[seed_mask,:][:,osm_mask])
+osm_opto_means = np.mean(opto_rates[seed_mask,:][:,osm_mask])
+osm_opto_stds = np.std(opto_rates[seed_mask,:][:,osm_mask])
+osm_diff_means = np.mean(diff_rates[seed_mask,:][:,osm_mask])
+osm_diff_stds = np.std(diff_rates[seed_mask,:][:,osm_mask])
+osm_norm_covs = np.cov(base_rates[seed_mask,:][:,osm_mask].flatten(),
+    diff_rates[seed_mask,:][:,osm_mask].flatten())[0,1] / osm_diff_stds**2
+osm_bals = np.mean(np.abs(mus[seed_mask,0,:][:,osm_mask])/muEs[seed_mask,0,:][:,osm_mask])
+osm_oves = np.mean((muXs[seed_mask,1,:][:,osm_mask]-muXs[seed_mask,0,:][:,osm_mask])/muEs[seed_mask,0,:][:,osm_mask])
+osm_ovxs = np.mean(muXs[seed_mask,1,:][:,osm_mask]/muXs[seed_mask,0,:][:,osm_mask]-1)
 
 print("Saving statistics took ",time.process_time() - start," s")
 print('')
@@ -310,6 +327,16 @@ res_dict['vsm_norm_covs'] = vsm_norm_covs
 res_dict['vsm_bals'] = vsm_bals
 res_dict['vsm_oves'] = vsm_oves
 res_dict['vsm_ovxs'] = vsm_ovxs
+res_dict['osm_base_means'] = osm_base_means
+res_dict['osm_base_stds'] = osm_base_stds
+res_dict['osm_opto_means'] = osm_opto_means
+res_dict['osm_opto_stds'] = osm_opto_stds
+res_dict['osm_diff_means'] = osm_diff_means
+res_dict['osm_diff_stds'] = osm_diff_stds
+res_dict['osm_norm_covs'] = osm_norm_covs
+res_dict['osm_bals'] = osm_bals
+res_dict['osm_oves'] = osm_oves
+res_dict['osm_ovxs'] = osm_ovxs
 res_dict['timeouts'] = timeouts
 
 with open('./../results/best_fit_4s_c_{:d}'.format(c_idx)+'.pkl', 'wb') as handle:

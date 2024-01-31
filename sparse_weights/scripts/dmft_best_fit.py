@@ -22,6 +22,10 @@ id = None
 if id is None:
     with open('./../results/best_fit.pkl', 'rb') as handle:
         res_dict = pickle.load(handle)
+elif len(id)==1:
+    with open('./../results/refit_candidate_prms_{:d}.pkl'.format(
+            id[0]), 'rb') as handle:
+        res_dict = pickle.load(handle)
 elif len(id)==2:
     with open('./../results/results_ring_{:d}.pkl'.format(
             id[0]), 'rb') as handle:
@@ -259,7 +263,10 @@ convs[:] = conv
 
 oris = np.arange(Nori)*180/Nori
 oris[oris > 90] = 180 - oris[oris > 90]
-vsm_mask = np.abs(oris) < 22.5
+vsm_mask = np.abs(oris) < 4.5
+oris = np.abs(np.arange(Nori)*180/Nori - 90)
+oris[oris > 90] = 180 - oris[oris > 90]
+osm_mask = np.abs(oris) < 4.5
 
 all_base_means = 0.8*np.mean(μrEs[0]) + 0.2*np.mean(μrIs[0])
 all_base_stds = np.sqrt(0.8*np.mean(ΣrEs[0]+μrEs[0]**2) + 0.2*np.mean(ΣrIs[0]+μrIs[0]**2) - all_base_means**2)
@@ -282,6 +289,19 @@ vsm_diff_stds = np.sqrt(0.8*np.mean(ΣrEs[2,vsm_mask]+μrEs[2,vsm_mask]**2) +\
 vsm_norm_covs = (0.8*np.mean(ΣrEs[3,vsm_mask]+μrEs[0,vsm_mask]*μrEs[2,vsm_mask]) +\
     0.2*np.mean(ΣrIs[3,vsm_mask]+μrIs[0,vsm_mask]*μrIs[2,vsm_mask]) -\
     vsm_base_means*vsm_diff_means) / vsm_diff_stds**2
+
+osm_base_means = 0.8*np.mean(μrEs[0,osm_mask]) + 0.2*np.mean(μrIs[0,osm_mask])
+osm_base_stds = np.sqrt(0.8*np.mean(ΣrEs[0,osm_mask]+μrEs[0,osm_mask]**2) +\
+    0.2*np.mean(ΣrIs[0,osm_mask]+μrIs[0,osm_mask]**2) - osm_base_means**2)
+osm_opto_means = 0.8*np.mean(μrEs[1,osm_mask]) + 0.2*np.mean(μrIs[1,osm_mask])
+osm_opto_stds = np.sqrt(0.8*np.mean(ΣrEs[1,osm_mask]+μrEs[1,osm_mask]**2) +\
+    0.2*np.mean(ΣrIs[1,osm_mask]+μrIs[1,osm_mask]**2) - osm_opto_means**2)
+osm_diff_means = osm_opto_means - osm_base_means
+osm_diff_stds = np.sqrt(0.8*np.mean(ΣrEs[2,osm_mask]+μrEs[2,osm_mask]**2) +\
+    0.2*np.mean(ΣrIs[2,osm_mask]+μrIs[2,osm_mask]**2) - osm_diff_means**2)
+osm_norm_covs = (0.8*np.mean(ΣrEs[3,osm_mask]+μrEs[0,osm_mask]*μrEs[2,osm_mask]) +\
+    0.2*np.mean(ΣrIs[3,osm_mask]+μrIs[0,osm_mask]*μrIs[2,osm_mask]) -\
+    osm_base_means*osm_diff_means) / osm_diff_stds**2
 
 print("Saving statistics took ",time.process_time() - start," s")
 print('')
@@ -316,6 +336,13 @@ res_dict['vsm_opto_stds'] = vsm_opto_stds
 res_dict['vsm_diff_means'] = vsm_diff_means
 res_dict['vsm_diff_stds'] = vsm_diff_stds
 res_dict['vsm_norm_covs'] = vsm_norm_covs
+res_dict['osm_base_means'] = osm_base_means
+res_dict['osm_base_stds'] = osm_base_stds
+res_dict['osm_opto_means'] = osm_opto_means
+res_dict['osm_opto_stds'] = osm_opto_stds
+res_dict['osm_diff_means'] = osm_diff_means
+res_dict['osm_diff_stds'] = osm_diff_stds
+res_dict['osm_norm_covs'] = osm_norm_covs
 res_dict['dmft_res'] = dmft_res
 
 with open('./../results/dmft_best_fit_id_{:s}_c_{:d}'.format(str(id),c_idx)+'.pkl', 'wb') as handle:
