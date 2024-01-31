@@ -97,10 +97,10 @@ def runjobs():
             
             #--------------------------------------------------------------------------
             # Make SBTACH
-            inpath = currwd + "/refit_candidate_prms_narrow.py"
+            inpath = currwd + "/candidate_baseline_supp.py"
             c1 = "{:s} -n $SLURM_ARRAY_TASK_ID".format(inpath)
             
-            jobname="refit_candidate_prms_narrow"
+            jobname="candidate_baseline_supp"
             
             if not args2.test:
                 jobnameDir=os.path.join(ofilesdir, jobname)
@@ -135,10 +135,10 @@ def runjobs():
             
             #--------------------------------------------------------------------------
             # Make SBTACH
-            inpath = currwd + "/refit_candidate_prms_narrow.py"
+            inpath = currwd + "/candidate_baseline_supp.py"
             c1 = "{:s} -n {:d}".format(inpath,njob)
             
-            jobname="refit_candidate_prms_narrow"
+            jobname="candidate_baseline_supp"
             
             if not args2.test:
                 jobnameDir=os.path.join(ofilesdir, jobname)
