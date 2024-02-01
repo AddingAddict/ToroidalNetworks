@@ -38,7 +38,7 @@ CVh_mult = 1
 CVL_mult = 1
 
 with open('./../results/refit_candidate_prms_{:d}.pkl'.format(njob), 'rb') as handle:
-    res_dict = pickle.load(handle)[idx]
+    res_dict = pickle.load(handle)
 prms = res_dict['prms']
 CVh = res_dict['best_monk_eX']
 bX = res_dict['best_monk_bX']
