@@ -29,6 +29,10 @@ id = None
 if id is None:
     with open('./../results/best_fit.pkl', 'rb') as handle:
         res_dict = pickle.load(handle)
+elif len(id)==1:
+    with open('./../results/refit_candidate_prms_{:d}.pkl'.format(
+            id[0]), 'rb') as handle:
+        res_dict = pickle.load(handle)
 elif len(id)==2:
     with open('./../results/results_ring_{:d}.pkl'.format(
             id[0]), 'rb') as handle:
