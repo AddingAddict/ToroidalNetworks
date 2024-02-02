@@ -83,8 +83,8 @@ def runjobs():
     
     #--------------------------------------------------------------------------
     # The array of hashes
-    con1_Vec=range(5)
-    con2_Vec=range(5)
+    con1_Vec=range(6)
+    con2_Vec=range(6)
     
     for con1 in con1_Vec:
         for con2 in con2_Vec:

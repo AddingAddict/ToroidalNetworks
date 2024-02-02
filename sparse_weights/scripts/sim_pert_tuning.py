@@ -17,9 +17,11 @@ import integrate as integ
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--tune_idx', '-t',  help='which tuning level for perturbation', type=int, default=0)
+parser.add_argument('--orth_pert', '-o',  help='whether perturbation is orthogonal to visual perturbation', type=int, default=0)
 args = vars(parser.parse_args())
 print(parser.parse_args())
 tune_idx= args['tune_idx']
+orth_pert= args['orth_pert']
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -121,7 +123,10 @@ def simulate_networks(prms,rX,cA,CVh):
         
         # build LAS
         LAS = this_LAS.cpu().numpy()
-        doris = net.get_ori_dist(byloc=True)
+        if orth_pert:
+            doris = net.get_ori_dist(vis_ori=90,byloc=True)
+        else:
+            doris = net.get_ori_dist(byloc=True)
         Lfacts = (1-tune) + tune*base_net.apply_kernel(doris,prms['SoriF'],net.Lori,kernel='basesubwrapgauss')
         for nloc in range(Nori):
             LAS[net.C_idxs[0][nloc]] *= Lfacts[nloc]

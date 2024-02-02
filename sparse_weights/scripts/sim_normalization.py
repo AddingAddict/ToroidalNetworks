@@ -80,8 +80,6 @@ prms['NI'] = NI
 
 seeds = np.arange(50)
 
-cons = np.arange(0,4+1)/4
-
 print('simulating contrast # '+str(c1_idx+1)+' for peak 1, contrast # '+str(c2_idx+1)+' for peak 2')
 print('')
 cA1 = aXs[c1_idx]/bX
