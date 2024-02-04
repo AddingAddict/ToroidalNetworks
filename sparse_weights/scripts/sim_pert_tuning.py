@@ -299,5 +299,5 @@ res_dict['osm_diff_stds'] = osm_diff_stds
 res_dict['osm_norm_covs'] = osm_norm_covs
 res_dict['timeouts'] = timeouts
 
-with open('./../results/vary_id_{:s}_tune_{:d}'.format(str(id),tune_idx)+'.pkl', 'wb') as handle:
+with open('./../results/vary_id_{:s}_tune_{:d}_ortho_{:d}'.format(str(id),tune_idx,orth_pert)+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)
