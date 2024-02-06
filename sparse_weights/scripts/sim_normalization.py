@@ -18,10 +18,12 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--c1_idx', '-c1',  help='which contrast for peak 1', type=int, default=0)
 parser.add_argument('--c2_idx', '-c2',  help='which contrast for peak 2', type=int, default=0)
+parser.add_argument('--base_mult', '-b',  help='baseline multiplier', type=float, default=1.0)
 args = vars(parser.parse_args())
 print(parser.parse_args())
 c1_idx= args['c1_idx']
 c2_idx= args['c2_idx']
+base_mult= args['base_mult']
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -43,7 +45,7 @@ else:
         res_dict = pickle.load(handle)[id[-1]]
 prms = res_dict['prms']
 CVh = res_dict['best_monk_eX']
-bX = res_dict['best_monk_bX']
+bX = base_mult*res_dict['best_monk_bX']
 aXs = res_dict['best_monk_aXs']
 K = prms['K']
 SoriE = prms['SoriE']
@@ -79,6 +81,9 @@ prms['NE'] = NE
 prms['NI'] = NI
 
 seeds = np.arange(50)
+
+print('simulating baseline mult {:.1f}'.format(base_mult))
+print('')
 
 print('simulating contrast # '+str(c1_idx+1)+' for peak 1, contrast # '+str(c2_idx+1)+' for peak 2')
 print('')
@@ -215,5 +220,5 @@ res_dict['vsm2_base_means'] = vsm2_base_means
 res_dict['vsm2_base_stds'] = vsm2_base_stds
 res_dict['timeouts'] = timeouts
 
-with open('./../results/vary_id_{:s}_c1_{:d}_c2_{:d}'.format(str(id),c1_idx,c2_idx)+'.pkl', 'wb') as handle:
+with open('./../results/vary_id_{:s}_base_{:.1f}_c1_{:d}_c2_{:d}'.format(str(id),base_mult,c1_idx,c2_idx)+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)

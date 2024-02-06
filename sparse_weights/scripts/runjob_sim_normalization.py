@@ -83,48 +83,50 @@ def runjobs():
     
     #--------------------------------------------------------------------------
     # The array of hashes
+    base_mults=2*np.arange(4+1)/4
     con1_Vec=range(6)
     con2_Vec=range(6)
     
-    for con1 in con1_Vec:
-        for con2 in con2_Vec:
-            if con2 > con1:
-                continue
+    for base in base_mults:
+        for con1 in con1_Vec:
+            for con2 in con2_Vec:
+                if con2 > con1:
+                    continue
 
-            time.sleep(0.2)
-            
-            #--------------------------------------------------------------------------
-            # Make SBTACH
-            inpath = currwd + "/sim_normalization.py"
-            c1 = "{:s} -c1 {:d} -c2 {:d}".format(inpath,con1,con2)
-            
-            jobname="sim_normalization"+"-c1-{:d}-c2-{:d}".format(con1,con2)
-            
-            if not args2.test:
-                jobnameDir=os.path.join(ofilesdir, jobname)
-                text_file=open(jobnameDir, "w");
-                os.system("chmod u+x "+ jobnameDir)
-                text_file.write("#!/bin/sh \n")
-                if cluster=='haba' or cluster=='moto' or cluster=='burg':
-                    text_file.write("#SBATCH --account=theory \n")
-                text_file.write("#SBATCH --job-name="+jobname+ "\n")
-                text_file.write("#SBATCH -t 0-11:59  \n")
-                text_file.write("#SBATCH --mem-per-cpu=40gb \n")
-                text_file.write("#SBATCH --gres=gpu\n")
-                text_file.write("#SBATCH -c 1 \n")
-                text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
-                text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
-                text_file.write("python  -W ignore " + c1+" \n")
-                text_file.write("echo $PATH  \n")
-                text_file.write("exit 0  \n")
-                text_file.close()
+                time.sleep(0.2)
+                
+                #--------------------------------------------------------------------------
+                # Make SBTACH
+                inpath = currwd + "/sim_normalization.py"
+                c1 = "{:s} -b {:f} -c1 {:d} -c2 {:d}".format(inpath,base,con1,con2)
+                
+                jobname="sim_normalization"+"-b-{:.1f}-c1-{:d}-c2-{:d}".format(base,con1,con2)
+                
+                if not args2.test:
+                    jobnameDir=os.path.join(ofilesdir, jobname)
+                    text_file=open(jobnameDir, "w");
+                    os.system("chmod u+x "+ jobnameDir)
+                    text_file.write("#!/bin/sh \n")
+                    if cluster=='haba' or cluster=='moto' or cluster=='burg':
+                        text_file.write("#SBATCH --account=theory \n")
+                    text_file.write("#SBATCH --job-name="+jobname+ "\n")
+                    text_file.write("#SBATCH -t 0-11:59  \n")
+                    text_file.write("#SBATCH --mem-per-cpu=40gb \n")
+                    text_file.write("#SBATCH --gres=gpu\n")
+                    text_file.write("#SBATCH -c 1 \n")
+                    text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
+                    text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
+                    text_file.write("python  -W ignore " + c1+" \n")
+                    text_file.write("echo $PATH  \n")
+                    text_file.write("exit 0  \n")
+                    text_file.close()
 
-                if cluster=='axon':
-                    os.system("sbatch -p burst " +jobnameDir);
+                    if cluster=='axon':
+                        os.system("sbatch -p burst " +jobnameDir);
+                    else:
+                        os.system("sbatch " +jobnameDir);
                 else:
-                    os.system("sbatch " +jobnameDir);
-            else:
-                print (c1)
+                    print (c1)
 
 
 
