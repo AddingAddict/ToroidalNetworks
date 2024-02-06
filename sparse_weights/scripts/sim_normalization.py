@@ -46,6 +46,8 @@ else:
 prms = res_dict['prms']
 CVh = res_dict['best_monk_eX']
 bX = base_mult*res_dict['best_monk_bX']
+if bX <= 1e-8:
+    bX = 1e-8
 aXs = res_dict['best_monk_aXs']
 K = prms['K']
 SoriE = prms['SoriE']

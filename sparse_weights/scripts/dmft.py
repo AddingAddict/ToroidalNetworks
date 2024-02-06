@@ -2,13 +2,21 @@ import os
 import pickle
 import numpy as np
 from scipy.linalg import toeplitz
-from scipy.interpolate import RegularGridInterpolator
+from scipy.interpolate import interp1d,RegularGridInterpolator
 from scipy.integrate import quad,simpson
 from scipy.special import erf
+from mpmath import fp
 import time
 
 sr2pi = np.sqrt(2*np.pi)
-sr8 = np.sqrt(8)
+
+jtheta = np.vectorize(fp.jtheta, 'D')
+
+def wrapnormdens(x,s,L=180):
+    return np.real(jtheta(3,x*np.pi/L,np.exp(-(s*(2*np.pi)/L)**2/2)))/(2*np.pi)
+
+def basesubwrapnorm(x,s,L=180):
+    return (wrapnormdens(x,s,L)-wrapnormdens(L/2,s,L))/(wrapnormdens(0,s,L)-wrapnormdens(L/2,s,L))
 
 def mutox(mu):
     return np.sign(mu/100-0.2)*np.abs(mu/100-0.2)**0.5
@@ -357,12 +365,28 @@ def diff_sparse_dmft(tau,W,K,H,eH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
     return Cdr,\
         (np.max(Cdr_diag[:,-Nsav:],axis=1)-np.min(Cdr_diag[:,-Nsav:],axis=1))/\
             np.mean(Cdr_diag[:,-Nsav:],axis=1) < 1e-3
+            
+def get_solve_width(sa,L=180):
+    widths = np.linspace(1,L*3/4,135)
+    fbars = np.array([basesubwrapnorm(sa,S,L) for S in widths])
+    max_fbar = np.max(fbars)
+    min_fbar = np.min(fbars)
+    widths_vs_fbars_itp = interp1d(fbars,widths)
+    def solve_widths(fbar):
+        return widths_vs_fbars_itp(np.fmax(min_fbar,np.fmin(max_fbar,fbar)))
+    return solve_widths
+
+def unstruct_fact(s,L=180):
+    return (1/L-wrapnormdens(L/2,s,L))/(wrapnormdens(0,s,L)-wrapnormdens(L/2,s,L))
+
+def struct_fact(x,sconv,sorig,L=180):
+    return (wrapnormdens(x,sconv,L)-wrapnormdens(L/2,sorig,L))/\
+        (wrapnormdens(0,sorig,L)-wrapnormdens(L/2,sorig,L))
 
 def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
-                rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None):
+                rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None,L=180):
     if Kb is None:
         Kb = np.zeros_like(K)
-    S = 180
         
     Ntyp = len(Hb)
     Nint = round((Twrm+Tsav)/dt)+1
@@ -392,6 +416,8 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
     tauinv = 1/tau
     dttauinv = dt/tau
     dttauinv2 = dttauinv**2
+    
+    solve_width = get_solve_width(sa,L)
     
     sa2 = sa**2
     sW2 = sW**2
@@ -447,14 +473,13 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
     Cphip = np.empty((Ntyp),dtype=np.float32)
     
     def drdt(rbi,rai,rpi,Sigbii,Sigaii,Sigpii):
-        sr2i = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((rpi-rbi)/(rai-rbi)),1+1e-4)))
-        sWr2i = sW2+sr2i
-        sri = np.sqrt(sr2i)
-        srdivsWri = np.sqrt(sr2i/sWr2i)
+        sri = solve_width((rpi-rbi)/(rai-rbi))
+        sWri = np.sqrt(sW2+sri**2)
         rpmbi = rpi - rbi
-        mubi = (muW+muWb)@rbi + (sri*sr2pi/S*erf(S/(sr8*sri))*muWb)@rpmbi + muHb
-        muai = mubi + (srdivsWri*np.exp(-0.5*sa2/sWr2i)*muW)@rpmbi + muHa-muHb
-        mupi = mubi + (srdivsWri*muW)@rpmbi + muHp-muHb
+        mubi = (muW+muWb)@rbi + (unstruct_fact(sri,L)*muWb)@rpmbi + muHb
+        muai = mubi + (struct_fact(sa,sWri,sri,L)*muW)@rpmbi + muHa-muHb
+        mupi = mubi + (struct_fact(0,sWri,sri,L)*muW)@rpmbi + muHp-muHb
+        mubi = mubi + (struct_fact(L/2,sWri,sri,L)*muW)@rpmbi
         M_fn(mubi,Sigbii,Mphib)
         M_fn(muai,Sigaii,Mphia)
         M_fn(mupi,Sigpii,Mphip)
@@ -464,14 +489,13 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
         Crbii = Crb[:,i,i]
         Craii = Cra[:,i,i]
         Crpii = Crp[:,i,i]
-        sCr2ii = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((Crpii-Crbii)/(Craii-Crbii)),1+1e-4)))
-        sWCr2ii = sW2+sCr2ii
-        sCrii = np.sqrt(sCr2ii)
-        sCrdivsWCr2ii = np.sqrt(sCr2ii/sWCr2ii)
+        sCrii = solve_width((Crpii-Crbii)/(Craii-Crbii))
+        sWCrii = np.sqrt(sW2+sCrii**2)
         Crpmbii = Crpii - Crbii
-        Sigbii = (SigW+SigWb)@Crbii + (sCrii*sr2pi/S*erf(S/(sr8*sCrii))*SigWb)@Crpmbii + SigHb
-        Sigaii = Sigbii + (sCrdivsWCr2ii*np.exp(-0.5*sa2/sWCr2ii)*SigW)@Crpmbii + SigHa-SigHb
-        Sigpii = Sigbii + (sCrdivsWCr2ii*SigW)@Crpmbii + SigHp-SigHb
+        Sigbii = (SigW+SigWb)@Crbii + (unstruct_fact(sCrii,L)*SigWb)@Crpmbii + SigHb
+        Sigaii = Sigbii + (struct_fact(sa,sWCrii,sCrii,L)*SigW)@Crpmbii + SigHa-SigHb
+        Sigpii = Sigbii + (struct_fact(0,sWCrii,sCrii,L)*SigW)@Crpmbii + SigHp-SigHb
+        Sigbii = Sigbii + (struct_fact(L/2,sWCrii,sCrii,L)*SigW)@Crpmbii
             
         kb1,ka1,kp1 = drdt(rb[:,i]           ,ra[:,i]           ,rp[:,i]           ,Sigbii,Sigaii,Sigpii)
         kb2,ka2,kp2 = drdt(rb[:,i]+0.5*dt*kb1,ra[:,i]+0.5*dt*kb1,rp[:,i]+0.5*dt*kb1,Sigbii,Sigaii,Sigpii)
@@ -484,14 +508,13 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
         rbi = rb[:,i]
         rai = ra[:,i]
         rpi = rp[:,i]
-        sr2i = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((rpi-rbi)/(rai-rbi)),1+1e-4)))
-        sWr2i = sW2+sr2i
-        sri = np.sqrt(sr2i)
-        srdivsWri = np.sqrt(sr2i/sWr2i)
+        sri = solve_width((rpi-rbi)/(rai-rbi))
+        sWri = np.sqrt(sW2+sri**2)
         rpmbi = rpi - rbi
-        mubi = (muW+muWb)@rbi + (sri*sr2pi/S*erf(S/(sr8*sri))*muWb)@rpmbi + muHb
-        muai = mubi + (srdivsWri*np.exp(-0.5*sa2/sWr2i)*muW)@rpmbi + muHa-muHb
-        mupi = mubi + (srdivsWri*muW)@rpmbi + muHp-muHb
+        mubi = (muW+muWb)@rbi + (unstruct_fact(sri,L)*muWb)@rpmbi + muHb
+        muai = mubi + (struct_fact(sa,sWri,sri,L)*muW)@rpmbi + muHa-muHb
+        mupi = mubi + (struct_fact(0,sWri,sri,L)*muW)@rpmbi + muHp-muHb
+        mubi = mubi + (struct_fact(L/2,sWri,sri,L)*muW)@rpmbi
         
         if np.any(np.abs(rb[:,i+1]) > 1e10) or np.any(np.isnan(rb[:,i+1])):
             print(mubi,muai,mupi,sri)
@@ -518,14 +541,13 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
             Crbij = Crb[:,i,j]
             Craij = Cra[:,i,j]
             Crpij = Crp[:,i,j]
-            sCr2ij = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((Crpij-Crbij)/(Craij-Crbij)),1+1e-4)))
-            sWCr2ij = sW2+sCr2ij
-            sCrij = np.sqrt(sCr2ij)
-            sCrdivsWCr2ij = np.sqrt(sCr2ij/sWCr2ij)
+            sCrij = solve_width((Crpij-Crbij)/(Craij-Crbij))
+            sWCrij = np.sqrt(sW2+sCrij**2)
             Crpmbij = Crpij - Crbij
-            Sigbij = (SigW+SigWb)@Crbij + (sCrij*sr2pi/S*erf(S/(sr8*sCrij))*SigWb)@Crpmbij + SigHb
-            Sigaij = Sigbij + (sCrdivsWCr2ij*np.exp(-0.5*sa2/sWCr2ij)*SigW)@Crpmbij + SigHa-SigHb
-            Sigpij = Sigbij + (sCrdivsWCr2ij*SigW)@Crpmbij + SigHp-SigHb
+            Sigbij = (SigW+SigWb)@Crbij + (unstruct_fact(sCrij,L)*SigWb)@Crpmbij + SigHb
+            Sigaij = Sigbij + (struct_fact(sa,sWCrij,sCrij,L)*SigW)@Crpmbij + SigHa-SigHb
+            Sigpij = Sigbij + (struct_fact(0,sWCrij,sCrij,L)*SigW)@Crpmbij + SigHp-SigHb
+            Sigbij = Sigbij + (struct_fact(L/2,sWCrij,sCrij,L)*SigW)@Crpmbij
             C_fn(mubi,Sigbii,Sigbij,Cphib)
             C_fn(muai,Sigaii,Sigaij,Cphia)
             C_fn(mupi,Sigpii,Sigpij,Cphip)
@@ -580,7 +602,7 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
             np.mean(Crp_diag[:,-Nsav:],axis=1) < 1e-3
 
 def doub_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fns,C_fns,Twrm,Tsav,dt,
-                     rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None):
+                     rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None,L=180):
     if Kb is None:
         doub_Kb = None
     else:
@@ -605,13 +627,12 @@ def doub_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fns,C_fns,Twrm,Tsav,dt,
         C_fns[1](mui[Ntyp:],Sigii[Ntyp:],Sigij[Ntyp:],out[Ntyp:])
         
     return sparse_ring_dmft(doub_tau,doub_W,doub_K,doub_Hb,doub_Hp,eH,doub_sW,doub_sH,sa,doub_M,doub_C,Twrm,Tsav,dt,
-                      rb0,ra0,rp0,Crb0,Cra0,Crp0,Kb=doub_Kb)
+                      rb0,ra0,rp0,Crb0,Cra0,Crp0,Kb=doub_Kb,L=L)
 
 def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,Crb,Cra,Crp,
-                     Cdrb0=None,Cdra0=None,Cdrp0=None,Kb=None):
+                     Cdrb0=None,Cdra0=None,Cdrp0=None,Kb=None,L=180):
     if Kb is None:
         Kb = np.zeros_like(K)
-    S = 180
         
     Ntyp = len(Hb)
     Nint = round((Twrm+Tsav)/dt)+1
@@ -644,6 +665,8 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
     sW2 = sW**2
     sH2 = sH**2
     
+    solve_width = get_solve_width(sa,L)
+    
     muW = tau[:,None]*W*K
     SigW = tau[:,None]**2*W**2*K
     muWb = tau[:,None]*W*Kb
@@ -661,23 +684,21 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
     doub_muWb = doub_mat(muWb)
     doub_SigWb = doub_mat(SigWb)[:,:,None]
     
-    sr2 = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((rp-rb)/(ra-rb)),1+1e-4)))
-    sWr2 = doub_mat(sW2)+sr2
-    sr = np.sqrt(sr2)
-    srdivsWr = np.sqrt(sr2/sWr2)
+    sr = solve_width((rp-rb)/(ra-rb))
+    sWr = np.sqrt(doub_mat(sW2)+sr**2)
     rpmb = rp - rb
-    sCr2 = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((Crp-Crb)/(Cra-Crb)),1+1e-4)))
-    sWCr2 = doub_mat(sW2)[:,:,None]+sCr2[None,:,:]
-    sCr = np.sqrt(sCr2)
-    sCrdivsWCr2 = np.sqrt(sCr2/sWCr2)
+    sCr = solve_width((Crp-Crb)/(Cra-Crb))
+    sWCr = np.sqrt(doub_mat(sW2)[:,:,None]+sCr[None,:,:]**2)
     Crpmb = Crp - Crb
-    mub = (doub_muW+doub_muWb)@rb + (sr*sr2pi/S*erf(S/(sr8*sr))*doub_muWb)@rpmb + doub_vec(muHb)
-    mua = mub + (srdivsWr*np.exp(-0.5*sa2/sWr2)*doub_muW)@rpmb + doub_vec(muHa-muHb)
-    mup = mub + (srdivsWr*doub_muW)@rpmb + doub_vec(muHp-muHb)
-    Sigb = each_matmul(doub_SigW+doub_SigWb,Crb) + each_matmul(sCr*sr2pi/S*erf(S/(sr8*sCr))*doub_SigWb,Crpmb) +\
+    mub = (doub_muW+doub_muWb)@rb + (unstruct_fact(sr,L)*doub_muWb)@rpmb + doub_vec(muHb)
+    mua = mub + (struct_fact(sa,sWr,sr,L)*doub_muW)@rpmb + doub_vec(muHa-muHb)
+    mup = mub + (struct_fact(0,sWr,sr,L)*doub_muW)@rpmb + doub_vec(muHp-muHb)
+    mub = mub + (struct_fact(L/2,sWr,sr,L)*doub_muW)@rpmb
+    Sigb = each_matmul(doub_SigW+doub_SigWb,Crb) + each_matmul(unstruct_fact(sCr,L)*doub_SigWb,Crpmb) +\
         doub_vec(SigHb)[:,None]
-    Siga = Sigb + each_matmul(sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2)*doub_SigW,Crpmb) + doub_vec(SigHa-SigHb)[:,None]
-    Sigp = Sigb + each_matmul(sCrdivsWCr2*doub_SigW,Crpmb) + doub_vec(SigHp-SigHb)[:,None]
+    Siga = Sigb + each_matmul(struct_fact(sa,sWCr,sCr,L)*doub_SigW,Crpmb) + doub_vec(SigHa-SigHb)[:,None]
+    Sigp = Sigb + each_matmul(struct_fact(0,sWCr,sCr,L)*doub_SigW,Crpmb) + doub_vec(SigHp-SigHb)[:,None]
+    Sigb = Sigb + each_matmul(struct_fact(L/2,sWCr,sCr,L)*doub_SigW,Crpmb)
     
     NCdr0 = Cdrb0.shape[1]
     if Nclc > NCdr0:
@@ -721,14 +742,13 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
             Cdrbij = Cdrb[:,i,j]
             Cdraij = Cdra[:,i,j]
             Cdrpij = Cdrp[:,i,j]
-            sCdr2ij = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((Cdrpij-Cdrbij)/(Cdraij-Cdrbij)),1+1e-4)))
-            sWCdr2ij = sW2+sCdr2ij
-            sCdrij = np.sqrt(sCdr2ij)
-            sCdrdivsWCdr2ij = np.sqrt(sCdr2ij/sWCdr2ij)
+            sCdrij = solve_width((Cdrpij-Cdrbij)/(Cdraij-Cdrbij))
+            sWCdrij = np.sqrt(sW2+sCdrij**2)
             Cdrpmbij = Cdrpij - Cdrbij
-            Sigdbij = (SigW+SigWb)@Cdrbij + (sCdrij*sr2pi/S*erf(S/(sr8*sCdrij))*SigWb)@Cdrpmbij
-            Sigdaij = Sigdbij + (sCdrdivsWCdr2ij*np.exp(-0.5*sa2/sWCdr2ij)*SigW)@Cdrpmbij
-            Sigdpij = Sigdbij + (sCdrdivsWCdr2ij*SigW)@Cdrpmbij
+            Sigdbij = (SigW+SigWb)@Cdrbij + (unstruct_fact(sCdrij,L)*SigWb)@Cdrpmbij
+            Sigdaij = Sigdbij + (struct_fact(sa,sWCdrij,sCdrij,L)*SigW)@Cdrpmbij
+            Sigdpij = Sigdbij + (struct_fact(0,sWCdrij,sCdrij,L)*SigW)@Cdrpmbij
+            Sigdbij = Sigdbij + (struct_fact(L/2,sWCdrij,sCdrij,L)*SigW)@Cdrpmbij
             
             kbij = 0.5*(Sigb[:Ntyp,ij_idx]+Sigb[Ntyp:,ij_idx]-Sigdbij)
             kaij = 0.5*(Siga[:Ntyp,ij_idx]+Siga[Ntyp:,ij_idx]-Sigdaij)
@@ -795,8 +815,6 @@ def run_first_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,which='both',return
     gI = prms['gI']
     hE = prms['hE']
     hI = prms['hI']
-    L = prms['L']
-    CVL = prms['CVL']
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
@@ -808,7 +826,7 @@ def run_first_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,which='both',return
     SigH = (muH*eH)**2
     
     FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
-    FL,ML,CL = opto_itp_moments(res_dir,L,CVL)
+    FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
     
     def base_M(mui,Sigii,out):
         out[0] = ME(mui[0],Sigii[0])[0]
@@ -883,8 +901,6 @@ def run_second_stage_dmft(first_res_dict,prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,ret
     gI = prms['gI']
     hE = prms['hE']
     hI = prms['hI']
-    L = prms['L']
-    CVL = prms['CVL']
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
@@ -896,7 +912,7 @@ def run_second_stage_dmft(first_res_dict,prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,ret
     SigH = (muH*eH)**2
     
     FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
-    FL,ML,CL = opto_itp_moments(res_dir,L,CVL)
+    FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
 
     def diff_R(mu1i,mu2i,Sig1ii,Sig2ii,kij,out):
         out[0] = R_simp(ME,ML,mu1i[0],mu2i[0],Sig1ii[0],Sig2ii[0],kij[0])
@@ -952,8 +968,6 @@ def run_two_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,return_full=False):
     gI = prms['gI']
     hE = prms['hE']
     hI = prms['hI']
-    L = prms['L']
-    CVL = prms['CVL']
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
@@ -965,7 +979,7 @@ def run_two_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,return_full=False):
     SigH = (muH*eH)**2
     
     FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
-    FL,ML,CL = opto_itp_moments(res_dir,L,CVL)
+    FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
     
     def base_M(mui,Sigii,out):
         out[0] = ME(mui[0],Sigii[0])[0]
@@ -1040,9 +1054,7 @@ def run_two_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,return_full=False):
     
     return res_dict
 
-def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which='both',return_full=False):
-    S = 180
-    
+def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,which='both',return_full=False):    
     Nsav = round(Tsav/dt)+1
     
     K = prms['K']
@@ -1055,8 +1067,6 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which
     gI = prms['gI']
     hE = prms['hE']
     hI = prms['hI']
-    L = prms['L']
-    CVL = prms['CVL']
     basefrac = prms.get('basefrac',0)
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
@@ -1073,6 +1083,8 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which
     sW2 = sW**2
     sH2 = sH**2
     
+    solve_width = get_solve_width(sa,L)
+    
     muHb = tau*Hb
     SigHb = (muHb*eH)**2
     muHa = tau*(Hb+(Hp-Hb)*np.exp(-0.5*sa2/sH2))
@@ -1081,7 +1093,7 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which
     SigHp = (muHp*eH)**2
     
     FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
-    FL,ML,CL = opto_itp_moments(res_dir,L,CVL)
+    FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
     
     def base_M(mui,Sigii,out):
         out[0] = ME(mui[0],Sigii[0])[0]
@@ -1103,14 +1115,14 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which
     
     if which=='base':
         full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
-            convb,conva,convp = sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,base_M,base_C,Twrm,Tsav,dt,Kb=Kbs)
+            convb,conva,convp = sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,base_M,base_C,Twrm,Tsav,dt,Kb=Kbs,L=L)
     elif which=='opto':
         full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
-            convb,conva,convp = sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,opto_M,opto_C,Twrm,Tsav,dt,Kb=Kbs)
+            convb,conva,convp = sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,opto_M,opto_C,Twrm,Tsav,dt,Kb=Kbs,L=L)
     elif which=='both':
         full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
             convb,conva,convp = doub_sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,[base_M,opto_M],[base_C,opto_C],
-                                                      Twrm,Tsav,dt,Kb=Kbs)
+                                                      Twrm,Tsav,dt,Kb=Kbs,L=L)
     else:
         raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
         
@@ -1128,43 +1140,41 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which
     muWb = tau[:,None]*W*Kbs
     SigWb = tau[:,None]**2*W**2*Kbs
     
-    sr2 = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((rp-rb)/(ra-rb)),1+1e-4)))
-    sr = np.sqrt(sr2)
-    sCr2 = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((Crp-Crb)/(Cra-Crb)),1+1e-4)))
-    sCr = np.sqrt(sCr2)
+    sr = solve_width((rp-rb)/(ra-rb))
+    sCr = solve_width((Crp-Crb)/(Cra-Crb))
     
     if which in ('base','opto'):
-        sWr2 = sW2+sr2
-        srdivsWr = np.sqrt(sr2/sWr2)
+        sWr = np.sqrt(sW2+sr**2)
         rpmb = rp-rb
-        sWCr2 = sW2[:,:,None]+sCr2[None,:,:]
-        sCrdivsWCr2 = np.sqrt(sCr2/sWCr2)
+        sWCr = np.sqrt(sW2[:,:,None]+sCr[None,:,:]**2)
         Crpmb = Crp-Crb
-        mub = (muW+muWb)@rb + (sr*sr2pi/S*erf(S/(sr8*sr))*muWb)@rpmb + muHb
-        mua = mub + (srdivsWr*np.exp(-0.5*sa2/sWr2)*muW)@rpmb + muHa-muHb
-        mup = mub + (srdivsWr*muW)@rpmb + muHp-muHb
-        Sigb = each_matmul(SigW+SigWb,Crb) + each_matmul(sCr*sr2pi/S*erf(S/(sr8*sCr))*SigWb,Crpmb) + (SigHb)[:,None]
-        Siga = Sigb + each_matmul(sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2)*SigW,Crpmb) + (SigHa-SigHb)[:,None]
-        Sigp = Sigb + each_matmul(sCrdivsWCr2*SigW,Crpmb) + (SigHp-SigHb)[:,None]
+        mub = (muW+muWb)@rb + (unstruct_fact(sr,L)*muWb)@rpmb + muHb
+        mua = mub + (struct_fact(sa,sWr,sr,L)*muW)@rpmb + muHa-muHb
+        mup = mub + (struct_fact(0,sWr,sr,L)*muW)@rpmb + muHp-muHb
+        mub = mub + (struct_fact(L/2,sWr,sr,L)*muW)@rpmb
+        Sigb = each_matmul(SigW+SigWb,Crb) + each_matmul(unstruct_fact(sCr,L)*SigWb,Crpmb) + (SigHb)[:,None]
+        Siga = Sigb + each_matmul(struct_fact(sa,sWCr,sCr,L)*SigW,Crpmb) + (SigHa-SigHb)[:,None]
+        Sigp = Sigb + each_matmul(struct_fact(0,sWCr,sCr,L)*SigW,Crpmb) + (SigHp-SigHb)[:,None]
+        Sigb = Sigb + each_matmul(struct_fact(L/2,sWCr,sCr,L)*SigW,Crpmb)
     elif which=='both':
         doub_muW = doub_mat(muW)
         doub_SigW = doub_mat(SigW)[:,:,None]
         doub_muWb = doub_mat(muWb)
         doub_SigWb = doub_mat(SigWb)[:,:,None]
         
-        sWr2 = doub_mat(sW2)+sr2
-        srdivsWr = np.sqrt(sr2/sWr2)
+        sWr = np.sqrt(doub_mat(sW2)+sr**2)
         rpmb = rp-rb
-        sWCr2 = doub_mat(sW2)[:,:,None]+sCr2[None,:,:]
-        sCrdivsWCr2 = np.sqrt(sCr2/sWCr2)
+        sWCr = np.sqrt(doub_mat(sW2)[:,:,None]+sCr[None,:,:]**2)
         Crpmb = Crp-Crb
-        mub = (doub_muW+doub_muWb)@rb + (sr*sr2pi/S*erf(S/(sr8*sr))*doub_muWb)@rpmb + doub_vec(muHb)
-        mua = mub + (srdivsWr*np.exp(-0.5*sa2/sWr2)*doub_muW)@rpmb + doub_vec(muHa-muHb)
-        mup = mub + (srdivsWr*doub_muW)@rpmb + doub_vec(muHp-muHb)
-        Sigb = each_matmul(doub_SigW+doub_SigWb,Crb) + each_matmul(sCr*sr2pi/S*erf(S/(sr8*sCr))*doub_SigWb,Crpmb) +\
+        mub = (doub_muW+doub_muWb)@rb + (unstruct_fact(sr,L)*doub_muWb)@rpmb + doub_vec(muHb)
+        mua = mub + (struct_fact(sa,sWr,sr,L)*doub_muW)@rpmb + doub_vec(muHa-muHb)
+        mup = mub + (struct_fact(0,sWr,sr,L)*doub_muW)@rpmb + doub_vec(muHp-muHb)
+        mub = mub + (struct_fact(L/2,sWr,sr,L)*doub_muW)@rpmb
+        Sigb = each_matmul(doub_SigW+doub_SigWb,Crb) + each_matmul(unstruct_fact(sCr,L)*doub_SigWb,Crpmb) +\
             doub_vec(SigHb)[:,None]
-        Siga = Sigb + each_matmul(sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2)*doub_SigW,Crpmb) + doub_vec(SigHa-SigHb)[:,None]
-        Sigp = Sigb + each_matmul(sCrdivsWCr2*doub_SigW,Crpmb) + doub_vec(SigHp-SigHb)[:,None]
+        Siga = Sigb + each_matmul(struct_fact(sa,sWCr,sCr,L)*doub_SigW,Crpmb) + doub_vec(SigHa-SigHb)[:,None]
+        Sigp = Sigb + each_matmul(struct_fact(0,sWCr,sCr,L)*doub_SigW,Crpmb) + doub_vec(SigHp-SigHb)[:,None]
+        Sigb = Sigb + each_matmul(struct_fact(L/2,sWCr,sCr,L)*doub_SigW,Crpmb)
     else:
         raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
     
@@ -1200,9 +1210,7 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,which
     
     return res_dict
 
-def run_second_stage_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_full=False):
-    S = 180
-    
+def run_second_stage_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,return_full=False):
     Nsav = round(Tsav/dt)+1
     
     K = prms['K']
@@ -1215,8 +1223,6 @@ def run_second_stage_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twrm,Tsa
     gI = prms['gI']
     hE = prms['hE']
     hI = prms['hI']
-    L = prms['L']
-    CVL = prms['CVL']
     basefrac = prms.get('basefrac',0)
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
@@ -1233,6 +1239,8 @@ def run_second_stage_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twrm,Tsa
     sW2 = sW**2
     sH2 = sH**2
     
+    solve_width = get_solve_width(sa,L)
+    
     muHb = tau*Hb
     SigHb = (muHb*eH)**2
     muHa = tau*(Hb+(Hp-Hb)*np.exp(-0.5*sa2/sH2))
@@ -1241,7 +1249,7 @@ def run_second_stage_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twrm,Tsa
     SigHp = (muHp*eH)**2
     
     FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
-    FL,ML,CL = opto_itp_moments(res_dir,L,CVL)
+    FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
 
     def diff_R(mu1i,mu2i,Sig1ii,Sig2ii,kij,out):
         out[0] = R_simp(ME,ML,mu1i[0],mu2i[0],Sig1ii[0],Sig2ii[0],kij[0])
@@ -1264,30 +1272,28 @@ def run_second_stage_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twrm,Tsa
     doub_muWb = doub_mat(muWb)
     doub_SigWb = doub_mat(SigWb)[:,:,None]
     
-    sr2 = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((rp-rb)/(ra-rb)),1+1e-4)))
-    sWr2 = doub_mat(sW2)+sr2
-    sr = np.sqrt(sr2)
-    srdivsWr = np.sqrt(sr2/sWr2)
+    sr = solve_width((rp-rb)/(ra-rb))
+    sWr = np.sqrt(doub_mat(sW2)+sr**2)
     rpmb = rp-rb
-    sCr2 = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((Crp-Crb)/(Cra-Crb)),1+1e-4)))
-    sWCr2 = doub_mat(sW2)[:,:,None]+sCr2[None,:,:]
-    sCr = np.sqrt(sCr2)
-    sCrdivsWCr2 = np.sqrt(sCr2/sWCr2)
+    sCr = solve_width((Crp-Crb)/(Cra-Crb))
+    sWCr = np.sqrt(doub_mat(sW2)[:,:,None]+sCr[None,:,:]**2)
     Crpmb = Crp-Crb
     
-    mub = (doub_muW+doub_muWb)@rb + (sr*sr2pi/S*erf(S/(sr8*sr))*doub_muWb)@rpmb + doub_vec(muHb)
-    mua = mub + (srdivsWr*np.exp(-0.5*sa2/sWr2)*doub_muW)@rpmb + doub_vec(muHa-muHb)
-    mup = mub + (srdivsWr*doub_muW)@rpmb + doub_vec(muHp-muHb)
-    Sigb = each_matmul(doub_SigW+doub_SigWb,Crb) + each_matmul(sCr*sr2pi/S*erf(S/(sr8*sCr))*doub_SigWb,Crpmb) +\
+    mub = (doub_muW+doub_muWb)@rb + (unstruct_fact(sr,L)*doub_muWb)@rpmb + doub_vec(muHb)
+    mua = mub + (struct_fact(sa,sWr,sr,L)*doub_muW)@rpmb + doub_vec(muHa-muHb)
+    mup = mub + (struct_fact(0,sWr,sr,L)*doub_muW)@rpmb + doub_vec(muHp-muHb)
+    mub = mub + (struct_fact(L/2,sWr,sr,L)*doub_muW)@rpmb
+    Sigb = each_matmul(doub_SigW+doub_SigWb,Crb) + each_matmul(unstruct_fact(sCr,L)*doub_SigWb,Crpmb) +\
         doub_vec(SigHb)[:,None]
-    Siga = Sigb + each_matmul(sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2)*doub_SigW,Crpmb) + doub_vec(SigHa-SigHb)[:,None]
-    Sigp = Sigb + each_matmul(sCrdivsWCr2*doub_SigW,Crpmb) + doub_vec(SigHp-SigHb)[:,None]
+    Siga = Sigb + each_matmul(struct_fact(sa,sWCr,sCr,L)*doub_SigW,Crpmb) + doub_vec(SigHa-SigHb)[:,None]
+    Sigp = Sigb + each_matmul(struct_fact(0,sWCr,sCr,L)*doub_SigW,Crpmb) + doub_vec(SigHp-SigHb)[:,None]
+    Sigb = Sigb + each_matmul(struct_fact(L/2,sWCr,sCr,L)*doub_SigW,Crpmb)
 
     start = time.process_time()
 
     full_Cdrb,full_Cdra,full_Cdrp,\
         convdb,convda,convdp = diff_sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,diff_R,Twrm,Tsav,dt,
-                                                rb,ra,rp,Crb,Cra,Crp,Kb=Kbs)
+                                                rb,ra,rp,Crb,Cra,Crp,Kb=Kbs,L=L)
 
     print('integrating second stage took',time.process_time() - start,'s')
 
@@ -1302,16 +1308,14 @@ def run_second_stage_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twrm,Tsa
     dmua = mua[:2] - mua[2:]
     dmup = mup[:2] - mup[2:]
 
-    sCdr2 = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((Cdrp-Cdrb)/(Cdra-Cdrb)),1+1e-4)))
-    sWCdr2 = sW2[:,:,None]+sCdr2[None,:,:]
-    sCdr = np.sqrt(sCdr2)
-    sCdrdivsWCdr2 = np.sqrt(sCdr2/sWCdr2)
+    sCdr = solve_width((Cdrp-Cdrb)/(Cdra-Cdrb))
+    sWCdr = np.sqrt(sW2[:,:,None]+sCdr[None,:,:]**2)
     Cdrpmb = Cdrp - Cdrb
     Sigdb = each_matmul(SigW[:,:,None]+SigWb[:,:,None],Cdrb) +\
-        each_matmul(sCdr*sr2pi/S*erf(S/(sr8*sCdr))*SigWb[:,:,None],Cdrpmb)
-    Sigda = Sigdb + each_matmul(sCdrdivsWCdr2*np.exp(-0.5*sa2/sWCdr2)*SigW[:,:,None],Cdrpmb)
-    Sigdp = Sigdb + each_matmul(sCdrdivsWCdr2*SigW[:,:,None],Cdrpmb)
-    Sigdb = each_matmul(SigW[:,:,None]+(1-sCdr*sr2pi/180)*SigWb[:,:,None],Cdrb)
+        each_matmul(unstruct_fact(sCdr,L)*SigWb[:,:,None],Cdrpmb)
+    Sigda = Sigdb + each_matmul(struct_fact(sa,sWCdr,sCdr,L)*SigW[:,:,None],Cdrpmb)
+    Sigdp = Sigdb + each_matmul(struct_fact(0,sWCdr,sCdr,L)*SigW[:,:,None],Cdrpmb)
+    Sigdb = Sigdb + each_matmul(struct_fact(L/2,sWCdr,sCdr,L)*SigW[:,:,None],Cdrpmb)
     
     res_dict = {}
     
@@ -1341,9 +1345,7 @@ def run_second_stage_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twrm,Tsa
     
     return res_dict
 
-def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_full=False):
-    S = 180
-    
+def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,return_full=False):
     Nsav = round(Tsav/dt)+1
     
     K = prms['K']
@@ -1356,8 +1358,6 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_
     gI = prms['gI']
     hE = prms['hE']
     hI = prms['hI']
-    L = prms['L']
-    CVL = prms['CVL']
     basefrac = prms.get('basefrac',0)
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
@@ -1374,6 +1374,8 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_
     sW2 = sW**2
     sH2 = sH**2
     
+    solve_width = get_solve_width(sa,L)
+    
     muHb = tau*Hb
     SigHb = (muHb*eH)**2
     muHa = tau*(Hb+(Hp-Hb)*np.exp(-0.5*sa2/sH2))
@@ -1382,7 +1384,7 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_
     SigHp = (muHp*eH)**2
     
     FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
-    FL,ML,CL = opto_itp_moments(res_dir,L,CVL)
+    FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
     
     def base_M(mui,Sigii,out):
         out[0] = ME(mui[0],Sigii[0])[0]
@@ -1408,7 +1410,7 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_
     
     full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
         convb,conva,convp = doub_sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,[base_M,opto_M],[base_C,opto_C],
-                                                  Twrm,Tsav,dt,Kb=Kbs)
+                                                  Twrm,Tsav,dt,Kb=Kbs,L=L)
 
     print('integrating first stage took',time.process_time() - start,'s')
 
@@ -1429,30 +1431,28 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_
     doub_muWb = doub_mat(muWb)
     doub_SigWb = doub_mat(SigWb)[:,:,None]
     
-    sr2 = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((rp-rb)/(ra-rb)),1+1e-4)))
-    sWr2 = doub_mat(sW2)+sr2
-    sr = np.sqrt(sr2)
-    srdivsWr = np.sqrt(sr2/sWr2)
+    sr = solve_width((rp-rb)/(ra-rb))
+    sWr = np.sqrt(doub_mat(sW2)+sr**2)
     rpmb = rp-rb
-    sCr2 = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((Crp-Crb)/(Cra-Crb)),1+1e-4)))
-    sWCr2 = doub_mat(sW2)[:,:,None]+sCr2[None,:,:]
-    sCr = np.sqrt(sCr2)
-    sCrdivsWCr2 = np.sqrt(sCr2/sWCr2)
+    sCr = solve_width((Crp-Crb)/(Cra-Crb))
+    sWCr = np.sqrt(doub_mat(sW2)[:,:,None]+sCr[None,:,:]**2)
     Crpmb = Crp-Crb
     
-    mub = (doub_muW+doub_muWb)@rb + (sr*sr2pi/S*erf(S/(sr8*sr))*doub_muWb)@rpmb + doub_vec(muHb)
-    mua = mub + (srdivsWr*np.exp(-0.5*sa2/sWr2)*doub_muW)@rpmb + doub_vec(muHa-muHb)
-    mup = mub + (srdivsWr*doub_muW)@rpmb + doub_vec(muHp-muHb)
-    Sigb = each_matmul(doub_SigW+doub_SigWb,Crb) + each_matmul(sCr*sr2pi/S*erf(S/(sr8*sCr))*doub_SigWb,Crpmb) +\
+    mub = (doub_muW+doub_muWb)@rb + (unstruct_fact(sr,L)*doub_muWb)@rpmb + doub_vec(muHb)
+    mua = mub + (struct_fact(sa,sWr,sr,L)*doub_muW)@rpmb + doub_vec(muHa-muHb)
+    mup = mub + (struct_fact(0,sWr,sr,L)*doub_muW)@rpmb + doub_vec(muHp-muHb)
+    mub = mub + (struct_fact(L/2,sWr,sr,L)*doub_muW)@rpmb
+    Sigb = each_matmul(doub_SigW+doub_SigWb,Crb) + each_matmul(unstruct_fact(sCr,L)*doub_SigWb,Crpmb) +\
         doub_vec(SigHb)[:,None]
-    Siga = Sigb + each_matmul(sCrdivsWCr2*np.exp(-0.5*sa2/sWCr2)*doub_SigW,Crpmb) + doub_vec(SigHa-SigHb)[:,None]
-    Sigp = Sigb + each_matmul(sCrdivsWCr2*doub_SigW,Crpmb) + doub_vec(SigHp-SigHb)[:,None]
+    Siga = Sigb + each_matmul(struct_fact(sa,sWCr,sCr,L)*doub_SigW,Crpmb) + doub_vec(SigHa-SigHb)[:,None]
+    Sigp = Sigb + each_matmul(struct_fact(0,sWCr,sCr,L)*doub_SigW,Crpmb) + doub_vec(SigHp-SigHb)[:,None]
+    Sigb = Sigb + each_matmul(struct_fact(L/2,sWCr,sCr,L)*doub_SigW,Crpmb)
 
     start = time.process_time()
 
     full_Cdrb,full_Cdra,full_Cdrp,\
         convdb,convda,convdp = diff_sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,diff_R,Twrm,Tsav,dt,
-                                                rb,ra,rp,Crb,Cra,Crp,Kb=Kbs)
+                                                rb,ra,rp,Crb,Cra,Crp,Kb=Kbs,L=L)
 
     print('integrating second stage took',time.process_time() - start,'s')
 
@@ -1467,16 +1467,14 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,return_
     dmua = mua[:2] - mua[2:]
     dmup = mup[:2] - mup[2:]
 
-    sCdr2 = np.fmax(1e-1,0.5*sa2/np.log(np.fmax(np.abs((Cdrp-Cdrb)/(Cdra-Cdrb)),1+1e-4)))
-    sWCdr2 = sW2[:,:,None]+sCdr2[None,:,:]
-    sCdr = np.sqrt(sCdr2)
-    sCdrdivsWCdr2 = np.sqrt(sCdr2/sWCdr2)
+    sCdr = solve_width((Cdrp-Cdrb)/(Cdra-Cdrb))
+    sWCdr = np.sqrt(sW2[:,:,None]+sCdr[None,:,:]**2)
     Cdrpmb = Cdrp - Cdrb
     Sigdb = each_matmul(SigW[:,:,None]+SigWb[:,:,None],Cdrb) +\
-        each_matmul(sCdr*sr2pi/S*erf(S/(sr8*sCdr))*SigWb[:,:,None],Cdrpmb)
-    Sigda = Sigdb + each_matmul(sCdrdivsWCdr2*np.exp(-0.5*sa2/sWCdr2)*SigW[:,:,None],Cdrpmb)
-    Sigdp = Sigdb + each_matmul(sCdrdivsWCdr2*SigW[:,:,None],Cdrpmb)
-    Sigdb = each_matmul(SigW[:,:,None]+(1-sCdr*sr2pi/180)*SigWb[:,:,None],Cdrb)
+        each_matmul(unstruct_fact(sCdr,L)*SigWb[:,:,None],Cdrpmb)
+    Sigda = Sigdb + each_matmul(struct_fact(sa,sWCdr,sCdr,L)*SigW[:,:,None],Cdrpmb)
+    Sigdp = Sigdb + each_matmul(struct_fact(0,sWCdr,sCdr,L)*SigW[:,:,None],Cdrpmb)
+    Sigdb = Sigdb + each_matmul(struct_fact(L/2,sWCdr,sCdr,L)*SigW[:,:,None],Cdrpmb)
     
     res_dict = {}
     
