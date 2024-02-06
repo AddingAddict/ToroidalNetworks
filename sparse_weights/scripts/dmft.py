@@ -473,7 +473,7 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
     Cphip = np.empty((Ntyp),dtype=np.float32)
     
     def drdt(rbi,rai,rpi,Sigbii,Sigaii,Sigpii):
-        sri = solve_width((rpi-rbi)/(rai-rbi))
+        sri = solve_width((rai-rbi)/(rpi-rbi))
         sWri = np.sqrt(sW2+sri**2)
         rpmbi = rpi - rbi
         mubi = (muW+muWb)@rbi + (unstruct_fact(sri,L)*muWb)@rpmbi + muHb
@@ -489,7 +489,7 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
         Crbii = Crb[:,i,i]
         Craii = Cra[:,i,i]
         Crpii = Crp[:,i,i]
-        sCrii = solve_width((Crpii-Crbii)/(Craii-Crbii))
+        sCrii = solve_width((Craii-Crbii)/(Crpii-Crbii))
         sWCrii = np.sqrt(sW2+sCrii**2)
         Crpmbii = Crpii - Crbii
         Sigbii = (SigW+SigWb)@Crbii + (unstruct_fact(sCrii,L)*SigWb)@Crpmbii + SigHb
@@ -508,7 +508,7 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
         rbi = rb[:,i]
         rai = ra[:,i]
         rpi = rp[:,i]
-        sri = solve_width((rpi-rbi)/(rai-rbi))
+        sri = solve_width((rai-rbi)/(rpi-rbi))
         sWri = np.sqrt(sW2+sri**2)
         rpmbi = rpi - rbi
         mubi = (muW+muWb)@rbi + (unstruct_fact(sri,L)*muWb)@rpmbi + muHb
@@ -541,7 +541,7 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
             Crbij = Crb[:,i,j]
             Craij = Cra[:,i,j]
             Crpij = Crp[:,i,j]
-            sCrij = solve_width((Crpij-Crbij)/(Craij-Crbij))
+            sCrij = solve_width((Craij-Crbij)/(Crpij-Crbij))
             sWCrij = np.sqrt(sW2+sCrij**2)
             Crpmbij = Crpij - Crbij
             Sigbij = (SigW+SigWb)@Crbij + (unstruct_fact(sCrij,L)*SigWb)@Crpmbij + SigHb
@@ -684,10 +684,10 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
     doub_muWb = doub_mat(muWb)
     doub_SigWb = doub_mat(SigWb)[:,:,None]
     
-    sr = solve_width((rp-rb)/(ra-rb))
+    sr = solve_width((ra-rb)/(rp-rb))
     sWr = np.sqrt(doub_mat(sW2)+sr**2)
     rpmb = rp - rb
-    sCr = solve_width((Crp-Crb)/(Cra-Crb))
+    sCr = solve_width((Cra-Crb)/(Crp-Crb))
     sWCr = np.sqrt(doub_mat(sW2)[:,:,None]+sCr[None,:,:]**2)
     Crpmb = Crp - Crb
     mub = (doub_muW+doub_muWb)@rb + (unstruct_fact(sr,L)*doub_muWb)@rpmb + doub_vec(muHb)
@@ -742,7 +742,7 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
             Cdrbij = Cdrb[:,i,j]
             Cdraij = Cdra[:,i,j]
             Cdrpij = Cdrp[:,i,j]
-            sCdrij = solve_width((Cdrpij-Cdrbij)/(Cdraij-Cdrbij))
+            sCdrij = solve_width((Cdraij-Cdrbij)/(Cdrpij-Cdrbij))
             sWCdrij = np.sqrt(sW2+sCdrij**2)
             Cdrpmbij = Cdrpij - Cdrbij
             Sigdbij = (SigW+SigWb)@Cdrbij + (unstruct_fact(sCdrij,L)*SigWb)@Cdrpmbij
@@ -1140,8 +1140,8 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180
     muWb = tau[:,None]*W*Kbs
     SigWb = tau[:,None]**2*W**2*Kbs
     
-    sr = solve_width((rp-rb)/(ra-rb))
-    sCr = solve_width((Crp-Crb)/(Cra-Crb))
+    sr = solve_width((ra-rb)/(rp-rb))
+    sCr = solve_width((Cra-Crb)/(Crp-Crb))
     
     if which in ('base','opto'):
         sWr = np.sqrt(sW2+sr**2)
@@ -1272,10 +1272,10 @@ def run_second_stage_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twrm,Tsa
     doub_muWb = doub_mat(muWb)
     doub_SigWb = doub_mat(SigWb)[:,:,None]
     
-    sr = solve_width((rp-rb)/(ra-rb))
+    sr = solve_width((ra-rb)/(rp-rb))
     sWr = np.sqrt(doub_mat(sW2)+sr**2)
     rpmb = rp-rb
-    sCr = solve_width((Crp-Crb)/(Cra-Crb))
+    sCr = solve_width((Cra-Crb)/(Crp-Crb))
     sWCr = np.sqrt(doub_mat(sW2)[:,:,None]+sCr[None,:,:]**2)
     Crpmb = Crp-Crb
     
@@ -1308,7 +1308,7 @@ def run_second_stage_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twrm,Tsa
     dmua = mua[:2] - mua[2:]
     dmup = mup[:2] - mup[2:]
 
-    sCdr = solve_width((Cdrp-Cdrb)/(Cdra-Cdrb))
+    sCdr = solve_width((Cdra-Cdrb)/(Cdrp-Cdrb))
     sWCdr = np.sqrt(sW2[:,:,None]+sCdr[None,:,:]**2)
     Cdrpmb = Cdrp - Cdrb
     Sigdb = each_matmul(SigW[:,:,None]+SigWb[:,:,None],Cdrb) +\
@@ -1431,10 +1431,10 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,r
     doub_muWb = doub_mat(muWb)
     doub_SigWb = doub_mat(SigWb)[:,:,None]
     
-    sr = solve_width((rp-rb)/(ra-rb))
+    sr = solve_width((ra-rb)/(rp-rb))
     sWr = np.sqrt(doub_mat(sW2)+sr**2)
     rpmb = rp-rb
-    sCr = solve_width((Crp-Crb)/(Cra-Crb))
+    sCr = solve_width((Cra-Crb)/(Crp-Crb))
     sWCr = np.sqrt(doub_mat(sW2)[:,:,None]+sCr[None,:,:]**2)
     Crpmb = Crp-Crb
     
@@ -1467,7 +1467,7 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,r
     dmua = mua[:2] - mua[2:]
     dmup = mup[:2] - mup[2:]
 
-    sCdr = solve_width((Cdrp-Cdrb)/(Cdra-Cdrb))
+    sCdr = solve_width((Cdra-Cdrb)/(Cdrp-Cdrb))
     sWCdr = np.sqrt(sW2[:,:,None]+sCdr[None,:,:]**2)
     Cdrpmb = Cdrp - Cdrb
     Sigdb = each_matmul(SigW[:,:,None]+SigWb[:,:,None],Cdrb) +\
