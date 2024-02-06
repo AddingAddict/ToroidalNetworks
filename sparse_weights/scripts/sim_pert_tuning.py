@@ -187,9 +187,7 @@ def simulate_networks(prms,rX,cA,CVh):
 
     return net,rs,mus,muEs,muIs,Ls,TOs
 
-# Simulate network where structure is removed by increasing baseline fraction
-print('simulating baseline fraction network')
-print('')
+# Simulate network
 this_prms = prms.copy()
 
 net,rs,mus,muEs,muIs,Ls,TOs = simulate_networks(this_prms,rX,cA,CVh)

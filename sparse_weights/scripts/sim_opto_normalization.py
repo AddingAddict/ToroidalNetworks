@@ -182,9 +182,7 @@ def simulate_networks(prms,rX,cA1,cA2,CVh):
 
     return net,rs,mus,muEs,muIs,Ls,TOs
 
-# Simulate network where structure is removed by increasing baseline fraction
-print('simulating baseline fraction network')
-print('')
+# Simulate network
 this_prms = prms.copy()
 
 net,rs,mus,muEs,muIs,Ls,TOs = simulate_networks(this_prms,rX,cA1,cA2,CVh)
@@ -220,7 +218,7 @@ for nloc in range(Nori):
 Lexps[:,:] = Ls
 timeouts[:,:] = TOs
 
-seed_mask = np.logical_not(timeouts)
+seed_mask = np.logical_not(np.any(timeouts,axis=-1))
 vsm1_mask = net.get_oriented_neurons()[0]
 vsm2_mask = net.get_oriented_neurons(vis_ori=90)[0]
 
@@ -294,5 +292,5 @@ res_dict['vsm2_diff_stds'] = vsm2_diff_stds
 res_dict['vsm2_norm_covs'] = vsm2_norm_covs
 res_dict['timeouts'] = timeouts
 
-with open('./../results/vary_id_{:s}_base_{:.1f}_c1_{:d}_c2_{:d}'.format(str(id),base_mult,c1_idx,c2_idx)+'.pkl', 'wb') as handle:
+with open('./../results/opto_norm_id_{:s}_base_{:.1f}_c1_{:d}_c2_{:d}'.format(str(id),base_mult,c1_idx,c2_idx)+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)
