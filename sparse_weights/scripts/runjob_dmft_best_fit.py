@@ -96,7 +96,7 @@ def runjobs():
                 #--------------------------------------------------------------------------
                 # Make SBTACH
                 inpath = currwd + "/dmft_best_fit.py"
-                c1 = "{:s} -c {:d}".format(inpath,c)
+                c1 = "{:s} -c {:d} -CVhm {:f} -CVLm {:f}".format(inpath,c,CVh_mult,CVL_mult)
                 
                 if np.isclose(CVh_mult,1.0) and np.isclose(CVL_mult,1.0):
                     jobname="dmft_best_fit"+"-c-{:d}".format(c)
