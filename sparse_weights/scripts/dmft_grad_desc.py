@@ -17,23 +17,27 @@ args = vars(parser.parse_args())
 print(parser.parse_args())
 iter_idx= args['iter_idx']
 
-id = None
-# id = (133,0,79,3)
-if id is None:
-    with open('./../results/best_fit.pkl', 'rb') as handle:
-        res_dict = pickle.load(handle)
-elif len(id)==1:
-    with open('./../results/refit_candidate_prms_{:d}.pkl'.format(
-            id[0]), 'rb') as handle:
-        res_dict = pickle.load(handle)
-elif len(id)==2:
-    with open('./../results/results_ring_{:d}.pkl'.format(
-            id[0]), 'rb') as handle:
-        res_dict = pickle.load(handle)[id[-1]]
+if iter_idx == 0:
+    id = None
+    # id = (133,0,79,3)
+    if id is None:
+        with open('./../results/best_fit.pkl', 'rb') as handle:
+            res_dict = pickle.load(handle)
+    elif len(id)==1:
+        with open('./../results/refit_candidate_prms_{:d}.pkl'.format(
+                id[0]), 'rb') as handle:
+            res_dict = pickle.load(handle)
+    elif len(id)==2:
+        with open('./../results/results_ring_{:d}.pkl'.format(
+                id[0]), 'rb') as handle:
+            res_dict = pickle.load(handle)[id[-1]]
+    else:
+        with open('./../results/results_ring_perturb_njob-{:d}_nrep-{:d}_ntry-{:d}.pkl'.format(
+                id[0],id[1],id[2]), 'rb') as handle:
+            res_dict = pickle.load(handle)[id[-1]]
 else:
-    with open('./../results/results_ring_perturb_njob-{:d}_nrep-{:d}_ntry-{:d}.pkl'.format(
-            id[0],id[1],id[2]), 'rb') as handle:
-        res_dict = pickle.load(handle)[id[-1]]
+    with open('./../results/dmft_grad_descent_id_{:s}_n_{:d}.pkl'.format(str(id),iter_idx-1), 'rb') as handle:
+        res_dict = pickle.load(handle)
 prms = res_dict['prms']
 CVh = res_dict['best_monk_eX']
 bX = res_dict['best_monk_bX']
@@ -53,7 +57,7 @@ dt = 0.01/4
 Nori = 20
 
 def get_prm_vec(prms,bX,fc_aX,CVh):
-    prm_vec = np.array(list(prms.values())[[1,2,4,5,6,7,8,9]])
+    prm_vec = np.array(list(prms.values()))[[1,2,4,5,6,7,8,9]]
     prm_vec[2] = np.log10(prm_vec[2])
     prm_vec[3] = np.log10(prm_vec[3])
     prm_vec = np.concatenate((prm_vec,np.array([bX,fc_aX,CVh])))
@@ -76,9 +80,21 @@ def get_prms_inps(prm_vec):
 
 init_prm_vec = get_prm_vec(prms,bX,aXs[-1],CVh)
 
-dprm_vec = np.array([
-    
+prm_vec_range = np.array([
+    [15,45],    # SoriE
+    [15,45],    # SoriI
+    [-4,-3],    # log10J
+    [-1,.5],    # log10beta
+    [ 3, 7],    # gE
+    [ 2, 6],    # gI
+    [ 0, 4],    # hE
+    [ 0, 2],    # hI
+    [ 0,20],    # bX
+    [ 3,28],    # aX
+    [ 0,.4],    # CVh
 ])
+
+dprm_vec = 0.01*(prm_vec_range[:,1]-prm_vec_range[:,0])
 
 def predict_networks(prms,rX,cA,CVh):
     tau = np.array([ri.tE,ri.tI],dtype=np.float32)
@@ -147,6 +163,7 @@ def predict_networks(prms,rX,cA,CVh):
         conv[:,1] = res_dict['conv'][2:]
         conv[:,2] = res_dict['convd']
         dmft_res = res_dict.copy()
+        print('convergences:',conv)
     else:
         res_dict = dmft.run_two_stage_ring_dmft(prms,rX,cA,CVh,'./../results',ri,Twrm,Tsav,dt)
         rvb = res_dict['rb'][:2]
@@ -179,6 +196,7 @@ def predict_networks(prms,rX,cA,CVh):
         conv[:,0] = res_dict['convp'][:2]
         conv[:,1] = res_dict['convp'][2:]
         conv[:,2] = res_dict['convdp']
+        print('convergences:',conv)
         dmft_res = res_dict.copy()
         
     # sWrv = np.sqrt(sW2+srv**2)
@@ -334,46 +352,43 @@ def get_loss_from_prms_vec(prm_vec):
 print('simulating unperturbed network')
 print('')
 
-loss0 = calc_loss(init_prm_vec)
+init_loss = get_loss_from_prms_vec(init_prm_vec)
+pert_losses = np.zeros_like(dprm_vec)
+
+for idx,dprm in enumerate(dprm_vec):
+    print('simulating perturbed network, perturbed var = '+\
+        ['SoriE','SoriI','log10J','log10beta',
+         'gE','gI','hE','hI','bX','fc_aX','CVh'][idx])
+    print('')
+    pert_prm_vec = init_prm_vec.copy()
+    pert_prm_vec[idx] += dprm
+    pert_losses[idx] = get_loss_from_prms_vec(pert_prm_vec)
+    
+grad = (pert_losses - init_loss) / dprm_vec
+
+final_prm_vec = init_prm_vec - 0.01*grad
+
+final_prms,final_bX,final_fc_aX,final_CVh = get_prms_inps(final_prm_vec)
+
+CVh = res_dict['best_monk_eX']
+bX = res_dict['best_monk_bX']
+aXs = res_dict['best_monk_aXs']
 
 res_dict = {}
 
-res_dict['prms'] = prms
-res_dict['μrEs'] = μrEs
-res_dict['μrIs'] = μrIs
-res_dict['ΣrEs'] = ΣrEs
-res_dict['ΣrIs'] = ΣrIs
-res_dict['μhEs'] = μhEs
-res_dict['μhIs'] = μhIs
-res_dict['ΣhEs'] = ΣhEs
-res_dict['ΣhIs'] = ΣhIs
-res_dict['balEs'] = balEs
-res_dict['balIs'] = balIs
-res_dict['normCEs'] = normCEs
-res_dict['normCIs'] = normCIs
-res_dict['convs'] = convs
-res_dict['all_base_means'] = all_base_means
-res_dict['all_base_stds'] = all_base_stds
-res_dict['all_opto_means'] = all_opto_means
-res_dict['all_opto_stds'] = all_opto_stds
-res_dict['all_diff_means'] = all_diff_means
-res_dict['all_diff_stds'] = all_diff_stds
-res_dict['all_norm_covs'] = all_norm_covs
-res_dict['vsm_base_means'] = vsm_base_means
-res_dict['vsm_base_stds'] = vsm_base_stds
-res_dict['vsm_opto_means'] = vsm_opto_means
-res_dict['vsm_opto_stds'] = vsm_opto_stds
-res_dict['vsm_diff_means'] = vsm_diff_means
-res_dict['vsm_diff_stds'] = vsm_diff_stds
-res_dict['vsm_norm_covs'] = vsm_norm_covs
-res_dict['osm_base_means'] = osm_base_means
-res_dict['osm_base_stds'] = osm_base_stds
-res_dict['osm_opto_means'] = osm_opto_means
-res_dict['osm_opto_stds'] = osm_opto_stds
-res_dict['osm_diff_means'] = osm_diff_means
-res_dict['osm_diff_stds'] = osm_diff_stds
-res_dict['osm_norm_covs'] = osm_norm_covs
-res_dict['dmft_res'] = dmft_res
+res_dict['prms'] = final_prms
+res_dict['best_monk_bX'] = final_bX
+res_dict['best_monk_aXs'] = aXs * final_fc_aX / aXs[-1]
+res_dict['best_monk_eX'] = final_CVh
+res_dict['init_prm_vec'] = init_prm_vec
+res_dict['final_prm_vec'] = final_prm_vec
+res_dict['init_loss'] = init_loss
+res_dict['pert_losses'] = pert_losses
+res_dict['grad'] = grad
+res_dict['prm_vec_range'] = prm_vec_range
+res_dict['dprm_vec'] = dprm_vec
 
-with open('./../results/dmft_best_fit_id_{:s}_c_{:d}'.format(str(id),c_idx)+'.pkl', 'wb') as handle:
+with open('./../results/dmft_grad_descent_id_{:s}_n_{:d}'.format(str(id),iter_idx)+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)
+
+os.system("python runjob_dmft_grad_desc.py -n {:d}".format(iter_idx+1));
