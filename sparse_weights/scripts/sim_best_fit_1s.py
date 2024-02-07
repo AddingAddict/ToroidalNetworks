@@ -20,9 +20,13 @@ import integrate as integ
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--c_idx', '-c',  help='which contrast', type=int, default=0)
+parser.add_argument('--CVh_mult', '-CVhm',  help='which number job', type=float, default=1.0)
+parser.add_argument('--CVL_mult', '-CVLm',  help='which number repetition', type=float, default=1.0)
 args = vars(parser.parse_args())
 print(parser.parse_args())
 c_idx= args['c_idx']
+CVh_mult= args['CVh_mult']
+CVL_mult= args['CVL_mult']
 
 id = None
 # id = (133,0,79,3)
@@ -57,6 +61,10 @@ SoriI = prms['SoriI']
 # hI = prms['hI']
 # L = prms['L']
 # CVL = prms['CVL']
+
+CVh = CVh*CVh_mult
+CVL = prms['CVL']*CVL_mult
+prms['CVL'] = CVL
 
 ri = ric.Ricciardi()
 ri.set_up_nonlinearity('./phi_int')
@@ -340,5 +348,9 @@ res_dict['osm_oves'] = osm_oves
 res_dict['osm_ovxs'] = osm_ovxs
 res_dict['timeouts'] = timeouts
 
-with open('./../results/best_fit_1s_id_{:s}_c_{:d}'.format(str(id),c_idx)+'.pkl', 'wb') as handle:
-    pickle.dump(res_dict,handle)
+if np.isclose(CVh_mult,1.0) and np.isclose(CVL_mult,1.0):
+    with open('./../results/best_fit_1s_id_{:s}_c_{:d}'.format(str(id),c_idx)+'.pkl', 'wb') as handle:
+        pickle.dump(res_dict,handle)
+else:
+    with open('./../results/best_fit_1s_id_{:s}_CVhx{:.2f}_CVLx{:.2f}_c_{:d}'.format(str(id),CVh_mult,CVL_mult,c_idx)+'.pkl', 'wb') as handle:
+        pickle.dump(res_dict,handle)
