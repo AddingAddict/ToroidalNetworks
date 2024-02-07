@@ -84,42 +84,49 @@ def runjobs():
     #--------------------------------------------------------------------------
     # The array of hashes
     c_Vec=range(6)
+    CVh_mult_vec = np.array([1.0,])
+    CVL_mult_vec = 10**(0.25*np.arange(2+1)/2-0.25)
     
     for c in c_Vec:
+        for CVh_mult in CVh_mult_vec:
+            for CVL_mult in CVL_mult_vec:
 
-        time.sleep(0.2)
-        
-        #--------------------------------------------------------------------------
-        # Make SBTACH
-        inpath = currwd + "/dmft_best_fit.py"
-        c1 = "{:s} -c {:d}".format(inpath,c)
-        
-        jobname="dmft_best_fit"+"-c-{:d}".format(c)
-        
-        if not args2.test:
-            jobnameDir=os.path.join(ofilesdir, jobname)
-            text_file=open(jobnameDir, "w");
-            os.system("chmod u+x "+ jobnameDir)
-            text_file.write("#!/bin/sh \n")
-            if cluster=='haba' or cluster=='moto' or cluster=='burg':
-                text_file.write("#SBATCH --account=theory \n")
-            text_file.write("#SBATCH --job-name="+jobname+ "\n")
-            text_file.write("#SBATCH -t 0-11:59  \n")
-            text_file.write("#SBATCH --mem-per-cpu=10gb \n")
-            text_file.write("#SBATCH -c 1 \n")
-            text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
-            text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
-            text_file.write("python  -W ignore " + c1+" \n")
-            text_file.write("echo $PATH  \n")
-            text_file.write("exit 0  \n")
-            text_file.close()
+                time.sleep(0.2)
+                
+                #--------------------------------------------------------------------------
+                # Make SBTACH
+                inpath = currwd + "/dmft_best_fit.py"
+                c1 = "{:s} -c {:d}".format(inpath,c)
+                
+                if np.isclose(CVh_mult,1.0) and np.isclose(CVL_mult,1.0):
+                    jobname="dmft_best_fit"+"-c-{:d}".format(c)
+                else:
+                    jobname="dmft_best_fit"+"-CVhx{:.2f}-CVLx{:.2f}-c-{:d}".format(CVh_mult,CVL_mult,c)
+                
+                if not args2.test:
+                    jobnameDir=os.path.join(ofilesdir, jobname)
+                    text_file=open(jobnameDir, "w");
+                    os.system("chmod u+x "+ jobnameDir)
+                    text_file.write("#!/bin/sh \n")
+                    if cluster=='haba' or cluster=='moto' or cluster=='burg':
+                        text_file.write("#SBATCH --account=theory \n")
+                    text_file.write("#SBATCH --job-name="+jobname+ "\n")
+                    text_file.write("#SBATCH -t 0-11:59  \n")
+                    text_file.write("#SBATCH --mem-per-cpu=10gb \n")
+                    text_file.write("#SBATCH -c 1 \n")
+                    text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
+                    text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
+                    text_file.write("python  -W ignore " + c1+" \n")
+                    text_file.write("echo $PATH  \n")
+                    text_file.write("exit 0  \n")
+                    text_file.close()
 
-            if cluster=='axon':
-                os.system("sbatch -p burst " +jobnameDir);
-            else:
-                os.system("sbatch " +jobnameDir);
-        else:
-            print (c1)
+                    if cluster=='axon':
+                        os.system("sbatch -p burst " +jobnameDir);
+                    else:
+                        os.system("sbatch " +jobnameDir);
+                else:
+                    print (c1)
 
 
 
