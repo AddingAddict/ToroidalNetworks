@@ -104,10 +104,10 @@ def predict_networks(prms,rX,cA,CVh):
     
     muHb = tau*Hb
     muHp = tau*Hp
-    smuH2 = sH2
+    smuH = sH
     SigHb = (muHb*eH)**2
     SigHp = (muHp*eH)**2
-    sSigH2 = 2*sH2
+    sSigH = 2*sH
 
     μrs = np.zeros((2,3,Nori))
     Σrs = np.zeros((2,4,Nori))
@@ -121,26 +121,26 @@ def predict_networks(prms,rX,cA,CVh):
     oris = np.arange(Nori)*180/Nori
     oris[oris > 90] = 180 - oris[oris > 90]
         
-    def gauss(x,b,p,s2):
-        return b + (p-b)*np.exp(-0.5*x**2/s2)
+    def gauss(x,b,p,s):
+        return b + (p-b)*dmft.basesubwrapnorm(x,s)
     
     if cA == 0 or prms.get('basefrac',0)==1:
         res_dict = dmft.run_two_stage_dmft(prms,rX*(1+cA),CVh,'./../results',ri,Twrm,Tsav,dt)
         rvb = res_dict['r'][:2]
         rvp = res_dict['r'][:2]
-        srv2 = 1e4*np.ones(2)
+        srv = 1e2*np.ones(2)
         rob = res_dict['r'][2:]
         rop = res_dict['r'][2:]
-        sro2 = 1e4*np.ones(2)
+        sro = 1e2*np.ones(2)
         Crvb = dmft.grid_stat(np.mean,res_dict['Cr'][:2],Tsim,dt)
         Crvp = dmft.grid_stat(np.mean,res_dict['Cr'][:2],Tsim,dt)
-        sCrv2 = 1e4*np.ones(2)
+        sCrv = 1e2*np.ones(2)
         Crob = dmft.grid_stat(np.mean,res_dict['Cr'][2:],Tsim,dt)
         Crop = dmft.grid_stat(np.mean,res_dict['Cr'][2:],Tsim,dt)
-        sCro2 = 1e4*np.ones(2)
+        sCro = 1e2*np.ones(2)
         Cdrb = dmft.grid_stat(np.mean,res_dict['Cdr'],Tsim,dt)
         Cdrp = dmft.grid_stat(np.mean,res_dict['Cdr'],Tsim,dt)
-        sCdr2 = 1e4*np.ones(2)
+        sCdr = 1e2*np.ones(2)
         normC[:,0,:] = (res_dict['Cr'][:2,-1]/res_dict['Cr'][:2,0])[:,None]
         normC[:,1,:] = (res_dict['Cr'][2:,-1]/res_dict['Cr'][2:,0])[:,None]
         normC[:,2,:] = (res_dict['Cdr'][:,-1]/res_dict['Cdr'][:,0])[:,None]
@@ -152,19 +152,19 @@ def predict_networks(prms,rX,cA,CVh):
         res_dict = dmft.run_two_stage_ring_dmft(prms,rX,cA,CVh,'./../results',ri,Twrm,Tsav,dt)
         rvb = res_dict['rb'][:2]
         rvp = res_dict['rp'][:2]
-        srv2 = res_dict['sr'][:2]**2
+        srv = res_dict['sr'][:2]
         rob = res_dict['rb'][2:]
         rop = res_dict['rp'][2:]
-        sro2 = res_dict['sr'][2:]**2
+        sro = res_dict['sr'][2:]
         Crvb = dmft.grid_stat(np.mean,res_dict['Crb'][:2],Tsim,dt)
         Crvp = dmft.grid_stat(np.mean,res_dict['Crp'][:2],Tsim,dt)
-        sCrv2 = dmft.grid_stat(np.mean,res_dict['sCr'][:2],Tsim,dt)**2
+        sCrv = dmft.grid_stat(np.mean,res_dict['sCr'][:2],Tsim,dt)
         Crob = dmft.grid_stat(np.mean,res_dict['Crb'][2:],Tsim,dt)
         Crop = dmft.grid_stat(np.mean,res_dict['Crp'][2:],Tsim,dt)
-        sCro2 = dmft.grid_stat(np.mean,res_dict['sCr'][2:],Tsim,dt)**2
+        sCro = dmft.grid_stat(np.mean,res_dict['sCr'][2:],Tsim,dt)
         Cdrb = dmft.grid_stat(np.mean,res_dict['Cdrb'],Tsim,dt)
         Cdrp = dmft.grid_stat(np.mean,res_dict['Cdrp'],Tsim,dt)
-        sCdr2 = dmft.grid_stat(np.mean,res_dict['sCdr'],Tsim,dt)**2
+        sCdr = dmft.grid_stat(np.mean,res_dict['sCdr'],Tsim,dt)
         normC[:,0] = gauss(oris[None,:],res_dict['Crb'][:2,-1,None],res_dict['Crp'][:2,-1,None],
                            res_dict['sCr'][:2,-1,None]) /\
                      gauss(oris[None,:],res_dict['Crb'][:2, 0,None],res_dict['Crp'][:2, 0,None],
@@ -182,51 +182,56 @@ def predict_networks(prms,rX,cA,CVh):
         conv[:,2] = res_dict['convdp']
         dmft_res = res_dict.copy()
         
-    sWrv2 = sW2+srv2
-    sWCrv2 = sW2+sCrv2
-    sWro2 = sW2+sro2
-    sWCro2 = sW2+sCro2
-    sWCdr2 = sW2+sCdr2
+    sWrv = np.sqrt(sW2+srv**2)
+    sWCrv = np.sqrt(sW2+sCrv**2)
+    sWro = np.sqrt(sW2+sro**2)
+    sWCro = np.sqrt(sW2+sCro**2)
+    sWCdr = np.sqrt(sW2+sCdr**2)
     
-    muvb = (muW+np.sqrt(srv2/(2*np.pi))*muWb)*rvb
-    muvp = muvb + np.sqrt(srv2/sWrv2)*muW*(rvp-rvb)
-    smuv2 = sWrv2
-    muob = (muW+np.sqrt(sro2/(2*np.pi))*muWb)*rob
-    muop = muob + np.sqrt(sro2/sWro2)*muW*(rop-rob)
-    smuo2 = sWro2
+    muvb = (muW+dmft.unstruct_fact(srv)*muWb)*rvb
+    muvp = muvb + dmft.struct_fact(0,sWrv,srv)*muW*(rvp-rvb)
+    muvb = muvb + dmft.struct_fact(90,sWrv,srv)*muW*(rvp-rvb)
+    smuv = sWrv
+    muob = (muW+dmft.unstruct_fact(sro)*muWb)*rob
+    muop = muob + dmft.struct_fact(0,sWro,sro)*muW*(rop-rob)
+    muob = muob + dmft.struct_fact(90,sWro,sro)*muW*(rop-rob)
+    smuo = sWro
     
-    Sigvb = (SigW+np.sqrt(sCrv2/(2*np.pi))*SigWb)*Crvb
-    Sigvp = Sigvb + np.sqrt(sCrv2/sWCrv2)*SigW*(Crvp-Crvb)
-    sSigv2 = sWCrv2
-    Sigob = (SigW+np.sqrt(sCro2/(2*np.pi))*SigWb)*Crob
-    Sigop = Sigob + np.sqrt(sCro2/sWCro2)*SigW*(Crop-Crob)
-    sSigo2 = sWCro2
-    Sigdb = (SigW+np.sqrt(sCdr2/(2*np.pi))*SigWb)*Cdrb
-    Sigdp = Sigdb + np.sqrt(sCdr2/sWCdr2)*SigW*(Cdrp-Cdrb)
-    sSigd2 = sWCdr2
+    Sigvb = (SigW+dmft.unstruct_fact(sCrv)*SigWb)*Crvb
+    Sigvp = Sigvb + dmft.struct_fact(0,sWCrv,sCrv)*SigW*(Crvp-Crvb)
+    Sigvb = Sigvb + dmft.struct_fact(90,sWCrv,sCrv)*SigW*(Crvp-Crvb)
+    sSigv = sWCrv
+    Sigob = (SigW+dmft.unstruct_fact(sCro)*SigWb)*Crob
+    Sigop = Sigob + dmft.struct_fact(0,sWCro,sCro)*SigW*(Crop-Crob)
+    Sigob = Sigob + dmft.struct_fact(90,sWCro,sCro)*SigW*(Crop-Crob)
+    sSigo = sWCro
+    Sigdb = (SigW+dmft.unstruct_fact(sCdr)*SigWb)*Cdrb
+    Sigdp = Sigdb + dmft.struct_fact(0,sWCdr,sCdr)*SigW*(Cdrp-Cdrb)
+    Sigdb = Sigdb + dmft.struct_fact(90,sWCdr,sCdr)*SigW*(Cdrp-Cdrb)
+    sSigd = sWCdr
     
     for i in range(2):
-        μrs[i,0] = gauss(oris,rvb[i],rvp[i],srv2[i])
-        μrs[i,1] = gauss(oris,rob[i],rop[i],sro2[i])
+        μrs[i,0] = gauss(oris,rvb[i],rvp[i],srv[i])
+        μrs[i,1] = gauss(oris,rob[i],rop[i],sro[i])
         μrs[i,2] = μrs[i,1] - μrs[i,0]
-        Σrs[i,0] = np.fmax(gauss(oris,Crvb[i],Crvp[i],sCrv2[i]) - μrs[i,0]**2,0)
-        Σrs[i,1] = np.fmax(gauss(oris,Crob[i],Crop[i],sCro2[i]) - μrs[i,1]**2,0)
-        Σrs[i,2] = np.fmax(gauss(oris,Cdrb[i],Cdrp[i],sCdr2[i]) - μrs[i,2]**2,0)
+        Σrs[i,0] = np.fmax(gauss(oris,Crvb[i],Crvp[i],sCrv[i]) - μrs[i,0]**2,0)
+        Σrs[i,1] = np.fmax(gauss(oris,Crob[i],Crop[i],sCro[i]) - μrs[i,1]**2,0)
+        Σrs[i,2] = np.fmax(gauss(oris,Cdrb[i],Cdrp[i],sCdr[i]) - μrs[i,2]**2,0)
         Σrs[i,3] = 0.5*(Σrs[i,1] - Σrs[i,0] - Σrs[i,2])
-        μmuEs[i,0] = gauss(oris,muvb[i,0],muvp[i,0],smuv2[i,0]) + gauss(oris,muHb[i],muHp[i],smuH2[i])
-        μmuEs[i,1] = gauss(oris,muob[i,0],muop[i,0],smuo2[i,0]) + gauss(oris,muHb[i],muHp[i],smuH2[i]) + prms['L']*1e-3
+        μmuEs[i,0] = gauss(oris,muvb[i,0],muvp[i,0],smuv[i,0]) + gauss(oris,muHb[i],muHp[i],smuH[i])
+        μmuEs[i,1] = gauss(oris,muob[i,0],muop[i,0],smuo[i,0]) + gauss(oris,muHb[i],muHp[i],smuH[i]) + prms['L']*1e-3
         μmuEs[i,2] = μmuEs[i,1] - μmuEs[i,0]
-        ΣmuEs[i,0] = gauss(oris,Sigvb[i,0],Sigvp[i,0],sSigv2[i,0]) + gauss(oris,SigHb[i],SigHp[i],sSigH2[i])
-        ΣmuEs[i,1] = gauss(oris,Sigob[i,0],Sigop[i,0],sSigo2[i,0]) + gauss(oris,SigHb[i],SigHp[i],sSigH2[i]) +\
+        ΣmuEs[i,0] = gauss(oris,Sigvb[i,0],Sigvp[i,0],sSigv[i,0]) + (gauss(oris,muHb[i],muHp[i],smuH[i])*eH)**2
+        ΣmuEs[i,1] = gauss(oris,Sigob[i,0],Sigop[i,0],sSigo[i,0]) + (gauss(oris,muHb[i],muHp[i],smuH[i])*eH)**2 +\
             (prms['CVL']*prms['L']*1e-3)**2
-        ΣmuEs[i,2] = gauss(oris,Sigdb[i,0],Sigdp[i,0],sSigd2[i,0]) + (prms['CVL']*prms['L']*1e-3)**2
+        ΣmuEs[i,2] = gauss(oris,Sigdb[i,0],Sigdp[i,0],sSigd[i,0]) + (prms['CVL']*prms['L']*1e-3)**2
         ΣmuEs[i,3] =  0.5*(ΣmuEs[i,1] - ΣmuEs[i,0] - ΣmuEs[i,2])
-        μmuIs[i,0] = gauss(oris,muvb[i,1],muvp[i,1],smuv2[i,1])
-        μmuIs[i,1] = gauss(oris,muob[i,1],muop[i,1],smuo2[i,1])
+        μmuIs[i,0] = gauss(oris,muvb[i,1],muvp[i,1],smuv[i,1])
+        μmuIs[i,1] = gauss(oris,muob[i,1],muop[i,1],smuo[i,1])
         μmuIs[i,2] = μmuIs[i,1] - μmuIs[i,0]
-        ΣmuIs[i,0] = gauss(oris,Sigvb[i,1],Sigvp[i,1],sSigv2[i,1])
-        ΣmuIs[i,1] = gauss(oris,Sigob[i,1],Sigop[i,1],sSigo2[i,1])
-        ΣmuIs[i,2] = gauss(oris,Sigdb[i,1],Sigdp[i,1],sSigd2[i,1])
+        ΣmuIs[i,0] = gauss(oris,Sigvb[i,1],Sigvp[i,1],sSigv[i,1])
+        ΣmuIs[i,1] = gauss(oris,Sigob[i,1],Sigop[i,1],sSigo[i,1])
+        ΣmuIs[i,2] = gauss(oris,Sigdb[i,1],Sigdp[i,1],sSigd[i,1])
         ΣmuIs[i,3] =  0.5*(ΣmuIs[i,1] - ΣmuIs[i,0] - ΣmuIs[i,2])
     μmus = μmuEs + μmuIs
     Σmus = ΣmuEs + ΣmuIs

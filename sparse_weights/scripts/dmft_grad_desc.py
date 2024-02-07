@@ -39,41 +39,46 @@ CVh = res_dict['best_monk_eX']
 bX = res_dict['best_monk_bX']
 aXs = res_dict['best_monk_aXs']
 K = prms['K']
+SoriF = prms['SoriF']
 L = prms['L']
 CVL = prms['CVL']
 
 ri = ric.Ricciardi()
 
-Twrm = 0.9
-Tsav = 0.3
+Twrm = 0.75
+Tsav = 0.25
 Tsim = 1.0
 dt = 0.01/4
 
 Nori = 20
 
 def get_prm_vec(prms,bX,fc_aX,CVh):
-    prm_vec = np.array(list(prms.values())[1:])
+    prm_vec = np.array(list(prms.values())[[1,2,4,5,6,7,8,9]])
+    prm_vec[2] = np.log10(prm_vec[2])
     prm_vec[3] = np.log10(prm_vec[3])
-    prm_vec[4] = np.log10(prm_vec[4])
     prm_vec = np.concatenate((prm_vec,np.array([bX,fc_aX,CVh])))
     return prm_vec
 
 def get_prms_inps(prm_vec):
-    prms = {'K': 500,
+    prms = {'K': K,
             'SoriE': prm_vec[0],
             'SoriI': prm_vec[1],
-            'SoriF': prm_vec[2],
-            'J': 10**prm_vec[5],
-            'beta': 10**prm_vec[5],
-            'gE': prm_vec[5],
-            'gI': prm_vec[6],
-            'hE': prm_vec[7],
-            'hI': prm_vec[8],
+            'SoriF': SoriF,
+            'J': 10**prm_vec[2],
+            'beta': 10**prm_vec[3],
+            'gE': prm_vec[4],
+            'gI': prm_vec[5],
+            'hE': prm_vec[6],
+            'hI': prm_vec[7],
             'L': L,
             'CVL': CVL}
-    return prms,prm_vec[9],prm_vec[10],prm_vec[11]
+    return prms,prm_vec[8],prm_vec[9],prm_vec[10]
 
 init_prm_vec = get_prm_vec(prms,bX,aXs[-1],CVh)
+
+dprm_vec = np.array([
+    
+])
 
 def predict_networks(prms,rX,cA,CVh):
     tau = np.array([ri.tE,ri.tI],dtype=np.float32)
@@ -176,28 +181,33 @@ def predict_networks(prms,rX,cA,CVh):
         conv[:,2] = res_dict['convdp']
         dmft_res = res_dict.copy()
         
-    # sWrv2 = sW2+srv2
-    # sWCrv2 = sW2+sCrv2
-    # sWro2 = sW2+sro2
-    # sWCro2 = sW2+sCro2
-    # sWCdr2 = sW2+sCdr2
+    # sWrv = np.sqrt(sW2+srv**2)
+    # sWCrv = np.sqrt(sW2+sCrv**2)
+    # sWro = np.sqrt(sW2+sro**2)
+    # sWCro = np.sqrt(sW2+sCro**2)
+    # sWCdr = np.sqrt(sW2+sCdr**2)
     
-    # muvb = (muW+np.sqrt(srv2/(2*np.pi))*muWb)*rvb
-    # muvp = muvb + np.sqrt(srv2/sWrv2)*muW*(rvp-rvb)
-    # smuv2 = sWrv2
-    # muob = (muW+np.sqrt(sro2/(2*np.pi))*muWb)*rob
-    # muop = muob + np.sqrt(sro2/sWro2)*muW*(rop-rob)
-    # smuo2 = sWro2
+    # muvb = (muW+dmft.unstruct_fact(srv)*muWb)*rvb
+    # muvp = muvb + dmft.struct_fact(0,sWrv,srv)*muW*(rvp-rvb)
+    # muvb = muvb + dmft.struct_fact(90,sWrv,srv)*muW*(rvp-rvb)
+    # smuv = sWrv
+    # muob = (muW+dmft.unstruct_fact(sro)*muWb)*rob
+    # muop = muob + dmft.struct_fact(0,sWro,sro)*muW*(rop-rob)
+    # muob = muob + dmft.struct_fact(90,sWro,sro)*muW*(rop-rob)
+    # smuo = sWro
     
-    # Sigvb = (SigW+np.sqrt(sCrv2/(2*np.pi))*SigWb)*Crvb
-    # Sigvp = Sigvb + np.sqrt(sCrv2/sWCrv2)*SigW*(Crvp-Crvb)
-    # sSigv2 = sWCrv2
-    # Sigob = (SigW+np.sqrt(sCro2/(2*np.pi))*SigWb)*Crob
-    # Sigop = Sigob + np.sqrt(sCro2/sWCro2)*SigW*(Crop-Crob)
-    # sSigo2 = sWCro2
-    # Sigdb = (SigW+np.sqrt(sCdr2/(2*np.pi))*SigWb)*Cdrb
-    # Sigdp = Sigdb + np.sqrt(sCdr2/sWCdr2)*SigW*(Cdrp-Cdrb)
-    # sSigd2 = sWCdr2
+    # Sigvb = (SigW+dmft.unstruct_fact(sCrv)*SigWb)*Crvb
+    # Sigvp = Sigvb + dmft.struct_fact(0,sWCrv,sCrv)*SigW*(Crvp-Crvb)
+    # Sigvb = Sigvb + dmft.struct_fact(90,sWCrv,sCrv)*SigW*(Crvp-Crvb)
+    # sSigv = sWCrv
+    # Sigob = (SigW+dmft.unstruct_fact(sCro)*SigWb)*Crob
+    # Sigop = Sigob + dmft.struct_fact(0,sWCro,sCro)*SigW*(Crop-Crob)
+    # Sigob = Sigob + dmft.struct_fact(90,sWCro,sCro)*SigW*(Crop-Crob)
+    # sSigo = sWCro
+    # Sigdb = (SigW+dmft.unstruct_fact(sCdr)*SigWb)*Cdrb
+    # Sigdp = Sigdb + dmft.struct_fact(0,sWCdr,sCdr)*SigW*(Cdrp-Cdrb)
+    # Sigdb = Sigdb + dmft.struct_fact(90,sWCdr,sCdr)*SigW*(Cdrp-Cdrb)
+    # sSigd = sWCdr
     
     for i in range(2):
         μrs[i,0] = gauss(oris,rvb[i],rvp[i],srv[i])
@@ -207,20 +217,20 @@ def predict_networks(prms,rX,cA,CVh):
         Σrs[i,1] = np.fmax(gauss(oris,Crob[i],Crop[i],sCro[i]) - μrs[i,1]**2,0)
         Σrs[i,2] = np.fmax(gauss(oris,Cdrb[i],Cdrp[i],sCdr[i]) - μrs[i,2]**2,0)
         Σrs[i,3] = 0.5*(Σrs[i,1] - Σrs[i,0] - Σrs[i,2])
-        # μmuEs[i,0] = gauss(oris,muvb[i,0],muvp[i,0],smuv2[i,0]) + gauss(oris,muHb[i],muHp[i],smuH2[i])
-        # μmuEs[i,1] = gauss(oris,muob[i,0],muop[i,0],smuo2[i,0]) + gauss(oris,muHb[i],muHp[i],smuH2[i]) + prms['L']*1e-3
+        # μmuEs[i,0] = gauss(oris,muvb[i,0],muvp[i,0],smuv[i,0]) + gauss(oris,muHb[i],muHp[i],smuH[i])
+        # μmuEs[i,1] = gauss(oris,muob[i,0],muop[i,0],smuo[i,0]) + gauss(oris,muHb[i],muHp[i],smuH[i]) + prms['L']*1e-3
         # μmuEs[i,2] = μmuEs[i,1] - μmuEs[i,0]
-        # ΣmuEs[i,0] = gauss(oris,Sigvb[i,0],Sigvp[i,0],sSigv2[i,0]) + gauss(oris,SigHb[i],SigHp[i],sSigH2[i])
-        # ΣmuEs[i,1] = gauss(oris,Sigob[i,0],Sigop[i,0],sSigo2[i,0]) + gauss(oris,SigHb[i],SigHp[i],sSigH2[i]) +\
+        # ΣmuEs[i,0] = gauss(oris,Sigvb[i,0],Sigvp[i,0],sSigv[i,0]) + (gauss(oris,muHb[i],muHp[i],smuH[i])*eH)**2
+        # ΣmuEs[i,1] = gauss(oris,Sigob[i,0],Sigop[i,0],sSigo[i,0]) + (gauss(oris,muHb[i],muHp[i],smuH[i])*eH)**2 +\
         #     (prms['CVL']*prms['L']*1e-3)**2
-        # ΣmuEs[i,2] = gauss(oris,Sigdb[i,0],Sigdp[i,0],sSigd2[i,0]) + (prms['CVL']*prms['L']*1e-3)**2
+        # ΣmuEs[i,2] = gauss(oris,Sigdb[i,0],Sigdp[i,0],sSigd[i,0]) + (prms['CVL']*prms['L']*1e-3)**2
         # ΣmuEs[i,3] =  0.5*(ΣmuEs[i,1] - ΣmuEs[i,0] - ΣmuEs[i,2])
-        # μmuIs[i,0] = gauss(oris,muvb[i,1],muvp[i,1],smuv2[i,1])
-        # μmuIs[i,1] = gauss(oris,muob[i,1],muop[i,1],smuo2[i,1])
+        # μmuIs[i,0] = gauss(oris,muvb[i,1],muvp[i,1],smuv[i,1])
+        # μmuIs[i,1] = gauss(oris,muob[i,1],muop[i,1],smuo[i,1])
         # μmuIs[i,2] = μmuIs[i,1] - μmuIs[i,0]
-        # ΣmuIs[i,0] = gauss(oris,Sigvb[i,1],Sigvp[i,1],sSigv2[i,1])
-        # ΣmuIs[i,1] = gauss(oris,Sigob[i,1],Sigop[i,1],sSigo2[i,1])
-        # ΣmuIs[i,2] = gauss(oris,Sigdb[i,1],Sigdp[i,1],sSigd2[i,1])
+        # ΣmuIs[i,0] = gauss(oris,Sigvb[i,1],Sigvp[i,1],sSigv[i,1])
+        # ΣmuIs[i,1] = gauss(oris,Sigob[i,1],Sigop[i,1],sSigo[i,1])
+        # ΣmuIs[i,2] = gauss(oris,Sigdb[i,1],Sigdp[i,1],sSigd[i,1])
         # ΣmuIs[i,3] =  0.5*(ΣmuIs[i,1] - ΣmuIs[i,0] - ΣmuIs[i,2])
     # μmus = μmuEs + μmuIs
     # Σmus = ΣmuEs + ΣmuIs
