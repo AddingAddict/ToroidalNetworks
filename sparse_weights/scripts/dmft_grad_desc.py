@@ -49,10 +49,10 @@ CVL = prms['CVL']
 
 ri = ric.Ricciardi()
 
-Twrm = 0.75
-Tsav = 0.25
+Twrm = 0.4
+Tsav = 0.1
 Tsim = 1.0
-dt = 0.01/4
+dt = 0.01/15
 
 Nori = 20
 

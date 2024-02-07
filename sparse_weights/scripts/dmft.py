@@ -430,7 +430,7 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
     
     muHb = tau*Hb
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*np.exp(-0.5*sa2/sH2))
+    muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
     SigHa = (muHa*eH)**2
     muHp = tau*Hp
     SigHp = (muHp*eH)**2
@@ -674,7 +674,7 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
     
     muHb = tau*Hb
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*np.exp(-0.5*sa2/sH2))
+    muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
     SigHa = (muHa*eH)**2
     muHp = tau*Hp
     SigHp = (muHp*eH)**2
@@ -1105,7 +1105,7 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180
     
     muHb = tau*Hb
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*np.exp(-0.5*sa2/sH2))
+    muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
     SigHa = (muHa*eH)**2
     muHp = tau*Hp
     SigHp = (muHp*eH)**2
@@ -1272,7 +1272,7 @@ def run_second_stage_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twrm,Tsa
     
     muHb = tau*Hb
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*np.exp(-0.5*sa2/sH2))
+    muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
     SigHa = (muHa*eH)**2
     muHp = tau*Hp
     SigHp = (muHp*eH)**2
@@ -1415,7 +1415,7 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,r
     
     muHb = tau*Hb
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*np.exp(-0.5*sa2/sH2))
+    muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
     SigHa = (muHa*eH)**2
     muHp = tau*Hp
     SigHp = (muHp*eH)**2

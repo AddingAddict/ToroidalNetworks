@@ -20,12 +20,14 @@ import integrate as integ
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--c_idx', '-c',  help='which contrast', type=int, default=0)
-parser.add_argument('--CVh_mult', '-CVhm',  help='which number job', type=float, default=1.0)
-parser.add_argument('--CVL_mult', '-CVLm',  help='which number repetition', type=float, default=1.0)
+parser.add_argument('--CVh_mult', '-CVhm',  help='multiplier for CVh', type=float, default=1.0)
+parser.add_argument('--L_mult', '-Lm',  help='multiplier for L', type=float, default=1.0)
+parser.add_argument('--CVL_mult', '-CVLm',  help='multiplier for CVL', type=float, default=1.0)
 args = vars(parser.parse_args())
 print(parser.parse_args())
 c_idx= args['c_idx']
 CVh_mult= args['CVh_mult']
+L_mult= args['L_mult']
 CVL_mult= args['CVL_mult']
 
 id = None
@@ -63,8 +65,8 @@ SoriI = prms['SoriI']
 # CVL = prms['CVL']
 
 CVh = CVh*CVh_mult
-CVL = prms['CVL']*CVL_mult
-prms['CVL'] = CVL
+prms['L'] = prms['L']*L_mult
+prms['CVL'] = prms['CVL']*CVL_mult
 
 ri = ric.Ricciardi()
 ri.set_up_nonlinearity('./phi_int')
@@ -348,9 +350,14 @@ res_dict['osm_oves'] = osm_oves
 res_dict['osm_ovxs'] = osm_ovxs
 res_dict['timeouts'] = timeouts
 
-if np.isclose(CVh_mult,1.0) and np.isclose(CVL_mult,1.0):
-    with open('./../results/best_fit_1s_id_{:s}_c_{:d}'.format(str(id),c_idx)+'.pkl', 'wb') as handle:
-        pickle.dump(res_dict,handle)
-else:
-    with open('./../results/best_fit_1s_id_{:s}_CVhx{:.2f}_CVLx{:.2f}_c_{:d}'.format(str(id),CVh_mult,CVL_mult,c_idx)+'.pkl', 'wb') as handle:
-        pickle.dump(res_dict,handle)
+res_file = './../results/best_fit_1s_id_{:s}'.format(str(id))
+if not np.isclose(CVh_mult,1.0):
+    res_file = res_file + '_CVhx{:.2f}'.format(CVh_mult)
+if not np.isclose(L_mult,1.0):
+    res_file = res_file + '_Lx{:.2f}'.format(L_mult)
+if not np.isclose(CVL_mult,1.0):
+    res_file = res_file + '_CVLx{:.2f}'.format(CVL_mult)
+res_file = res_file + '_c_{:d}'.format(c_idx)
+
+with open(res_file+'.pkl', 'wb') as handle:
+    pickle.dump(res_dict,handle)
