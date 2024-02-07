@@ -857,8 +857,13 @@ def run_first_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,which='both',return
         
     print('integrating first stage took',time.process_time() - start,'s')
 
-    r = full_r[:,-1]
-    Cr = full_Cr[:,-1,-1:-Nsav-1:-1]
+    # time average predicted moments
+    # r = full_r[:,-1]
+    # Cr = full_Cr[:,-1,-1:-Nsav-1:-1]
+    r = np.mean(full_r[:,-1:-Nsav-1:-1],-1)
+    Cr = np.zeros((2,Nsav))
+    for i in range(Nsav):
+        Cr[:,i] = np.mean(each_diag(full_Cr[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
     
     muW = tau[:,None]*W*Ks
     SigW = tau[:,None]**2*W**2*Ks
@@ -936,8 +941,12 @@ def run_second_stage_dmft(first_res_dict,prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,ret
 
     print('integrating second stage took',time.process_time() - start,'s')
 
+    # time average predicted moments
     dr = r[:2] - r[2:]
-    Cdr = full_Cdr[:,-1,-1:-Nsav-1:-1]
+    # Cdr = full_Cdr[:,-1,-1:-Nsav-1:-1]
+    Cdr = np.zeros((2,Nsav))
+    for i in range(Nsav):
+        Cdr[:,i] = np.mean(each_diag(full_Cdr[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
 
     dmu = mu[:2] - mu[2:]
 
@@ -1007,8 +1016,13 @@ def run_two_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,return_full=False):
 
     print('integrating first stage took',time.process_time() - start,'s')
 
-    r = full_r[:,-1]
-    Cr = full_Cr[:,-1,-1:-Nsav-1:-1]
+    # time average predicted moments
+    # r = full_r[:,-1]
+    # Cr = full_Cr[:,-1,-1:-Nsav-1:-1]
+    r = np.mean(full_r[:,-1:-Nsav-1:-1],-1)
+    Cr = np.zeros((2,Nsav))
+    for i in range(Nsav):
+        Cr[:,i] = np.mean(each_diag(full_Cr[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
     
     muW = tau[:,None]*W*Ks
     SigW = tau[:,None]**2*W**2*Ks
@@ -1025,8 +1039,12 @@ def run_two_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,return_full=False):
 
     print('integrating second stage took',time.process_time() - start,'s')
 
+    # time average predicted moments
     dr = r[:2] - r[2:]
-    Cdr = full_Cdr[:,-1,-1:-Nsav-1:-1]
+    # Cdr = full_Cdr[:,-1,-1:-Nsav-1:-1]
+    Cdr = np.zeros((2,Nsav))
+    for i in range(Nsav):
+        Cdr[:,i] = np.mean(each_diag(full_Cdr[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
 
     dmu = mu[:2] - mu[2:]
 
@@ -1128,12 +1146,23 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180
         
     print('integrating first stage took',time.process_time() - start,'s')
 
-    rb = full_rb[:,-1]
-    ra = full_ra[:,-1]
-    rp = full_rp[:,-1]
-    Crb = full_Crb[:,-1,-1:-Nsav-1:-1]
-    Cra = full_Cra[:,-1,-1:-Nsav-1:-1]
-    Crp = full_Crp[:,-1,-1:-Nsav-1:-1]
+    # time average predicted moments
+    # rb = full_rb[:,-1]
+    # ra = full_ra[:,-1]
+    # rp = full_rp[:,-1]
+    # Crb = full_Crb[:,-1,-1:-Nsav-1:-1]
+    # Cra = full_Cra[:,-1,-1:-Nsav-1:-1]
+    # Crp = full_Crp[:,-1,-1:-Nsav-1:-1]
+    rb = np.mean(full_rb[:,-1:-Nsav-1:-1],-1)
+    ra = np.mean(full_ra[:,-1:-Nsav-1:-1],-1)
+    rp = np.mean(full_rp[:,-1:-Nsav-1:-1],-1)
+    Crb = np.zeros((2,Nsav))
+    Cra = np.zeros((2,Nsav))
+    Crp = np.zeros((2,Nsav))
+    for i in range(Nsav):
+        Crb[:,i] = np.mean(each_diag(full_Crb[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
+        Cra[:,i] = np.mean(each_diag(full_Cra[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
+        Crp[:,i] = np.mean(each_diag(full_Crp[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
     
     muW = tau[:,None]*W*Ks
     SigW = tau[:,None]**2*W**2*Ks
@@ -1297,12 +1326,20 @@ def run_second_stage_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twrm,Tsa
 
     print('integrating second stage took',time.process_time() - start,'s')
 
+    # time average predicted moments
     drb = rb[2:] - rb[:2]
     dra = ra[2:] - ra[:2]
     drp = rp[2:] - rp[:2]
-    Cdrb = full_Cdrb[:,-1,-1:-Nsav-1:-1]
-    Cdra = full_Cdra[:,-1,-1:-Nsav-1:-1]
-    Cdrp = full_Cdrp[:,-1,-1:-Nsav-1:-1]
+    # Cdrb = full_Cdrb[:,-1,-1:-Nsav-1:-1]
+    # Cdra = full_Cdra[:,-1,-1:-Nsav-1:-1]
+    # Cdrp = full_Cdrp[:,-1,-1:-Nsav-1:-1]
+    Cdrb = np.zeros((2,Nsav))
+    Cdra = np.zeros((2,Nsav))
+    Cdrp = np.zeros((2,Nsav))
+    for i in range(Nsav):
+        Cdrb[:,i] = np.mean(each_diag(full_Cdrb[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
+        Cdra[:,i] = np.mean(each_diag(full_Cdra[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
+        Cdrp[:,i] = np.mean(each_diag(full_Cdrp[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
 
     dmub = mub[2:] - mub[:2]
     dmua = mua[2:] - mua[:2]
@@ -1414,12 +1451,23 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,r
 
     print('integrating first stage took',time.process_time() - start,'s')
 
-    rb = full_rb[:,-1]
-    ra = full_ra[:,-1]
-    rp = full_rp[:,-1]
-    Crb = full_Crb[:,-1,-1:-Nsav-1:-1]
-    Cra = full_Cra[:,-1,-1:-Nsav-1:-1]
-    Crp = full_Crp[:,-1,-1:-Nsav-1:-1]
+    # time average predicted moments
+    # rb = full_rb[:,-1]
+    # ra = full_ra[:,-1]
+    # rp = full_rp[:,-1]
+    # Crb = full_Crb[:,-1,-1:-Nsav-1:-1]
+    # Cra = full_Cra[:,-1,-1:-Nsav-1:-1]
+    # Crp = full_Crp[:,-1,-1:-Nsav-1:-1]
+    rb = np.mean(full_rb[:,-1:-Nsav-1:-1],-1)
+    ra = np.mean(full_ra[:,-1:-Nsav-1:-1],-1)
+    rp = np.mean(full_rp[:,-1:-Nsav-1:-1],-1)
+    Crb = np.zeros((2,Nsav))
+    Cra = np.zeros((2,Nsav))
+    Crp = np.zeros((2,Nsav))
+    for i in range(Nsav):
+        Crb[:,i] = np.mean(each_diag(full_Crb[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
+        Cra[:,i] = np.mean(each_diag(full_Cra[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
+        Crp[:,i] = np.mean(each_diag(full_Crp[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
     
     muW = tau[:,None]*W*Ks
     SigW = tau[:,None]**2*W**2*Ks
@@ -1456,12 +1504,20 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,r
 
     print('integrating second stage took',time.process_time() - start,'s')
 
+    # time average predicted moments
     drb = rb[2:] - rb[:2]
     dra = ra[2:] - ra[:2]
     drp = rp[2:] - rp[:2]
-    Cdrb = full_Cdrb[:,-1,-1:-Nsav-1:-1]
-    Cdra = full_Cdra[:,-1,-1:-Nsav-1:-1]
-    Cdrp = full_Cdrp[:,-1,-1:-Nsav-1:-1]
+    # Cdrb = full_Cdrb[:,-1,-1:-Nsav-1:-1]
+    # Cdra = full_Cdra[:,-1,-1:-Nsav-1:-1]
+    # Cdrp = full_Cdrp[:,-1,-1:-Nsav-1:-1]
+    Cdrb = np.zeros((2,Nsav))
+    Cdra = np.zeros((2,Nsav))
+    Cdrp = np.zeros((2,Nsav))
+    for i in range(Nsav):
+        Cdrb[:,i] = np.mean(each_diag(full_Cdrb[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
+        Cdra[:,i] = np.mean(each_diag(full_Cdra[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
+        Cdrp[:,i] = np.mean(each_diag(full_Cdrp[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
 
     dmub = mub[2:] - mub[:2]
     dmua = mua[2:] - mua[:2]
