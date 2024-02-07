@@ -53,10 +53,10 @@ SoriI = prms['SoriI']
 
 ri = ric.Ricciardi()
 
-Twrm = 1.6
-Tsav = 0.4
+Twrm = 0.9
+Tsav = 0.3
 Tsim = 1.0
-dt = 0.01/15
+dt = 0.01/4
 
 Nori = 20
 

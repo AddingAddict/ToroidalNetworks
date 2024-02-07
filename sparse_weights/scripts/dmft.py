@@ -1297,16 +1297,16 @@ def run_second_stage_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twrm,Tsa
 
     print('integrating second stage took',time.process_time() - start,'s')
 
-    drb = rb[:2] - rb[2:]
-    dra = ra[:2] - ra[2:]
-    drp = rp[:2] - rp[2:]
+    drb = rb[2:] - rb[:2]
+    dra = ra[2:] - ra[:2]
+    drp = rp[2:] - rp[:2]
     Cdrb = full_Cdrb[:,-1,-1:-Nsav-1:-1]
     Cdra = full_Cdra[:,-1,-1:-Nsav-1:-1]
     Cdrp = full_Cdrp[:,-1,-1:-Nsav-1:-1]
 
-    dmub = mub[:2] - mub[2:]
-    dmua = mua[:2] - mua[2:]
-    dmup = mup[:2] - mup[2:]
+    dmub = mub[2:] - mub[:2]
+    dmua = mua[2:] - mua[:2]
+    dmup = mup[2:] - mup[:2]
 
     sCdr = solve_width((Cdra-Cdrb)/(Cdrp-Cdrb))
     sWCdr = np.sqrt(sW2[:,:,None]+sCdr[None,:,:]**2)
@@ -1456,16 +1456,16 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,r
 
     print('integrating second stage took',time.process_time() - start,'s')
 
-    drb = rb[:2] - rb[2:]
-    dra = ra[:2] - ra[2:]
-    drp = rp[:2] - rp[2:]
+    drb = rb[2:] - rb[:2]
+    dra = ra[2:] - ra[:2]
+    drp = rp[2:] - rp[:2]
     Cdrb = full_Cdrb[:,-1,-1:-Nsav-1:-1]
     Cdra = full_Cdra[:,-1,-1:-Nsav-1:-1]
     Cdrp = full_Cdrp[:,-1,-1:-Nsav-1:-1]
 
-    dmub = mub[:2] - mub[2:]
-    dmua = mua[:2] - mua[2:]
-    dmup = mup[:2] - mup[2:]
+    dmub = mub[2:] - mub[:2]
+    dmua = mua[2:] - mua[:2]
+    dmup = mup[2:] - mup[:2]
 
     sCdr = solve_width((Cdra-Cdrb)/(Cdrp-Cdrb))
     sWCdr = np.sqrt(sW2[:,:,None]+sCdr[None,:,:]**2)
