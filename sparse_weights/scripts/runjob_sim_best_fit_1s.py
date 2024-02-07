@@ -83,9 +83,9 @@ def runjobs():
     
     #--------------------------------------------------------------------------
     # The array of hashes
-    c_Vec=range(12)
+    c_Vec=range(8)#12)
     CVh_mult_vec = np.array([1.0,])
-    CVL_mult_vec = 10**(0.25*np.arange(2+1)/2-0.5)
+    CVL_mult_vec = 10**(0.25*np.arange(2+1)/2-0.25)
     
     for c in c_Vec:
         for CVh_mult in CVh_mult_vec:
@@ -101,7 +101,7 @@ def runjobs():
                 if np.isclose(CVh_mult,1.0) and np.isclose(CVL_mult,1.0):
                     jobname="sim_best_fit_1s"+"-c-{:d}".format(c)
                 else:
-                    jobname="sim_best_fit_1s"+"CVhx{:.2f}-CVLx{:.2f}-c-{:d}".format(CVh_mult,CVL_mult,c)
+                    jobname="sim_best_fit_1s"+"-CVhx{:.2f}-CVLx{:.2f}-c-{:d}".format(CVh_mult,CVL_mult,c)
                 
                 if not args2.test:
                     jobnameDir=os.path.join(ofilesdir, jobname)
