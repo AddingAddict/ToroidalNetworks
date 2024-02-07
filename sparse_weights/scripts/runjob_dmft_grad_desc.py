@@ -26,7 +26,7 @@ def runjobs():
     args2 = parser.parse_args()
     args = vars(args2)
     
-    iter_idx = str(args["iter_idx"])
+    iter_idx = int(args["iter_idx"])
     
     hostname = socket.gethostname()
     if 'ax' in hostname:
