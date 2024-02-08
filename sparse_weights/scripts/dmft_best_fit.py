@@ -13,12 +13,18 @@ import dmft
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--c_idx', '-c',  help='which contrast', type=int, default=0)
+parser.add_argument('--SoriE_mult', '-SoriEm',  help='multiplier for SoriE', type=float, default=1.0)
+parser.add_argument('--SoriI_mult', '-SoriIm',  help='multiplier for SoriI', type=float, default=1.0)
+parser.add_argument('--SoriF_mult', '-SoriFm',  help='multiplier for SoriF', type=float, default=1.0)
 parser.add_argument('--CVh_mult', '-CVhm',  help='multiplier for CVh', type=float, default=1.0)
 parser.add_argument('--L_mult', '-Lm',  help='multiplier for L', type=float, default=1.0)
 parser.add_argument('--CVL_mult', '-CVLm',  help='multiplier for CVL', type=float, default=1.0)
 args = vars(parser.parse_args())
 print(parser.parse_args())
 c_idx= args['c_idx']
+SoriE_mult= args['SoriE_mult']
+SoriI_mult= args['SoriI_mult']
+SoriF_mult= args['SoriF_mult']
 CVh_mult= args['CVh_mult']
 L_mult= args['L_mult']
 CVL_mult= args['CVL_mult']
@@ -58,8 +64,11 @@ SoriI = prms['SoriI']
 # CVL = prms['CVL']
 
 CVh = CVh*CVh_mult
-CVL = prms['CVL']*CVL_mult
-prms['CVL'] = CVL
+prms['SoriE'] = prms['SoriE']*SoriE_mult
+prms['SoriI'] = prms['SoriI']*SoriI_mult
+prms['SoriF'] = prms['SoriF']*SoriF_mult
+prms['L'] = prms['L']*L_mult
+prms['CVL'] = prms['CVL']*CVL_mult
 
 ri = ric.Ricciardi()
 
@@ -365,6 +374,12 @@ res_dict['osm_norm_covs'] = osm_norm_covs
 res_dict['dmft_res'] = dmft_res
 
 res_file = './../results/dmft_best_fit_id_{:s}'.format(str(id))
+if not np.isclose(SoriE_mult,1.0):
+    res_file = res_file + '_SoriEx{:.2f}'.format(SoriE_mult)
+if not np.isclose(SoriI_mult,1.0):
+    res_file = res_file + '_SoriIx{:.2f}'.format(SoriI_mult)
+if not np.isclose(SoriF_mult,1.0):
+    res_file = res_file + '_SoriFx{:.2f}'.format(SoriF_mult)
 if not np.isclose(CVh_mult,1.0):
     res_file = res_file + '_CVhx{:.2f}'.format(CVh_mult)
 if not np.isclose(L_mult,1.0):

@@ -84,24 +84,36 @@ def runjobs():
     #--------------------------------------------------------------------------
     # The array of hashes
     c_Vec=range(6)
+    SoriE_mult_vec = (np.arange(4+1)/4)[2:]
+    SoriI_mult_vec = np.array([1.0,])
+    SoriF_mult_vec = np.array([1.0,])
     CVh_mult_vec = np.array([1.0,])
-    CVL_mult_vec = 10**(0.25*np.arange(2+1)/2-0.25)
+    L_mult_vec = 10**(0.5*np.arange(4+1)/4-0.5)[-1:]
+    CVL_mult_vec = 10**(0.5*np.arange(4+1)/4-0.5)[-1:]
     
     for c in c_Vec:
-        for CVh_mult in CVh_mult_vec:
-            for CVL_mult in CVL_mult_vec:
+        for SoriE_mult in SoriE_mult_vec:
+            for SoriI_mult in SoriI_mult_vec:
+                for SoriF_mult in SoriF_mult_vec:
+                    for CVh_mult in CVh_mult_vec:
+                        for L_mult in L_mult_vec:
+                            for CVL_mult in CVL_mult_vec:
 
-                time.sleep(0.2)
-                
-                #--------------------------------------------------------------------------
-                # Make SBTACH
-                inpath = currwd + "/dmft_best_fit.py"
-                c1 = "{:s} -c {:d} -CVhm {:f} -CVLm {:f}".format(inpath,c,CVh_mult,CVL_mult)
-                
-                if np.isclose(CVh_mult,1.0) and np.isclose(CVL_mult,1.0):
-                    jobname="dmft_best_fit"+"-c-{:d}".format(c)
-                else:
-                    jobname="dmft_best_fit"+"-CVhx{:.2f}-CVLx{:.2f}-c-{:d}".format(CVh_mult,CVL_mult,c)
+                                time.sleep(0.2)
+                                
+                                #--------------------------------------------------------------------------
+                                # Make SBTACH
+                                inpath = currwd + "/dmft_best_fit.py"
+                                c1 = "{:s} -c {:d} -SoriEm {:f} -SoriIm {:f} -SoriFm {:f} -CVhm {:f} -Lm {:f} -CVLm {:f}".format(
+                                    inpath,c,SoriE_mult,SoriI_mult,SoriF_mult,CVh_mult,L_mult,CVL_mult)
+                                
+                                if np.isclose(SoriE_mult,1.0) and np.isclose(SoriI_mult,1.0) and\
+                                    np.isclose(SoriF_mult,1.0) and np.isclose(CVh_mult,1.0) and\
+                                    np.isclose(L_mult,1.0) and np.isclose(CVL_mult,1.0):
+                                    jobname="dmft_best_fit"+"-c-{:d}".format(c)
+                                else:
+                                    jobname="dmft_best_fit"+"-SoriEx{:.2f}-SoriIx{:.2f}-SoriFx{:.2f}-CVhx{:.2f}-Lx{:.2f}-CVLx{:.2f}-c-{:d}".format(
+                                        SoriE_mult,SoriI_mult,SoriF_mult,CVh_mult,L_mult,CVL_mult,c)
                 
                 if not args2.test:
                     jobnameDir=os.path.join(ofilesdir, jobname)
