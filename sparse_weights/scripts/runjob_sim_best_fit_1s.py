@@ -84,52 +84,62 @@ def runjobs():
     #--------------------------------------------------------------------------
     # The array of hashes
     c_Vec=range(8)#12)
+    SoriE_mult_vec = (np.arange(4+1)/4)[2:]
+    SoriI_mult_vec = np.array([1.0,])
+    SoriF_mult_vec = np.array([1.0,])
     CVh_mult_vec = np.array([1.0,])
-    L_mult_vec = 10**(0.25*np.arange(2+1)/2-0.25)
-    CVL_mult_vec = 10**(0.5*np.arange(4+1)/4-0.5)[:2]
+    L_mult_vec = 10**(0.5*np.arange(4+1)/4-0.5)[-1:]
+    CVL_mult_vec = 10**(0.5*np.arange(4+1)/4-0.5)[-1:]
     
     for c in c_Vec:
-        for CVh_mult in CVh_mult_vec:
-            for L_mult in L_mult_vec:
-                for CVL_mult in CVL_mult_vec:
+        for SoriE_mult in SoriE_mult_vec:
+            for SoriI_mult in SoriI_mult_vec:
+                for SoriF_mult in SoriF_mult_vec:
+                    for CVh_mult in CVh_mult_vec:
+                        for L_mult in L_mult_vec:
+                            for CVL_mult in CVL_mult_vec:
 
-                    time.sleep(0.2)
-                    
-                    #--------------------------------------------------------------------------
-                    # Make SBTACH
-                    inpath = currwd + "/sim_best_fit_1s.py"
-                    c1 = "{:s} -c {:d} -CVhm {:f} -Lm {:f} -CVLm {:f}".format(inpath,c,CVh_mult,L_mult,CVL_mult)
-                    
-                    if np.isclose(CVh_mult,1.0) and np.isclose(L_mult,1.0) and np.isclose(CVL_mult,1.0):
-                        jobname="sim_best_fit_1s"+"-c-{:d}".format(c)
-                    else:
-                        jobname="sim_best_fit_1s"+"-CVhx{:.2f}-Lx{:.2f}-CVLx{:.2f}-c-{:d}".format(CVh_mult,L_mult,CVL_mult,c)
-                    
-                    if not args2.test:
-                        jobnameDir=os.path.join(ofilesdir, jobname)
-                        text_file=open(jobnameDir, "w");
-                        os.system("chmod u+x "+ jobnameDir)
-                        text_file.write("#!/bin/sh \n")
-                        if cluster=='haba' or cluster=='moto' or cluster=='burg':
-                            text_file.write("#SBATCH --account=theory \n")
-                        text_file.write("#SBATCH --job-name="+jobname+ "\n")
-                        text_file.write("#SBATCH -t 0-11:59  \n")
-                        text_file.write("#SBATCH --mem-per-cpu=10gb \n")
-                        text_file.write("#SBATCH --gres=gpu\n")
-                        text_file.write("#SBATCH -c 1 \n")
-                        text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
-                        text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
-                        text_file.write("python  -W ignore " + c1+" \n")
-                        text_file.write("echo $PATH  \n")
-                        text_file.write("exit 0  \n")
-                        text_file.close()
+                                time.sleep(0.2)
+                                
+                                #--------------------------------------------------------------------------
+                                # Make SBTACH
+                                inpath = currwd + "/sim_best_fit_1s.py"
+                                c1 = "{:s} -c {:d} -SoriEm {:f} -SoriIm {:f} -SoriFm {:f} -CVhm {:f} -Lm {:f} -CVLm {:f}".format(
+                                    inpath,c,SoriE_mult,SoriI_mult,SoriF_mult,CVh_mult,L_mult,CVL_mult)
+                                
+                                if np.isclose(SoriE_mult,1.0) and np.isclose(SoriI_mult,1.0) and\
+                                    np.isclose(SoriF_mult,1.0) and np.isclose(CVh_mult,1.0) and\
+                                    np.isclose(L_mult,1.0) and np.isclose(CVL_mult,1.0):
+                                    jobname="sim_best_fit_1s"+"-c-{:d}".format(c)
+                                else:
+                                    jobname="sim_best_fit_1s"+"-SoriEx{:.2f}-SoriIx{:.2f}-SoriFx{:.2f}-CVhx{:.2f}-Lx{:.2f}-CVLx{:.2f}-c-{:d}".format(
+                                        SoriE_mult,SoriI_mult,SoriF_mult,CVh_mult,L_mult,CVL_mult,c)
+                                
+                                if not args2.test:
+                                    jobnameDir=os.path.join(ofilesdir, jobname)
+                                    text_file=open(jobnameDir, "w");
+                                    os.system("chmod u+x "+ jobnameDir)
+                                    text_file.write("#!/bin/sh \n")
+                                    if cluster=='haba' or cluster=='moto' or cluster=='burg':
+                                        text_file.write("#SBATCH --account=theory \n")
+                                    text_file.write("#SBATCH --job-name="+jobname+ "\n")
+                                    text_file.write("#SBATCH -t 0-11:59  \n")
+                                    text_file.write("#SBATCH --mem-per-cpu=10gb \n")
+                                    text_file.write("#SBATCH --gres=gpu\n")
+                                    text_file.write("#SBATCH -c 1 \n")
+                                    text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
+                                    text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
+                                    text_file.write("python  -W ignore " + c1+" \n")
+                                    text_file.write("echo $PATH  \n")
+                                    text_file.write("exit 0  \n")
+                                    text_file.close()
 
-                        if cluster=='axon':
-                            os.system("sbatch -p burst " +jobnameDir);
-                        else:
-                            os.system("sbatch " +jobnameDir);
-                    else:
-                        print (c1)
+                                    if cluster=='axon':
+                                        os.system("sbatch -p burst " +jobnameDir);
+                                    else:
+                                        os.system("sbatch " +jobnameDir);
+                                else:
+                                    print (c1)
 
 
 
