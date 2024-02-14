@@ -83,9 +83,9 @@ def runjobs():
     
     #--------------------------------------------------------------------------
     # The array of hashes
-    c_Vec=range(8)#12)
+    c_Vec=range(7)#12)
     # SoriE_mult_vec = (np.arange(4+1)/4)[2:]
-    SoriE_mult_vec = (np.arange(10+1)/10)[-4:-1]
+    SoriE_mult_vec = np.array([1.0,])
     SoriI_mult_vec = np.array([1.0,])
     SoriF_mult_vec = np.array([1.0,])
     CVh_mult_vec = np.array([1.0,])
@@ -105,10 +105,8 @@ def runjobs():
                                 #--------------------------------------------------------------------------
                                 # Make SBTACH
                                 inpath = currwd + "/sim_best_fit_1s.py"
-                                # c1 = "{:s} -c {:d} -SoriEm {:f} -SoriIm {:f} -SoriFm {:f} -CVhm {:f} -Lm {:f} -CVLm {:f}".format(
-                                #     inpath,c,SoriE_mult,SoriI_mult,SoriF_mult,CVh_mult,L_mult,CVL_mult)
                                 c1 = "{:s} -c {:d} -SoriEm {:f} -SoriIm {:f} -SoriFm {:f} -CVhm {:f} -Lm {:f} -CVLm {:f}".format(
-                                    inpath,c,SoriE_mult,SoriE_mult,SoriE_mult,CVh_mult,L_mult,CVL_mult)
+                                    inpath,c,SoriE_mult,SoriI_mult,SoriF_mult,CVh_mult,L_mult,CVL_mult)
                                 
                                 if np.isclose(SoriE_mult,1.0) and np.isclose(SoriI_mult,1.0) and\
                                     np.isclose(SoriF_mult,1.0) and np.isclose(CVh_mult,1.0) and\
