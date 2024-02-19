@@ -83,7 +83,7 @@ def runjobs():
     
     #--------------------------------------------------------------------------
     # The array of hashes
-    c_Vec=range(7)
+    c_Vec=range(6)
     SoriE_mult_vec = np.array([1.0,])
     SoriI_mult_vec = np.array([1.0,])
     SoriF_mult_vec = np.array([1.0,])
@@ -92,7 +92,7 @@ def runjobs():
     CVL_mult_vec = 10**(0.5*np.arange(4+1)/4-0.5)[-1:]
     J_mult = 1.0
     beta_mult = 1.0
-    gE_mult = 1.1
+    gE_mult = 1.0
     gI_mult = 1.0
     hE_mult = 1.0
     hI_mult = 1.0
