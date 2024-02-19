@@ -601,6 +601,226 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
         (np.max(Crp_diag[:,-Nsav:],axis=1)-np.min(Crp_diag[:,-Nsav:],axis=1))/\
             np.mean(Crp_diag[:,-Nsav:],axis=1) < 1e-3
 
+def sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
+                rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None,L=180):
+    if Kb is None:
+        Kb = np.zeros_like(K)
+        
+    Ntyp = len(Hb)
+    Nint = round((Twrm+Tsav)/dt)+1
+    Nclc = round(1.5*Tsav/dt)+1
+    Nsav = round(Tsav/dt)+1
+    
+    rb = np.zeros((Ntyp,Nint),dtype=np.float32)
+    ra = np.zeros((Ntyp,Nint),dtype=np.float32)
+    rp = np.zeros((Ntyp,Nint),dtype=np.float32)
+    Crb = np.zeros((Ntyp,Nint,Nint),dtype=np.float32)
+    Cra = np.zeros((Ntyp,Nint,Nint),dtype=np.float32)
+    Crp = np.zeros((Ntyp,Nint,Nint),dtype=np.float32)
+    
+    if rb0 is None:
+        rb0 = 1*np.ones((Ntyp),dtype=np.float32)
+    if ra0 is None:
+        ra0 = 2*np.ones((Ntyp),dtype=np.float32)
+    if rp0 is None:
+        rp0 = 5*np.ones((Ntyp),dtype=np.float32)
+    if Crb0 is None:
+        Crb0 = 1e2*np.ones((Ntyp,1),dtype=np.float32)
+    if Cra0 is None:
+        Cra0 = 4e2*np.ones((Ntyp,1),dtype=np.float32)
+    if Crp0 is None:
+        Crp0 = 25e2*np.ones((Ntyp,1),dtype=np.float32)
+        
+    tauinv = 1/tau
+    dttauinv = dt/tau
+    dttauinv2 = dttauinv**2
+    
+    solve_width = get_solve_width(sa,L)
+    
+    sa2 = sa**2
+    sW2 = sW**2
+    sH2 = sH**2
+        
+    muWb = tau[:,None]*W*Kb
+    SigWb = tau[:,None]**2*W**2*Kb
+    muW = tau[:,None]*W*K
+    SigW = tau[:,None]**2*W**2*K
+    
+    muHb = tau*Hb
+    SigHb = (muHb*eH)**2
+    muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
+    SigHa = (muHa*eH)**2
+    muHp = tau*Hp
+    SigHp = (muHp*eH)**2
+    
+    rb[:,0] = rb0
+    ra[:,0] = ra0
+    rp[:,0] = rp0
+    
+    NCr0 = Crb0.shape[1]
+    if Nclc > NCr0:
+        Crb[:,0,:NCr0] = Crb0
+        Crb[:,0,NCr0:Nclc] = Crb0[:,-1:]
+        Crb[:,:NCr0,0] = Crb0
+        Crb[:,NCr0:Nclc,0] = Crb0[:,-1:]
+        
+        Cra[:,0,:NCr0] = Cra0
+        Cra[:,0,NCr0:Nclc] = Cra0[:,-1:]
+        Cra[:,:NCr0,0] = Cra0
+        Cra[:,NCr0:Nclc,0] = Cra0[:,-1:]
+        
+        Crp[:,0,:NCr0] = Crp0
+        Crp[:,0,NCr0:Nclc] = Crp0[:,-1:]
+        Crp[:,:NCr0,0] = Crp0
+        Crp[:,NCr0:Nclc,0] = Crp0[:,-1:]
+    else:
+        Crb[:,0,:Nclc] = Crb0[:,:Nclc]
+        Crb[:,:Nclc,0] = Crb0[:,:Nclc]
+        
+        Cra[:,0,:Nclc] = Cra0[:,:Nclc]
+        Cra[:,:Nclc,0] = Cra0[:,:Nclc]
+        
+        Crp[:,0,:Nclc] = Crp0[:,:Nclc]
+        Crp[:,:Nclc,0] = Crp0[:,:Nclc]
+        
+    Mphib = np.empty((Ntyp),dtype=np.float32)
+    Mphia = np.empty((Ntyp),dtype=np.float32)
+    Mphip = np.empty((Ntyp),dtype=np.float32)
+    Cphib = np.empty((Ntyp),dtype=np.float32)
+    Cphia = np.empty((Ntyp),dtype=np.float32)
+    Cphip = np.empty((Ntyp),dtype=np.float32)
+    
+    def drdt(rbi,rai,rpi,Sigbii,Sigaii,Sigpii):
+        sri = solve_width((rai-rbi)/(rpi-rbi))
+        sWri = np.sqrt(sW2+sri**2)
+        rpmbi = rpi - rbi
+        mubi = (muW+muWb)@rbi + (unstruct_fact(sri,L)*muWb)@rpmbi + muHb
+        muai = mubi + ((struct_fact(sa,sWri,sri,L)+struct_fact(L/2,sWri,sri,L))*muW)@rpmbi + muHa-muHb
+        mupi = mubi + ((struct_fact(0,sWri,sri,L)+struct_fact(L/2,sWri,sri,L))*muW)@rpmbi + muHp-muHb
+        mubi = mubi + (2*struct_fact(L/2,sWri,sri,L)*muW)@rpmbi
+        M_fn(mubi,Sigbii,Mphib)
+        M_fn(muai,Sigaii,Mphia)
+        M_fn(mupi,Sigpii,Mphip)
+        return tauinv*(-rbi + Mphib), tauinv*(-rai + Mphia),  tauinv*(-rpi + Mphip)
+    
+    for i in range(Nint-1):
+        Crbii = Crb[:,i,i]
+        Craii = Cra[:,i,i]
+        Crpii = Crp[:,i,i]
+        sCrii = solve_width((Craii-Crbii)/(Crpii-Crbii))
+        sWCrii = np.sqrt(sW2+sCrii**2)
+        Crpmbii = Crpii - Crbii
+        Sigbii = (SigW+SigWb)@Crbii + (unstruct_fact(sCrii,L)*SigWb)@Crpmbii + SigHb
+        Sigaii = Sigbii + ((struct_fact(sa,sWCrii,sCrii,L)+struct_fact(L/2,sWCrii,sCrii,L))*SigW)@Crpmbii + SigHa-SigHb
+        Sigpii = Sigbii + ((struct_fact(0,sWCrii,sCrii,L)+struct_fact(L/2,sWCrii,sCrii,L))*SigW)@Crpmbii + SigHp-SigHb
+        Sigbii = Sigbii + (2*struct_fact(L/2,sWCrii,sCrii,L)*SigW)@Crpmbii
+            
+        kb1,ka1,kp1 = drdt(rb[:,i]           ,ra[:,i]           ,rp[:,i]           ,Sigbii,Sigaii,Sigpii)
+        kb2,ka2,kp2 = drdt(rb[:,i]+0.5*dt*kb1,ra[:,i]+0.5*dt*kb1,rp[:,i]+0.5*dt*kb1,Sigbii,Sigaii,Sigpii)
+        kb3,ka3,kp3 = drdt(rb[:,i]+0.5*dt*kb2,ra[:,i]+0.5*dt*kb2,rp[:,i]+0.5*dt*kb2,Sigbii,Sigaii,Sigpii)
+        kb4,ka4,kp4 = drdt(rb[:,i]+    dt*kb2,ra[:,i]+    dt*kb2,rp[:,i]+    dt*kb2,Sigbii,Sigaii,Sigpii)
+        
+        rb[:,i+1] = rb[:,i] + dt/6*(kb1+2*kb2+2*kb3+kb4)
+        ra[:,i+1] = ra[:,i] + dt/6*(ka1+2*ka2+2*ka3+ka4)
+        rp[:,i+1] = rp[:,i] + dt/6*(kp1+2*kp2+2*kp3+kp4)
+        rbi = rb[:,i]
+        rai = ra[:,i]
+        rpi = rp[:,i]
+        sri = solve_width((rai-rbi)/(rpi-rbi))
+        sWri = np.sqrt(sW2+sri**2)
+        rpmbi = rpi - rbi
+        mubi = (muW+muWb)@rbi + (unstruct_fact(sri,L)*muWb)@rpmbi + muHb
+        muai = mubi + ((struct_fact(sa,sWri,sri,L)+struct_fact(L/2,sWri,sri,L))*muW)@rpmbi + muHa-muHb
+        mupi = mubi + ((struct_fact(0,sWri,sri,L)+struct_fact(L/2,sWri,sri,L))*muW)@rpmbi + muHp-muHb
+        mubi = mubi + (2*struct_fact(L/2,sWri,sri,L)*muW)@rpmbi
+        
+        if np.any(np.abs(rb[:,i+1]) > 1e10) or np.any(np.isnan(rb[:,i+1])):
+            print(mubi,muai,mupi,sri)
+            print(Sigbii,Sigaii,Sigpii,sCrii)
+            print("system diverged when integrating rb")
+            return rb,ra,rp,Crb,Cra,Crp,False,False,False
+        if np.any(np.abs(ra[:,i+1]) > 1e10) or np.any(np.isnan(ra[:,i+1])):
+            print(mubi,muai,mupi,sri)
+            print(Sigbii,Sigaii,Sigpii,sCrii)
+            print("system diverged when integrating ra")
+            return rb,ra,rp,Crb,Cra,Crp,False,False,False
+        if np.any(np.abs(rp[:,i+1]) > 1e10) or np.any(np.isnan(rp[:,i+1])):
+            print(mubi,muai,mupi,sri)
+            print(Sigbii,Sigaii,Sigpii,sCrii)
+            print("system diverged when integrating rp")
+            return rb,ra,rp,Crb,Cra,Crp,False,False,False
+
+        if i > Nclc-1:
+            Crb[:,i+1,i-Nclc] = Crb[:,i,i-Nclc]
+            Cra[:,i+1,i-Nclc] = Cra[:,i,i-Nclc]
+            Crp[:,i+1,i-Nclc] = Crp[:,i,i-Nclc]
+            
+        for j in range(max(0,i-Nclc),i+1):
+            Crbij = Crb[:,i,j]
+            Craij = Cra[:,i,j]
+            Crpij = Crp[:,i,j]
+            sCrij = solve_width((Craij-Crbij)/(Crpij-Crbij))
+            sWCrij = np.sqrt(sW2+sCrij**2)
+            Crpmbij = Crpij - Crbij
+            Sigbij = (SigW+SigWb)@Crbij + (unstruct_fact(sCrij,L)*SigWb)@Crpmbij + SigHb
+            Sigaij = Sigbij + ((struct_fact(sa,sWCrij,sCrij,L)+\
+                                struct_fact(L/2,sWCrij,sCrij,L))*SigW)@Crpmbij + SigHa-SigHb
+            Sigpij = Sigbij + ((struct_fact(0,sWCrij,sCrij,L)+\
+                                struct_fact(L/2,sWCrij,sCrij,L))*SigW)@Crpmbij + SigHp-SigHb
+            Sigbij = Sigbij + (2*struct_fact(L/2,sWCrij,sCrij,L)*SigW)@Crpmbij
+            C_fn(mubi,Sigbii,Sigbij,Cphib)
+            C_fn(muai,Sigaii,Sigaij,Cphia)
+            C_fn(mupi,Sigpii,Sigpij,Cphip)
+            Crb[:,i+1,j+1] = Crb[:,i,j+1]+Crb[:,i+1,j]-Crb[:,i,j] +\
+                dttauinv*(-Crb[:,i+1,j]-Crb[:,i,j+1]+2*Crb[:,i,j]) + dttauinv2*(-Crb[:,i,j]+Cphib)
+            Cra[:,i+1,j+1] = Cra[:,i,j+1]+Cra[:,i+1,j]-Cra[:,i,j] +\
+                dttauinv*(-Cra[:,i+1,j]-Cra[:,i,j+1]+2*Cra[:,i,j]) + dttauinv2*(-Cra[:,i,j]+Cphia)
+            Crp[:,i+1,j+1] = Crp[:,i,j+1]+Crp[:,i+1,j]-Crp[:,i,j] +\
+                dttauinv*(-Crp[:,i+1,j]-Crp[:,i,j+1]+2*Crp[:,i,j]) + dttauinv2*(-Crp[:,i,j]+Cphip)
+                
+            Crb[:,i+1,j+1] = np.maximum(Crb[:,i+1,j+1],rbi**2)
+            Cra[:,i+1,j+1] = np.maximum(Cra[:,i+1,j+1],rai**2)
+            Crp[:,i+1,j+1] = np.maximum(Crp[:,i+1,j+1],rpi**2)
+            
+            if np.any(np.abs(Crb[:,i+1,j+1]) > 1e10) or np.any(np.isnan(Crb[:,i+1,j+1])):
+                print(mubi,muai,mupi,sri)
+                print(Sigbii,Sigaii,Sigpii,sCrii)
+                print(Sigbij,Sigaij,Sigpij,sCrij)
+                print("system diverged when integrating Crb")
+                return rb,ra,rp,Crb,Cra,Crp,False,False,False
+            if np.any(np.abs(Cra[:,i+1,j+1]) > 1e10) or np.any(np.isnan(Cra[:,i+1,j+1])):
+                print(mubi,muai,mupi,sri)
+                print(Sigbii,Sigaii,Sigpii,sCrii)
+                print(Sigbij,Sigaij,Sigpij,sCrij)
+                print("system diverged when integrating Cra")
+                return rb,ra,rp,Crb,Cra,Crp,False,False,False
+            if np.any(np.abs(Crp[:,i+1,j+1]) > 1e10) or np.any(np.isnan(Crp[:,i+1,j+1])):
+                print(mubi,muai,mupi,sri)
+                print(Sigbii,Sigaii,Sigpii,sCrii)
+                print(Sigbij,Sigaij,Sigpij,sCrij)
+                print("system diverged when integrating Crp")
+                return rb,ra,rp,Crb,Cra,Crp,False,False,False
+                
+            Crb[:,j+1,i+1] = Crb[:,i+1,j+1]
+            Cra[:,j+1,i+1] = Cra[:,i+1,j+1]
+            Crp[:,j+1,i+1] = Crp[:,i+1,j+1]
+            
+        Ndiv = 5
+        if (Ndiv*(i+1)) % (Nint-1) == 0:
+            print("{:.2f}% completed".format((i+1)/(Nint-1)))
+            
+    Crb_diag = each_diag(Crb)
+    Cra_diag = each_diag(Cra)
+    Crp_diag = each_diag(Crp)
+    
+    return rb,ra,rp,Crb,Cra,Crp,\
+        (np.max(Crb_diag[:,-Nsav:],axis=1)-np.min(Crb_diag[:,-Nsav:],axis=1))/\
+            np.mean(Crb_diag[:,-Nsav:],axis=1) < 1e-3,\
+        (np.max(Cra_diag[:,-Nsav:],axis=1)-np.min(Cra_diag[:,-Nsav:],axis=1))/\
+            np.mean(Cra_diag[:,-Nsav:],axis=1) < 1e-3,\
+        (np.max(Crp_diag[:,-Nsav:],axis=1)-np.min(Crp_diag[:,-Nsav:],axis=1))/\
+            np.mean(Crp_diag[:,-Nsav:],axis=1) < 1e-3
+
 def doub_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fns,C_fns,Twrm,Tsav,dt,
                      rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None,L=180):
     if Kb is None:
@@ -628,6 +848,34 @@ def doub_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fns,C_fns,Twrm,Tsav,dt,
         
     return sparse_ring_dmft(doub_tau,doub_W,doub_K,doub_Hb,doub_Hp,eH,doub_sW,doub_sH,sa,doub_M,doub_C,Twrm,Tsav,dt,
                       rb0,ra0,rp0,Crb0,Cra0,Crp0,Kb=doub_Kb,L=L)
+
+def doub_sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fns,C_fns,Twrm,Tsav,dt,
+                     rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None,L=180):
+    if Kb is None:
+        doub_Kb = None
+    else:
+        doub_Kb = doub_vec(Kb)
+        
+    Ntyp = len(Hb)
+    
+    doub_tau = doub_vec(tau)
+    doub_W = doub_mat(W)
+    doub_K = doub_vec(K)
+    doub_Hb = doub_vec(Hb)
+    doub_Hp = doub_vec(Hp)
+    doub_sW = doub_mat(sW)
+    doub_sH = doub_vec(sH)
+    
+    def doub_M(mui,Sigii,out):
+        M_fns[0](mui[:Ntyp],Sigii[:Ntyp],out[:Ntyp])
+        M_fns[1](mui[Ntyp:],Sigii[Ntyp:],out[Ntyp:])
+        
+    def doub_C(mui,Sigii,Sigij,out):
+        C_fns[0](mui[:Ntyp],Sigii[:Ntyp],Sigij[:Ntyp],out[:Ntyp])
+        C_fns[1](mui[Ntyp:],Sigii[Ntyp:],Sigij[Ntyp:],out[Ntyp:])
+        
+    return sparse_2feat_ring_dmft(doub_tau,doub_W,doub_K,doub_Hb,doub_Hp,eH,doub_sW,doub_sH,sa,doub_M,doub_C,
+                                  Twrm,Tsav,dt,rb0,ra0,rp0,Crb0,Cra0,Crp0,Kb=doub_Kb,L=L)
 
 def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,Crb,Cra,Crp,
                      Cdrb0=None,Cdra0=None,Cdrp0=None,Kb=None,L=180):
@@ -1580,5 +1828,176 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,r
         res_dict['full_Cdrb'] = full_Cdrb
         res_dict['full_Cdra'] = full_Cdra
         res_dict['full_Cdrp'] = full_Cdrp
+    
+    return res_dict
+
+def run_2feat_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,which='both',return_full=False):    
+    Nsav = round(Tsav/dt)+1
+    
+    K = prms['K']
+    SoriE = prms['SoriE']
+    SoriI = prms['SoriI']
+    SoriF = prms['SoriF']
+    J = prms['J']
+    beta = prms['beta']
+    gE = prms['gE']
+    gI = prms['gI']
+    hE = prms['hE']
+    hI = prms['hI']
+    basefrac = prms.get('basefrac',0)
+    
+    tau = np.array([rc.tE,rc.tI],dtype=np.float32)
+    W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
+    Ks = (1-basefrac)*np.array([K,K/4],dtype=np.float32)
+    Kbs =   basefrac *np.array([K,K/4],dtype=np.float32)
+    Hb = rX*(1+basefrac*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hp = rX*(1+         cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    eH = CVh
+    sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
+    sH = np.array([SoriF,SoriF],dtype=np.float32)
+    
+    sa2 = sa**2
+    sW2 = sW**2
+    sH2 = sH**2
+    
+    solve_width = get_solve_width(sa,L)
+    
+    muHb = tau*Hb
+    SigHb = (muHb*eH)**2
+    muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
+    SigHa = (muHa*eH)**2
+    muHp = tau*Hp
+    SigHp = (muHp*eH)**2
+    
+    FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
+    FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
+    
+    def base_M(mui,Sigii,out):
+        out[0] = ME(mui[0],Sigii[0])[0]
+        out[1] = MI(mui[1],Sigii[1])[0]
+        
+    def base_C(mui,Sigii,Sigij,out):
+        out[0] = CE(mui[0],Sigii[0],Sigij[0])[0]
+        out[1] = CI(mui[1],Sigii[1],Sigij[1])[0]
+    
+    def opto_M(mui,Sigii,out):
+        out[0] = ML(mui[0],Sigii[0])[0]
+        out[1] = MI(mui[1],Sigii[1])[0]
+        
+    def opto_C(mui,Sigii,Sigij,out):
+        out[0] = CL(mui[0],Sigii[0],Sigij[0])[0]
+        out[1] = CI(mui[1],Sigii[1],Sigij[1])[0]
+    
+    start = time.process_time()
+    
+    if which=='base':
+        full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
+            convb,conva,convp = sparse_2feat_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,base_M,base_C,Twrm,Tsav,dt,Kb=Kbs,L=L)
+    elif which=='opto':
+        full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
+            convb,conva,convp = sparse_2feat_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,opto_M,opto_C,Twrm,Tsav,dt,Kb=Kbs,L=L)
+    elif which=='both':
+        full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
+            convb,conva,convp = doub_sparse_2feat_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,[base_M,opto_M],[base_C,opto_C],
+                                                      Twrm,Tsav,dt,Kb=Kbs,L=L)
+    else:
+        raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
+        
+    print('integrating first stage took',time.process_time() - start,'s')
+
+    # time average predicted moments
+    # rb = full_rb[:,-1]
+    # ra = full_ra[:,-1]
+    # rp = full_rp[:,-1]
+    # Crb = full_Crb[:,-1,-1:-Nsav-1:-1]
+    # Cra = full_Cra[:,-1,-1:-Nsav-1:-1]
+    # Crp = full_Crp[:,-1,-1:-Nsav-1:-1]
+    rb = np.mean(full_rb[:,-1:-Nsav-1:-1],-1)
+    ra = np.mean(full_ra[:,-1:-Nsav-1:-1],-1)
+    rp = np.mean(full_rp[:,-1:-Nsav-1:-1],-1)
+    Crb = np.zeros((len(rb),Nsav))
+    Cra = np.zeros((len(ra),Nsav))
+    Crp = np.zeros((len(rp),Nsav))
+    for i in range(Nsav):
+        Crb[:,i] = np.mean(each_diag(full_Crb[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
+        Cra[:,i] = np.mean(each_diag(full_Cra[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
+        Crp[:,i] = np.mean(each_diag(full_Crp[:,-1:-Nsav-i-1:-1,-1:-Nsav-i-1:-1],i),-1)
+    
+    muW = tau[:,None]*W*Ks
+    SigW = tau[:,None]**2*W**2*Ks
+    muWb = tau[:,None]*W*Kbs
+    SigWb = tau[:,None]**2*W**2*Kbs
+    
+    sr = solve_width((ra-rb)/(rp-rb))
+    sCr = solve_width((Cra-Crb)/(Crp-Crb))
+    
+    if which in ('base','opto'):
+        sWr = np.sqrt(sW2+sr**2)
+        rpmb = rp-rb
+        sWCr = np.sqrt(sW2[:,:,None]+sCr[None,:,:]**2)
+        Crpmb = Crp-Crb
+        mub = (muW+muWb)@rb + (unstruct_fact(sr,L)*muWb)@rpmb + muHb
+        mua = mub + ((struct_fact(sa,sWr,sr,L)+struct_fact(L/2,sWr,sr,L))*muW)@rpmb + muHa-muHb
+        mup = mub + ((struct_fact(0,sWr,sr,L)+struct_fact(L/2,sWr,sr,L))*muW)@rpmb + muHp-muHb
+        mub = mub + (2*struct_fact(L/2,sWr,sr,L)*muW)@rpmb
+        Sigb = each_matmul(SigW+SigWb,Crb) + each_matmul(unstruct_fact(sCr,L)*SigWb,Crpmb) + (SigHb)[:,None]
+        Siga = Sigb + each_matmul((struct_fact(sa,sWCr,sCr,L)+\
+                                   struct_fact(L/2,sWCr,sCr,L))*SigW,Crpmb) + (SigHa-SigHb)[:,None]
+        Sigp = Sigb + each_matmul((struct_fact(0,sWCr,sCr,L)+\
+                                   struct_fact(L/2,sWCr,sCr,L))*SigW,Crpmb) + (SigHp-SigHb)[:,None]
+        Sigb = Sigb + each_matmul(2*struct_fact(L/2,sWCr,sCr,L)*SigW,Crpmb)
+    elif which=='both':
+        doub_muW = doub_mat(muW)
+        doub_SigW = doub_mat(SigW)[:,:,None]
+        doub_muWb = doub_mat(muWb)
+        doub_SigWb = doub_mat(SigWb)[:,:,None]
+        
+        sWr = np.sqrt(doub_mat(sW2)+sr**2)
+        rpmb = rp-rb
+        sWCr = np.sqrt(doub_mat(sW2)[:,:,None]+sCr[None,:,:]**2)
+        Crpmb = Crp-Crb
+        mub = (doub_muW+doub_muWb)@rb + (unstruct_fact(sr,L)*doub_muWb)@rpmb + doub_vec(muHb)
+        mua = mub + ((struct_fact(sa,sWr,sr,L)+struct_fact(L/2,sWr,sr,L))*doub_muW)@rpmb + doub_vec(muHa-muHb)
+        mup = mub + ((struct_fact(0,sWr,sr,L)+struct_fact(L/2,sWr,sr,L))*doub_muW)@rpmb + doub_vec(muHp-muHb)
+        mub = mub + (2*struct_fact(L/2,sWr,sr,L)*doub_muW)@rpmb
+        Sigb = each_matmul(doub_SigW+doub_SigWb,Crb) + each_matmul(unstruct_fact(sCr,L)*doub_SigWb,Crpmb) +\
+            doub_vec(SigHb)[:,None]
+        Siga = Sigb + each_matmul((struct_fact(sa,sWCr,sCr,L)+\
+                                   struct_fact(L/2,sWCr,sCr,L))*doub_SigW,Crpmb) + doub_vec(SigHa-SigHb)[:,None]
+        Sigp = Sigb + each_matmul((struct_fact(0,sWCr,sCr,L)+\
+                                   struct_fact(L/2,sWCr,sCr,L))*doub_SigW,Crpmb) + doub_vec(SigHp-SigHb)[:,None]
+        Sigb = Sigb + each_matmul(2*struct_fact(L/2,sWCr,sCr,L)*doub_SigW,Crpmb)
+    else:
+        raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
+    
+    res_dict = {}
+    
+    res_dict['rb'] = rb
+    res_dict['ra'] = ra
+    res_dict['rp'] = rp
+    res_dict['sr'] = sr
+    res_dict['Crb'] = Crb
+    res_dict['Cra'] = Cra
+    res_dict['Crp'] = Crp
+    res_dict['sCr'] = sCr
+    
+    res_dict['mub'] = mub
+    res_dict['mua'] = mua
+    res_dict['mup'] = mup
+    res_dict['Sigb'] = Sigb
+    res_dict['Siga'] = Siga
+    res_dict['Sigp'] = Sigp
+    
+    res_dict['convb'] = convb
+    res_dict['conva'] = conva
+    res_dict['convp'] = convp
+    
+    if return_full:
+        res_dict['full_rb'] = full_rb
+        res_dict['full_ra'] = full_ra
+        res_dict['full_rp'] = full_rp
+        res_dict['full_Crb'] = full_Crb
+        res_dict['full_Cra'] = full_Cra
+        res_dict['full_Crp'] = full_Crp
     
     return res_dict
