@@ -91,11 +91,11 @@ def runjobs():
     CVh_mult_vec = np.array([1.0,])
     L_mult_vec = 10**(0.5*np.arange(4+1)/4)[:1]
     CVL_mult_vec = 10**(0.5*np.arange(4+1)/4-0.5)[-1:]
-    J_mult = 1.0
-    beta_mult = 1.0
-    gE_mult = 1.1
+    J_mult = 0.9
+    beta_mult = 0.9
+    gE_mult = 1/0.9
     gI_mult = 1.0
-    hE_mult = 1.0
+    hE_mult = 1.07/0.9
     hI_mult = 1.0
     
     for c in c_Vec:
