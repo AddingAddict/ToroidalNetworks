@@ -121,7 +121,7 @@ balEs = np.zeros((2,Nori))
 balIs = np.zeros((2,Nori))
 normCEs = np.zeros((2,Nori))
 normCIs = np.zeros((2,Nori))
-convs = np.zeros((2,3)).astype(bool)
+convs = np.zeros((2,2)).astype(bool)
 
 def predict_networks(prms,rX,cA,CVh):
     tau = np.array([ri.tE,ri.tI],dtype=np.float32)
