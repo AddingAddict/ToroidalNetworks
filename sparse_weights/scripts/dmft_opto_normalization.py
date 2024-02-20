@@ -217,29 +217,21 @@ def predict_networks(prms,rX,cA,CVh):
     sWCro = np.sqrt(sW2+sCro**2)
     
     muvb = (muW+dmft.unstruct_fact(srv)*muWb)*rvb
-    # muvp = muvb + (dmft.struct_fact(0,sWrv,srv)+dmft.struct_fact(90,sWrv,srv))*muW*(rvp-rvb)
-    # muvb = muvb + 2*dmft.struct_fact(90,sWrv,srv)*muW*(rvp-rvb)
-    muvp = muvb + (dmft.struct_fact(0,sWrv,srv)+dmft.struct_fact(45,sWrv,srv))*muW*(rvp-rvb)
-    muvb = muvb + 2*dmft.struct_fact(45,sWrv,srv)*muW*(rvp-rvb)
+    muvp = muvb + (dmft.struct_fact(0,sWrv,srv)+dmft.struct_fact(90,sWrv,srv))*muW*(rvp-rvb)
+    muvb = muvb + 2*dmft.struct_fact(90,sWrv,srv)*muW*(rvp-rvb)
     smuv = sWrv
     muob = (muW+dmft.unstruct_fact(sro)*muWb)*rob
-    # muop = muob + (dmft.struct_fact(0,sWro,sro)+dmft.struct_fact(90,sWro,sro))*muW*(rop-rob)
-    # muob = muob + 2*dmft.struct_fact(90,sWro,sro)*muW*(rop-rob)
-    muop = muob + (dmft.struct_fact(0,sWro,sro)+dmft.struct_fact(45,sWro,sro))*muW*(rop-rob)
-    muob = muob + 2*dmft.struct_fact(45,sWro,sro)*muW*(rop-rob)
+    muop = muob + (dmft.struct_fact(0,sWro,sro)+dmft.struct_fact(90,sWro,sro))*muW*(rop-rob)
+    muob = muob + 2*dmft.struct_fact(90,sWro,sro)*muW*(rop-rob)
     smuo = sWro
     
     Sigvb = (SigW+dmft.unstruct_fact(sCrv)*SigWb)*Crvb
-    # Sigvp = Sigvb + (dmft.struct_fact(0,sWCrv,sCrv)+dmft.struct_fact(90,sWCrv,sCrv))*SigW*(Crvp-Crvb)
-    # Sigvb = Sigvb + 2*dmft.struct_fact(90,sWCrv,sCrv)*SigW*(Crvp-Crvb)
-    Sigvp = Sigvb + (dmft.struct_fact(0,sWCrv,sCrv)+dmft.struct_fact(45,sWCrv,sCrv))*SigW*(Crvp-Crvb)
-    Sigvb = Sigvb + 2*dmft.struct_fact(45,sWCrv,sCrv)*SigW*(Crvp-Crvb)
+    Sigvp = Sigvb + (dmft.struct_fact(0,sWCrv,sCrv)+dmft.struct_fact(90,sWCrv,sCrv))*SigW*(Crvp-Crvb)
+    Sigvb = Sigvb + 2*dmft.struct_fact(90,sWCrv,sCrv)*SigW*(Crvp-Crvb)
     sSigv = sWCrv
     Sigob = (SigW+dmft.unstruct_fact(sCro)*SigWb)*Crob
-    # Sigop = Sigob + (dmft.struct_fact(0,sWCro,sCro)+dmft.struct_fact(90,sWCro,sCro))*SigW*(Crop-Crob)
-    # Sigob = Sigob + 2*dmft.struct_fact(90,sWCro,sCro)*SigW*(Crop-Crob)
-    Sigop = Sigob + (dmft.struct_fact(0,sWCro,sCro)+dmft.struct_fact(45,sWCro,sCro))*SigW*(Crop-Crob)
-    Sigob = Sigob + 2*dmft.struct_fact(45,sWCro,sCro)*SigW*(Crop-Crob)
+    Sigop = Sigob + (dmft.struct_fact(0,sWCro,sCro)+dmft.struct_fact(90,sWCro,sCro))*SigW*(Crop-Crob)
+    Sigob = Sigob + 2*dmft.struct_fact(90,sWCro,sCro)*SigW*(Crop-Crob)
     sSigo = sWCro
     
     for i in range(2):

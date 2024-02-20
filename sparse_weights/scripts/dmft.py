@@ -695,12 +695,9 @@ def sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
         sWri = np.sqrt(sW2+sri**2)
         rpmbi = rpi - rbi
         mubi = (muW+muWb)@rbi + (unstruct_fact(sri,L)*muWb)@rpmbi + muHb
-        # muai = mubi + ((struct_fact(sa,sWri,sri,L)+struct_fact(L/2,sWri,sri,L))*muW)@rpmbi + muHa-muHb
-        # mupi = mubi + ((struct_fact(0,sWri,sri,L)+struct_fact(L/2,sWri,sri,L))*muW)@rpmbi + muHp-muHb
-        # mubi = mubi + (2*struct_fact(L/2,sWri,sri,L)*muW)@rpmbi
-        muai = mubi + ((struct_fact(sa,sWri,sri,L)+struct_fact(L/4,sWri,sri,L))*muW)@rpmbi + muHa-muHb
-        mupi = mubi + ((struct_fact(0,sWri,sri,L)+struct_fact(L/4,sWri,sri,L))*muW)@rpmbi + muHp-muHb
-        mubi = mubi + (2*struct_fact(L/4,sWri,sri,L)*muW)@rpmbi
+        muai = mubi + ((struct_fact(sa,sWri,sri,L)+struct_fact(L/2,sWri,sri,L))*muW)@rpmbi + muHa-muHb
+        mupi = mubi + ((struct_fact(0,sWri,sri,L)+struct_fact(L/2,sWri,sri,L))*muW)@rpmbi + muHp-muHb
+        mubi = mubi + (2*struct_fact(L/2,sWri,sri,L)*muW)@rpmbi
         M_fn(mubi,Sigbii,Mphib)
         M_fn(muai,Sigaii,Mphia)
         M_fn(mupi,Sigpii,Mphip)
@@ -714,12 +711,9 @@ def sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
         sWCrii = np.sqrt(sW2+sCrii**2)
         Crpmbii = Crpii - Crbii
         Sigbii = (SigW+SigWb)@Crbii + (unstruct_fact(sCrii,L)*SigWb)@Crpmbii + SigHb
-        # Sigaii = Sigbii + ((struct_fact(sa,sWCrii,sCrii,L)+struct_fact(L/2,sWCrii,sCrii,L))*SigW)@Crpmbii + SigHa-SigHb
-        # Sigpii = Sigbii + ((struct_fact(0,sWCrii,sCrii,L)+struct_fact(L/2,sWCrii,sCrii,L))*SigW)@Crpmbii + SigHp-SigHb
-        # Sigbii = Sigbii + (2*struct_fact(L/2,sWCrii,sCrii,L)*SigW)@Crpmbii
-        Sigaii = Sigbii + ((struct_fact(sa,sWCrii,sCrii,L)+struct_fact(L/4,sWCrii,sCrii,L))*SigW)@Crpmbii + SigHa-SigHb
-        Sigpii = Sigbii + ((struct_fact(0,sWCrii,sCrii,L)+struct_fact(L/4,sWCrii,sCrii,L))*SigW)@Crpmbii + SigHp-SigHb
-        Sigbii = Sigbii + (2*struct_fact(L/4,sWCrii,sCrii,L)*SigW)@Crpmbii
+        Sigaii = Sigbii + ((struct_fact(sa,sWCrii,sCrii,L)+struct_fact(L/2,sWCrii,sCrii,L))*SigW)@Crpmbii + SigHa-SigHb
+        Sigpii = Sigbii + ((struct_fact(0,sWCrii,sCrii,L)+struct_fact(L/2,sWCrii,sCrii,L))*SigW)@Crpmbii + SigHp-SigHb
+        Sigbii = Sigbii + (2*struct_fact(L/2,sWCrii,sCrii,L)*SigW)@Crpmbii
             
         kb1,ka1,kp1 = drdt(rb[:,i]           ,ra[:,i]           ,rp[:,i]           ,Sigbii,Sigaii,Sigpii)
         kb2,ka2,kp2 = drdt(rb[:,i]+0.5*dt*kb1,ra[:,i]+0.5*dt*kb1,rp[:,i]+0.5*dt*kb1,Sigbii,Sigaii,Sigpii)
@@ -736,12 +730,9 @@ def sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
         sWri = np.sqrt(sW2+sri**2)
         rpmbi = rpi - rbi
         mubi = (muW+muWb)@rbi + (unstruct_fact(sri,L)*muWb)@rpmbi + muHb
-        # muai = mubi + ((struct_fact(sa,sWri,sri,L)+struct_fact(L/2,sWri,sri,L))*muW)@rpmbi + muHa-muHb
-        # mupi = mubi + ((struct_fact(0,sWri,sri,L)+struct_fact(L/2,sWri,sri,L))*muW)@rpmbi + muHp-muHb
-        # mubi = mubi + (2*struct_fact(L/2,sWri,sri,L)*muW)@rpmbi
-        muai = mubi + ((struct_fact(sa,sWri,sri,L)+struct_fact(L/4,sWri,sri,L))*muW)@rpmbi + muHa-muHb
-        mupi = mubi + ((struct_fact(0,sWri,sri,L)+struct_fact(L/4,sWri,sri,L))*muW)@rpmbi + muHp-muHb
-        mubi = mubi + (2*struct_fact(L/4,sWri,sri,L)*muW)@rpmbi
+        muai = mubi + ((struct_fact(sa,sWri,sri,L)+struct_fact(L/2,sWri,sri,L))*muW)@rpmbi + muHa-muHb
+        mupi = mubi + ((struct_fact(0,sWri,sri,L)+struct_fact(L/2,sWri,sri,L))*muW)@rpmbi + muHp-muHb
+        mubi = mubi + (2*struct_fact(L/2,sWri,sri,L)*muW)@rpmbi
         
         if np.any(np.abs(rb[:,i+1]) > 1e10) or np.any(np.isnan(rb[:,i+1])):
             print(mubi,muai,mupi,sri)
@@ -772,16 +763,11 @@ def sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
             sWCrij = np.sqrt(sW2+sCrij**2)
             Crpmbij = Crpij - Crbij
             Sigbij = (SigW+SigWb)@Crbij + (unstruct_fact(sCrij,L)*SigWb)@Crpmbij + SigHb
-            # Sigaij = Sigbij + ((struct_fact(sa,sWCrij,sCrij,L)+\
-            #                     struct_fact(L/2,sWCrij,sCrij,L))*SigW)@Crpmbij + SigHa-SigHb
-            # Sigpij = Sigbij + ((struct_fact(0,sWCrij,sCrij,L)+\
-            #                     struct_fact(L/2,sWCrij,sCrij,L))*SigW)@Crpmbij + SigHp-SigHb
-            # Sigbij = Sigbij + (2*struct_fact(L/2,sWCrij,sCrij,L)*SigW)@Crpmbij
             Sigaij = Sigbij + ((struct_fact(sa,sWCrij,sCrij,L)+\
-                                struct_fact(L/4,sWCrij,sCrij,L))*SigW)@Crpmbij + SigHa-SigHb
+                                struct_fact(L/2,sWCrij,sCrij,L))*SigW)@Crpmbij + SigHa-SigHb
             Sigpij = Sigbij + ((struct_fact(0,sWCrij,sCrij,L)+\
-                                struct_fact(L/4,sWCrij,sCrij,L))*SigW)@Crpmbij + SigHp-SigHb
-            Sigbij = Sigbij + (2*struct_fact(L/4,sWCrij,sCrij,L)*SigW)@Crpmbij
+                                struct_fact(L/2,sWCrij,sCrij,L))*SigW)@Crpmbij + SigHp-SigHb
+            Sigbij = Sigbij + (2*struct_fact(L/2,sWCrij,sCrij,L)*SigW)@Crpmbij
             C_fn(mubi,Sigbii,Sigbij,Cphib)
             C_fn(muai,Sigaii,Sigaij,Cphia)
             C_fn(mupi,Sigpii,Sigpij,Cphip)
@@ -1951,23 +1937,15 @@ def run_2feat_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,which
         sWCr = np.sqrt(sW2[:,:,None]+sCr[None,:,:]**2)
         Crpmb = Crp-Crb
         mub = (muW+muWb)@rb + (unstruct_fact(sr,L)*muWb)@rpmb + muHb
-        # mua = mub + ((struct_fact(sa,sWr,sr,L)+struct_fact(L/2,sWr,sr,L))*muW)@rpmb + muHa-muHb
-        # mup = mub + ((struct_fact(0,sWr,sr,L)+struct_fact(L/2,sWr,sr,L))*muW)@rpmb + muHp-muHb
-        # mub = mub + (2*struct_fact(L/2,sWr,sr,L)*muW)@rpmb
-        mua = mub + ((struct_fact(sa,sWr,sr,L)+struct_fact(L/4,sWr,sr,L))*muW)@rpmb + muHa-muHb
-        mup = mub + ((struct_fact(0,sWr,sr,L)+struct_fact(L/4,sWr,sr,L))*muW)@rpmb + muHp-muHb
-        mub = mub + (2*struct_fact(L/4,sWr,sr,L)*muW)@rpmb
+        mua = mub + ((struct_fact(sa,sWr,sr,L)+struct_fact(L/2,sWr,sr,L))*muW)@rpmb + muHa-muHb
+        mup = mub + ((struct_fact(0,sWr,sr,L)+struct_fact(L/2,sWr,sr,L))*muW)@rpmb + muHp-muHb
+        mub = mub + (2*struct_fact(L/2,sWr,sr,L)*muW)@rpmb
         Sigb = each_matmul(SigW+SigWb,Crb) + each_matmul(unstruct_fact(sCr,L)*SigWb,Crpmb) + (SigHb)[:,None]
-        # Siga = Sigb + each_matmul((struct_fact(sa,sWCr,sCr,L)+\
-        #                            struct_fact(L/2,sWCr,sCr,L))*SigW,Crpmb) + (SigHa-SigHb)[:,None]
-        # Sigp = Sigb + each_matmul((struct_fact(0,sWCr,sCr,L)+\
-        #                            struct_fact(L/2,sWCr,sCr,L))*SigW,Crpmb) + (SigHp-SigHb)[:,None]
-        # Sigb = Sigb + each_matmul(2*struct_fact(L/2,sWCr,sCr,L)*SigW,Crpmb)
         Siga = Sigb + each_matmul((struct_fact(sa,sWCr,sCr,L)+\
-                                   struct_fact(L/4,sWCr,sCr,L))*SigW,Crpmb) + (SigHa-SigHb)[:,None]
+                                   struct_fact(L/2,sWCr,sCr,L))*SigW,Crpmb) + (SigHa-SigHb)[:,None]
         Sigp = Sigb + each_matmul((struct_fact(0,sWCr,sCr,L)+\
-                                   struct_fact(L/4,sWCr,sCr,L))*SigW,Crpmb) + (SigHp-SigHb)[:,None]
-        Sigb = Sigb + each_matmul(2*struct_fact(L/4,sWCr,sCr,L)*SigW,Crpmb)
+                                   struct_fact(L/2,sWCr,sCr,L))*SigW,Crpmb) + (SigHp-SigHb)[:,None]
+        Sigb = Sigb + each_matmul(2*struct_fact(L/2,sWCr,sCr,L)*SigW,Crpmb)
     elif which=='both':
         doub_muW = doub_mat(muW)
         doub_SigW = doub_mat(SigW)[:,:,None]
@@ -1979,24 +1957,16 @@ def run_2feat_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,which
         sWCr = np.sqrt(doub_mat(sW2)[:,:,None]+sCr[None,:,:]**2)
         Crpmb = Crp-Crb
         mub = (doub_muW+doub_muWb)@rb + (unstruct_fact(sr,L)*doub_muWb)@rpmb + doub_vec(muHb)
-        # mua = mub + ((struct_fact(sa,sWr,sr,L)+struct_fact(L/2,sWr,sr,L))*doub_muW)@rpmb + doub_vec(muHa-muHb)
-        # mup = mub + ((struct_fact(0,sWr,sr,L)+struct_fact(L/2,sWr,sr,L))*doub_muW)@rpmb + doub_vec(muHp-muHb)
-        # mub = mub + (2*struct_fact(L/2,sWr,sr,L)*doub_muW)@rpmb
-        mua = mub + ((struct_fact(sa,sWr,sr,L)+struct_fact(L/4,sWr,sr,L))*doub_muW)@rpmb + doub_vec(muHa-muHb)
-        mup = mub + ((struct_fact(0,sWr,sr,L)+struct_fact(L/4,sWr,sr,L))*doub_muW)@rpmb + doub_vec(muHp-muHb)
-        mub = mub + (2*struct_fact(L/4,sWr,sr,L)*doub_muW)@rpmb
+        mua = mub + ((struct_fact(sa,sWr,sr,L)+struct_fact(L/2,sWr,sr,L))*doub_muW)@rpmb + doub_vec(muHa-muHb)
+        mup = mub + ((struct_fact(0,sWr,sr,L)+struct_fact(L/2,sWr,sr,L))*doub_muW)@rpmb + doub_vec(muHp-muHb)
+        mub = mub + (2*struct_fact(L/2,sWr,sr,L)*doub_muW)@rpmb
         Sigb = each_matmul(doub_SigW+doub_SigWb,Crb) + each_matmul(unstruct_fact(sCr,L)*doub_SigWb,Crpmb) +\
             doub_vec(SigHb)[:,None]
-        # Siga = Sigb + each_matmul((struct_fact(sa,sWCr,sCr,L)+\
-        #                            struct_fact(L/2,sWCr,sCr,L))*doub_SigW,Crpmb) + doub_vec(SigHa-SigHb)[:,None]
-        # Sigp = Sigb + each_matmul((struct_fact(0,sWCr,sCr,L)+\
-        #                            struct_fact(L/2,sWCr,sCr,L))*doub_SigW,Crpmb) + doub_vec(SigHp-SigHb)[:,None]
-        # Sigb = Sigb + each_matmul(2*struct_fact(L/2,sWCr,sCr,L)*doub_SigW,Crpmb)
         Siga = Sigb + each_matmul((struct_fact(sa,sWCr,sCr,L)+\
-                                   struct_fact(L/4,sWCr,sCr,L))*doub_SigW,Crpmb) + doub_vec(SigHa-SigHb)[:,None]
+                                   struct_fact(L/2,sWCr,sCr,L))*doub_SigW,Crpmb) + doub_vec(SigHa-SigHb)[:,None]
         Sigp = Sigb + each_matmul((struct_fact(0,sWCr,sCr,L)+\
-                                   struct_fact(L/4,sWCr,sCr,L))*doub_SigW,Crpmb) + doub_vec(SigHp-SigHb)[:,None]
-        Sigb = Sigb + each_matmul(2*struct_fact(L/4,sWCr,sCr,L)*doub_SigW,Crpmb)
+                                   struct_fact(L/2,sWCr,sCr,L))*doub_SigW,Crpmb) + doub_vec(SigHp-SigHb)[:,None]
+        Sigb = Sigb + each_matmul(2*struct_fact(L/2,sWCr,sCr,L)*doub_SigW,Crpmb)
     else:
         raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
     
