@@ -19,11 +19,35 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--c1_idx', '-c1',  help='which contrast for peak 1', type=int, default=0)
 parser.add_argument('--c2_idx', '-c2',  help='which contrast for peak 2', type=int, default=0)
 parser.add_argument('--base_mult', '-b',  help='baseline multiplier', type=float, default=1.0)
+parser.add_argument('--SoriE_mult', '-SoriEm',  help='multiplier for SoriE', type=float, default=1.0)
+parser.add_argument('--SoriI_mult', '-SoriIm',  help='multiplier for SoriI', type=float, default=1.0)
+parser.add_argument('--SoriF_mult', '-SoriFm',  help='multiplier for SoriF', type=float, default=1.0)
+parser.add_argument('--CVh_mult', '-CVhm',  help='multiplier for CVh', type=float, default=1.0)
+parser.add_argument('--J_mult', '-Jm',  help='multiplier for J', type=float, default=1.0)
+parser.add_argument('--beta_mult', '-betam',  help='multiplier for beta', type=float, default=1.0)
+parser.add_argument('--gE_mult', '-gEm',  help='multiplier for gE', type=float, default=1.0)
+parser.add_argument('--gI_mult', '-gIm',  help='multiplier for gI', type=float, default=1.0)
+parser.add_argument('--hE_mult', '-hEm',  help='multiplier for hE', type=float, default=1.0)
+parser.add_argument('--hI_mult', '-hIm',  help='multiplier for hI', type=float, default=1.0)
+parser.add_argument('--L_mult', '-Lm',  help='multiplier for L', type=float, default=1.0)
+parser.add_argument('--CVL_mult', '-CVLm',  help='multiplier for CVL', type=float, default=1.0)
 args = vars(parser.parse_args())
 print(parser.parse_args())
 c1_idx= args['c1_idx']
 c2_idx= args['c2_idx']
 base_mult= args['base_mult']
+SoriE_mult= args['SoriE_mult']
+SoriI_mult= args['SoriI_mult']
+SoriF_mult= args['SoriF_mult']
+CVh_mult= args['CVh_mult']
+J_mult= args['J_mult']
+beta_mult= args['beta_mult']
+gE_mult= args['gE_mult']
+gI_mult= args['gI_mult']
+hE_mult= args['hE_mult']
+hI_mult= args['hI_mult']
+L_mult= args['L_mult']
+CVL_mult= args['CVL_mult']
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -59,8 +83,21 @@ SoriI = prms['SoriI']
 # gI = prms['gI']
 # hE = prms['hE']
 # hI = prms['hI']
-L = prms['L']
-CVL = prms['CVL']
+# L = prms['L']
+# CVL = prms['CVL']
+
+CVh = CVh*CVh_mult
+prms['SoriE'] = prms['SoriE']*SoriE_mult
+prms['SoriI'] = prms['SoriI']*SoriI_mult
+prms['SoriF'] = prms['SoriF']*SoriF_mult
+prms['J'] = prms['J']*J_mult
+prms['beta'] = prms['beta']*beta_mult
+prms['gE'] = prms['gE']*gE_mult
+prms['gI'] = prms['gI']*gI_mult
+prms['hE'] = prms['hE']*hE_mult
+prms['hI'] = prms['hI']*hI_mult
+prms['L'] = prms['L']*L_mult
+prms['CVL'] = prms['CVL']*CVL_mult
 
 ri = ric.Ricciardi()
 ri.set_up_nonlinearity('./phi_int')
@@ -292,5 +329,32 @@ res_dict['vsm2_diff_stds'] = vsm2_diff_stds
 res_dict['vsm2_norm_covs'] = vsm2_norm_covs
 res_dict['timeouts'] = timeouts
 
-with open('./../results/opto_norm_id_{:s}_base_{:.1f}_c1_{:d}_c2_{:d}'.format(str(id),base_mult,c1_idx,c2_idx)+'.pkl', 'wb') as handle:
+res_file = './../results/opto_norm_id_{:s}'.format(str(id))
+if not np.isclose(SoriE_mult,1.0):
+    res_file = res_file + '_SoriEx{:.2f}'.format(SoriE_mult)
+if not np.isclose(SoriI_mult,1.0):
+    res_file = res_file + '_SoriIx{:.2f}'.format(SoriI_mult)
+if not np.isclose(SoriF_mult,1.0):
+    res_file = res_file + '_SoriFx{:.2f}'.format(SoriF_mult)
+if not np.isclose(CVh_mult,1.0):
+    res_file = res_file + '_CVhx{:.2f}'.format(CVh_mult)
+if not np.isclose(J_mult,1.0):
+    res_file = res_file + '_Jx{:.2f}'.format(J_mult)
+if not np.isclose(beta_mult,1.0):
+    res_file = res_file + '_betax{:.2f}'.format(beta_mult)
+if not np.isclose(gE_mult,1.0):
+    res_file = res_file + '_gEx{:.2f}'.format(gE_mult)
+if not np.isclose(gI_mult,1.0):
+    res_file = res_file + '_gIx{:.2f}'.format(gI_mult)
+if not np.isclose(hE_mult,1.0):
+    res_file = res_file + '_hEx{:.2f}'.format(hE_mult)
+if not np.isclose(hI_mult,1.0):
+    res_file = res_file + '_hIx{:.2f}'.format(hI_mult)
+if not np.isclose(L_mult,1.0):
+    res_file = res_file + '_Lx{:.2f}'.format(L_mult)
+if not np.isclose(CVL_mult,1.0):
+    res_file = res_file + '_CVLx{:.2f}'.format(CVL_mult)
+res_file = res_file + '_base_{:.1f}_c1_{:d}_c2_{:d}'.format(base_mult,c1_idx,c2_idx)
+
+with open(res_file+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)

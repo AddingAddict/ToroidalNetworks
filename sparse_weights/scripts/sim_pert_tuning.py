@@ -78,7 +78,7 @@ prms['Nori'] = Nori
 prms['NE'] = NE
 prms['NI'] = NI
 
-seeds = np.arange(50)
+seeds = np.arange(100)
 
 tunes = np.arange(0,8+1)/8
 
