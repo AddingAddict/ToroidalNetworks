@@ -8,7 +8,7 @@ import ring_network as ring_network
 import spat_ori_network as spat_network
 import integrate as integ
 
-def gen_ring_disorder(seed,prm_dict,eX):
+def gen_ring_disorder(seed,prm_dict,eX,vis_ori=None):
     net = ring_network.RingNetwork(seed=0,NC=[prm_dict.get('NE',4),prm_dict.get('NI',1)],
         Nori=prm_dict.get('Nori',180))
 
@@ -30,7 +30,7 @@ def gen_ring_disorder(seed,prm_dict,eX):
 
     net.set_seed(seed)
     net.generate_disorder(WMat,np.array([[SoriE,SoriI],[SoriE,SoriI]]),HVec,SoriF*np.ones(2),K,
-                          basefrac=prm_dict.get('basefrac',0))
+                          basefrac=prm_dict.get('basefrac',0),vis_ori=None)
 
     B = np.zeros(net.N,dtype=np.float32)
     B[net.C_all[0]] = HVec[0]

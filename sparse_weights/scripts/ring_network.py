@@ -172,10 +172,10 @@ class RingNetwork(network.BaseNetwork):
         return H_mean_full+np.random.normal(size=(self.N))*np.sqrt(H_var_full)
 
     # def generate_disorder(self,W,SWori,WX,SWoriX,K,basefrac=0):
-    def generate_disorder(self,W,SWori,H,SHori,K,basefrac=0):
+    def generate_disorder(self,W,SWori,H,SHori,K,basefrac=0,vis_ori=None):
         self.M = self.generate_M(W,SWori,K,basefrac)
         # self.MX = self.generate_MX(W,SWori,K,basefrac)
-        self.H = self.generate_H(H,SHori,basefrac)
+        self.H = self.generate_H(H,SHori,basefrac,vis_ori=vis_ori)
 
     def generate_tensors(self):
         self.C_conds = []
