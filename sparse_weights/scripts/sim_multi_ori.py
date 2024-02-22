@@ -117,7 +117,7 @@ prms['Nori'] = Nori
 prms['NE'] = NE
 prms['NI'] = NI
 
-seeds = np.arange(10)
+seeds = np.arange(80)
 
 print('simulating contrast # '+str(c_idx+1))
 print('')
@@ -136,8 +136,6 @@ def simulate_networks(prms,rX,cA,CVh):
     muIs = np.zeros((len(seeds),2,N))
     Ls = np.zeros((len(seeds),2))
     TOs = np.zeros((len(seeds),2))
-    
-    net,this_M,orig_H,this_B,this_LAS,this_EPS = su.gen_ring_disorder_tensor(0,prms,CVh)
 
     for seed_idx,seed in enumerate(seeds):
         print('simulating seed # '+str(seed_idx+1))
@@ -145,7 +143,7 @@ def simulate_networks(prms,rX,cA,CVh):
         
         start = time.process_time()
         
-        this_H = torch.roll(orig_H,N*seed//len(seeds)).to(device)
+        net,this_M,this_H,this_B,this_LAS,this_EPS = su.gen_ring_disorder_tensor(0,prms,CVh,vis_ori=180*seed/len(seeds))
         
         M = this_M.cpu().numpy()
         H = (rX*(this_B+cA*this_H)*this_EPS).cpu().numpy()
