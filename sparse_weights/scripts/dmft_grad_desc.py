@@ -55,7 +55,7 @@ ri = ric.Ricciardi()
 Twrm = 0.6
 Tsav = 0.2
 Tsim = 1.0
-dt = 0.01/4
+dt = 0.01/3
 
 Nori = 20
 
@@ -97,7 +97,7 @@ prm_vec_range = np.array([
     [ 0,.4],    # CVh
 ])
 
-dprm_vec = 0.01*(prm_vec_range[:,1]-prm_vec_range[:,0])
+dprm_vec = 0.005*(prm_vec_range[:,1]-prm_vec_range[:,0])
 
 def predict_networks(prms,rX,cA,CVh):
     tau = np.array([ri.tE,ri.tI],dtype=np.float32)
@@ -369,7 +369,7 @@ for idx,dprm in enumerate(dprm_vec):
     
 grad = (pert_losses - init_loss) / dprm_vec
 
-final_prm_vec = init_prm_vec - 0.01*grad
+final_prm_vec = init_prm_vec - 0.0005*grad
 
 final_prms,final_bX,final_fc_aX,final_CVh = get_prms_inps(final_prm_vec)
 
