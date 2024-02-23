@@ -90,7 +90,7 @@ prm_vec_range = np.array([
     [-1,.5],    # log10beta
     [ 3, 7],    # gE
     [ 2, 6],    # gI
-    [ 0, 4],    # hE
+    [ 0, 6],    # hE
     [ 0, 2],    # hI
     [ 0,20],    # bX
     [ 3,28],    # aX
