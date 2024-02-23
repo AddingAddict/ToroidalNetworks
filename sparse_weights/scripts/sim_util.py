@@ -30,7 +30,7 @@ def gen_ring_disorder(seed,prm_dict,eX,vis_ori=None):
 
     net.set_seed(seed)
     net.generate_disorder(WMat,np.array([[SoriE,SoriI],[SoriE,SoriI]]),HVec,SoriF*np.ones(2),K,
-                          basefrac=prm_dict.get('basefrac',0),vis_ori=None)
+                          basefrac=prm_dict.get('basefrac',0),vis_ori=vis_ori)
 
     B = np.zeros(net.N,dtype=np.float32)
     B[net.C_all[0]] = HVec[0]
@@ -48,7 +48,7 @@ def gen_ring_disorder(seed,prm_dict,eX,vis_ori=None):
 
     return net,net.M,net.H,B,LAS,eps
 
-def gen_ring_disorder_tensor(seed,prm_dict,eX):
+def gen_ring_disorder_tensor(seed,prm_dict,eX,vis_ori=None):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     net = ring_network.RingNetwork(seed=0,NC=[prm_dict.get('NE',4),prm_dict.get('NI',1)],
@@ -72,7 +72,7 @@ def gen_ring_disorder_tensor(seed,prm_dict,eX):
 
     net.set_seed(seed)
     net.generate_disorder(WMat,np.array([[SoriE,SoriI],[SoriE,SoriI]]),HVec,SoriF*np.ones(2),K,
-                          basefrac=prm_dict.get('basefrac',0))
+                          basefrac=prm_dict.get('basefrac',0),vis_ori=vis_ori)
     net.generate_tensors()
 
     B = torch.where(net.C_conds[0],HVec[0],HVec[1])
