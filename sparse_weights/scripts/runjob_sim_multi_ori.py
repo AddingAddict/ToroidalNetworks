@@ -122,7 +122,7 @@ def runjobs():
                                     np.isclose(L_mult,1.0) and np.isclose(CVL_mult,1.0):
                                     jobname="sim_multi_ori"+"-c-{:d}".format(c)
                                 else:
-                                    jobname="sim_best_fit_1s"+"-SoriEx{:.2f}-SoriIx{:.2f}-SoriFx{:.2f}-CVhx{:.2f}-Jx{:.2f}-betax{:.2f}-gEx{:.2f}-gIx{:.2f}-hEx{:.2f}-hIx{:.2f}-Lx{:.2f}-CVLx{:.2f}-c-{:d}".format(
+                                    jobname="sim_multi_ori"+"-SoriEx{:.2f}-SoriIx{:.2f}-SoriFx{:.2f}-CVhx{:.2f}-Jx{:.2f}-betax{:.2f}-gEx{:.2f}-gIx{:.2f}-hEx{:.2f}-hIx{:.2f}-Lx{:.2f}-CVLx{:.2f}-c-{:d}".format(
                                         SoriE_mult,SoriI_mult,SoriF_mult,CVh_mult,J_mult,beta_mult,gE_mult,gI_mult,hE_mult,hI_mult,L_mult,CVL_mult,c)
                                 
                                 if not args2.test:
