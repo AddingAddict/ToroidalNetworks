@@ -110,7 +110,7 @@ def runjobs():
                                 
                                 #--------------------------------------------------------------------------
                                 # Make SBTACH
-                                inpath = currwd + "/sim_opto_norm.py"
+                                inpath = currwd + "/sim_opto_inh.py"
                                 c1 = "{:s} -c {:d} -SoriEm {:f} -SoriIm {:f} -SoriFm {:f} -CVhm {:f} -Jm {:f} -betam {:f} -gEm {:f} -gIm {:f} -hEm {:f} -hIm {:f} -Lm {:f} -CVLm {:f}".format(
                                     inpath,c,SoriE_mult,SoriI_mult,SoriF_mult,CVh_mult,J_mult,beta_mult,gE_mult,gI_mult,hE_mult,hI_mult,L_mult,CVL_mult)
                                 
@@ -120,9 +120,9 @@ def runjobs():
                                     np.isclose(gE_mult,1.0) and np.isclose(gI_mult,1.0) and\
                                     np.isclose(hE_mult,1.0) and np.isclose(hI_mult,1.0) and\
                                     np.isclose(L_mult,1.0) and np.isclose(CVL_mult,1.0):
-                                    jobname="sim_opto_norm"+"-c-{:d}".format(c)
+                                    jobname="sim_opto_inh"+"-c-{:d}".format(c)
                                 else:
-                                    jobname="sim_opto_norm"+"-SoriEx{:.2f}-SoriIx{:.2f}-SoriFx{:.2f}-CVhx{:.2f}-Jx{:.2f}-betax{:.2f}-gEx{:.2f}-gIx{:.2f}-hEx{:.2f}-hIx{:.2f}-Lx{:.2f}-CVLx{:.2f}-c-{:d}".format(
+                                    jobname="sim_opto_inh"+"-SoriEx{:.2f}-SoriIx{:.2f}-SoriFx{:.2f}-CVhx{:.2f}-Jx{:.2f}-betax{:.2f}-gEx{:.2f}-gIx{:.2f}-hEx{:.2f}-hIx{:.2f}-Lx{:.2f}-CVLx{:.2f}-c-{:d}".format(
                                         SoriE_mult,SoriI_mult,SoriF_mult,CVh_mult,J_mult,beta_mult,gE_mult,gI_mult,hE_mult,hI_mult,L_mult,CVL_mult,c)
                                 
                                 if not args2.test:
