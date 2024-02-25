@@ -141,7 +141,7 @@ def simulate_networks(prms,rX,cA,CVh):
         
         start = time.process_time()
 
-        net,this_M,this_H,this_B,this_LAS,this_EPS = su.gen_ring_disorder_tensor(seed,prms,CVh,opto_pop=1)
+        net,this_M,this_H,this_B,this_LAS,this_EPS = su.gen_ring_disorder_tensor(seed,prms,CVh)
         M = this_M.cpu().numpy()
         H = (rX*(this_B+cA*this_H)*this_EPS).cpu().numpy()
         LAS = this_LAS.cpu().numpy()
@@ -165,7 +165,7 @@ def simulate_networks(prms,rX,cA,CVh):
 
         start = time.process_time()
         
-        opto_sol,opto_timeout = integ.sim_dyn_tensor(ri,T,1.0,this_M,rX*(this_B+cA*this_H)*this_EPS,
+        opto_sol,opto_timeout = integ.sim_dyn_tensor(ri,T,-1.0,this_M,rX*(this_B+cA*this_H)*this_EPS,
                                                      this_LAS,net.C_conds[0],mult_tau=True,max_min=30)
         Ls[seed_idx,1] = np.max(integ.calc_lyapunov_exp_tensor(ri,T[T>=4*Nt],1.0,this_M,
                                                                rX*(this_B+cA*this_H)*this_EPS,this_LAS,
