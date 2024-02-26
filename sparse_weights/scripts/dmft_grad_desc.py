@@ -42,7 +42,9 @@ CVh = res_dict['best_monk_eX']
 bX = res_dict['best_monk_bX']
 aXs = res_dict['best_monk_aXs']
 K = prms['K']
-SoriF = prms['SoriF']
+prms['SoriE'] = 35
+prms['SoriI'] = 35
+prms['SoriF'] = 20
 L = prms['L']
 CVL = prms['CVL']
 
@@ -60,38 +62,36 @@ dt = 0.01/3
 Nori = 20
 
 def get_prm_vec(prms,bX,fc_aX,CVh):
-    prm_vec = np.array(list(prms.values()))[[1,2,4,5,6,7,8,9]]
-    prm_vec[2] = np.log10(prm_vec[2])
-    prm_vec[3] = np.log10(prm_vec[3])
+    prm_vec = np.array(list(prms.values()))[[4,5,6,7,8,9]]
+    prm_vec[0] = np.log10(prm_vec[0])
+    prm_vec[1] = np.log10(prm_vec[1])
     prm_vec = np.concatenate((prm_vec,np.array([bX,fc_aX,CVh])))
     return prm_vec
 
 def get_prms_inps(prm_vec):
     prms = {'K': K,
-            'SoriE': prm_vec[0],
-            'SoriI': prm_vec[1],
-            'SoriF': SoriF,
-            'J': 10**prm_vec[2],
-            'beta': 10**prm_vec[3],
-            'gE': prm_vec[4],
-            'gI': prm_vec[5],
-            'hE': prm_vec[6],
-            'hI': prm_vec[7],
+            'SoriE': 35,
+            'SoriI': 35,
+            'SoriF': 20,
+            'J': 10**prm_vec[0],
+            'beta': 10**prm_vec[1],
+            'gE': prm_vec[2],
+            'gI': prm_vec[3],
+            'hE': prm_vec[4],
+            'hI': prm_vec[5],
             'L': L,
             'CVL': CVL}
-    return prms,prm_vec[8],prm_vec[9],prm_vec[10]
+    return prms,prm_vec[6],prm_vec[7],prm_vec[8]
 
 init_prm_vec = get_prm_vec(prms,bX,aXs[-1],CVh)
 
 prm_vec_range = np.array([
-    [15,45],    # SoriE
-    [15,45],    # SoriI
     [-4,-3],    # log10J
     [-1,.5],    # log10beta
     [ 3, 7],    # gE
     [ 2, 6],    # gI
-    [ 0, 6],    # hE
-    [ 0, 2],    # hI
+    [ 0.1, 6],    # hE
+    [ 0.1, 2],    # hI
     [ 0,20],    # bX
     [ 3,28],    # aX
     [ 0,.4],    # CVh
@@ -369,7 +369,7 @@ for idx,dprm in enumerate(dprm_vec):
     
 grad = (pert_losses - init_loss) / dprm_vec
 
-final_prm_vec = init_prm_vec - 0.0005*grad
+final_prm_vec = init_prm_vec - 0.001*grad
 final_prm_vec = np.clip(final_prm_vec,prm_vec_range[:,0],prm_vec_range[:,1])
 
 final_prms,final_bX,final_fc_aX,final_CVh = get_prms_inps(final_prm_vec)
