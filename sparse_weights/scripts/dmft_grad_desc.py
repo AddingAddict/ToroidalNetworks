@@ -23,23 +23,24 @@ if iter_idx == 0:
     if id is None:
         with open('./../results/best_fit.pkl', 'rb') as handle:
             res_dict = pickle.load(handle)
-    if '(' in id:
-        id = tuple(map(int, id.replace('(','').replace(')','').split(',')))
-    if isinstance(id,str):
-        with open('./../results/'+id+'.pkl', 'rb') as handle:
-            res_dict = pickle.load(handle)
-    elif len(id)==1:
-        with open('./../results/refit_candidate_prms_{:d}.pkl'.format(
-                id[0]), 'rb') as handle:
-            res_dict = pickle.load(handle)
-    elif len(id)==2:
-        with open('./../results/results_ring_{:d}.pkl'.format(
-                id[0]), 'rb') as handle:
-            res_dict = pickle.load(handle)[id[-1]]
     else:
-        with open('./../results/results_ring_perturb_njob-{:d}_nrep-{:d}_ntry-{:d}.pkl'.format(
-                id[0],id[1],id[2]), 'rb') as handle:
-            res_dict = pickle.load(handle)[id[-1]]
+        if '(' in id:
+            id = tuple(map(int, id.replace('(','').replace(')','').split(',')))
+        if isinstance(id,str):
+            with open('./../results/'+id+'.pkl', 'rb') as handle:
+                res_dict = pickle.load(handle)
+        elif len(id)==1:
+            with open('./../results/refit_candidate_prms_{:d}.pkl'.format(
+                    id[0]), 'rb') as handle:
+                res_dict = pickle.load(handle)
+        elif len(id)==2:
+            with open('./../results/results_ring_{:d}.pkl'.format(
+                    id[0]), 'rb') as handle:
+                res_dict = pickle.load(handle)[id[-1]]
+        else:
+            with open('./../results/results_ring_perturb_njob-{:d}_nrep-{:d}_ntry-{:d}.pkl'.format(
+                    id[0],id[1],id[2]), 'rb') as handle:
+                res_dict = pickle.load(handle)[id[-1]]
 else:
     with open('./../results/dmft_grad_descent_id_{:s}_n_{:d}.pkl'.format(str(id),iter_idx-1), 'rb') as handle:
         res_dict = pickle.load(handle)
