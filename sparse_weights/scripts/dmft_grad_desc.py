@@ -402,4 +402,7 @@ res_dict['dprm_vec'] = dprm_vec
 with open('./../results/dmft_grad_descent_id_{:s}_n_{:d}'.format(str(id),iter_idx)+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)
 
-os.system("python runjob_dmft_grad_desc.py -n {:d}".format(iter_idx+1));
+if id is None:
+    os.system("python runjob_dmft_grad_desc.py -n {:d}".format(iter_idx+1))
+else:
+    os.system("python runjob_dmft_grad_desc.py -n {:d} -i {:s}".format(iter_idx+1,id))

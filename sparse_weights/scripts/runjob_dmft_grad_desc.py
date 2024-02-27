@@ -99,7 +99,7 @@ def runjobs():
     else:
         c1 = "{:s} -n {:d} -i {:s}".format(inpath,iter_idx,id)
     
-    jobname="dmft_grad_desc"+"-n-{:d}".format(iter_idx)
+    jobname="dmft_grad_desc"+"-id-{:s}-n-{:d}".format(str(id),iter_idx)
     
     if not args2.test:
         jobnameDir=os.path.join(ofilesdir, jobname)
