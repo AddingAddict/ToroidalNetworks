@@ -21,12 +21,14 @@ def runjobs():
     parser = argparse.ArgumentParser()
     parser.add_argument("--test", "-t", type=int, default=0)
     parser.add_argument('--iter_idx', '-n',  help='which iteration', type=int, default=0)
+    parser.add_argument('--id', '-i',  help='which id', type=str, default=None)
     parser.add_argument("--cluster_", help=" String", default='burg')
     
     args2 = parser.parse_args()
     args = vars(args2)
     
     iter_idx = int(args["iter_idx"])
+    id = args["id"]
     
     hostname = socket.gethostname()
     if 'ax' in hostname:
@@ -92,7 +94,10 @@ def runjobs():
     #--------------------------------------------------------------------------
     # Make SBTACH
     inpath = currwd + "/dmft_grad_desc.py"
-    c1 = "{:s} -n {:d}".format(inpath,iter_idx)
+    if id is None:
+        c1 = "{:s} -n {:d}".format(inpath,iter_idx)
+    else:
+        c1 = "{:s} -n {:d} -i {:s}".format(inpath,iter_idx,id)
     
     jobname="dmft_grad_desc"+"-n-{:d}".format(iter_idx)
     

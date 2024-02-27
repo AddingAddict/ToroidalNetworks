@@ -13,12 +13,18 @@ import dmft
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--iter_idx', '-n',  help='which iteration', type=int, default=0)
+parser.add_argument('--id', '-i',  help='which id', type=str, default=None)
 args = vars(parser.parse_args())
 print(parser.parse_args())
-iter_idx= args['iter_idx']
+iter_idx = args['iter_idx']
+id = args['id']
 
-id = None
+if '(' in id:
+    id = tuple(map(int, id.replace('(','').replace(')','').split(',')))
 if iter_idx == 0:
+    if isinstance(id,str):
+        with open('./../results/'+id+'.pkl', 'rb') as handle:
+            res_dict = pickle.load(handle)
     if id is None:
         with open('./../results/best_fit.pkl', 'rb') as handle:
             res_dict = pickle.load(handle)
@@ -44,7 +50,7 @@ aXs = res_dict['best_monk_aXs']
 K = prms['K']
 prms['SoriE'] = 35
 prms['SoriI'] = 35
-prms['SoriF'] = 20
+prms['SoriF'] = 25
 L = prms['L']
 CVL = prms['CVL']
 
@@ -72,7 +78,7 @@ def get_prms_inps(prm_vec):
     prms = {'K': K,
             'SoriE': 35,
             'SoriI': 35,
-            'SoriF': 20,
+            'SoriF': 25,
             'J': 10**prm_vec[0],
             'beta': 10**prm_vec[1],
             'gE': prm_vec[2],
@@ -369,7 +375,7 @@ for idx,dprm in enumerate(dprm_vec):
     
 grad = (pert_losses - init_loss) / dprm_vec
 
-final_prm_vec = init_prm_vec - 0.001*grad
+final_prm_vec = init_prm_vec - 0.001*10**(-iter_idx/8)*grad
 final_prm_vec = np.clip(final_prm_vec,prm_vec_range[:,0],prm_vec_range[:,1])
 
 final_prms,final_bX,final_fc_aX,final_CVh = get_prms_inps(final_prm_vec)
