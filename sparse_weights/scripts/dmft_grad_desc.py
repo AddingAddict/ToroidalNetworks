@@ -19,14 +19,14 @@ print(parser.parse_args())
 iter_idx = args['iter_idx']
 id = args['id']
 
-if '(' in id:
-    id = tuple(map(int, id.replace('(','').replace(')','').split(',')))
 if iter_idx == 0:
-    if isinstance(id,str):
-        with open('./../results/'+id+'.pkl', 'rb') as handle:
-            res_dict = pickle.load(handle)
     if id is None:
         with open('./../results/best_fit.pkl', 'rb') as handle:
+            res_dict = pickle.load(handle)
+    if '(' in id:
+        id = tuple(map(int, id.replace('(','').replace(')','').split(',')))
+    if isinstance(id,str):
+        with open('./../results/'+id+'.pkl', 'rb') as handle:
             res_dict = pickle.load(handle)
     elif len(id)==1:
         with open('./../results/refit_candidate_prms_{:d}.pkl'.format(
