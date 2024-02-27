@@ -271,6 +271,7 @@ monk_opto_means =       np.array([30.82, 44.93, 53.36, 60.46, 64.09, 68.87])
 monk_opto_stds =        np.array([36.36, 42.87, 45.13, 49.31, 47.53, 52.24])
 monk_diff_means =       np.array([10.44,  1.61, -1.41, -4.08, -6.88, -3.82])
 monk_diff_stds =        np.array([37.77, 42.48, 42.24, 45.43, 41.78, 41.71])
+monk_std_diffs =        np.array([19.30, 10.46,  6.20,  6.55,  2.36,  3.63])
 monk_norm_covs =        np.array([-0.1456, -0.2999, -0.3792, -0.3831, -0.4664, -0.4226])
 
 monk_base_means_err =   np.array([ 2.39,  4.49,  5.38,  5.90,  6.22,  6.69])
@@ -279,6 +280,7 @@ monk_opto_means_err =   np.array([ 5.03,  5.86,  6.16,  6.74,  6.50,  7.15])
 monk_opto_stds_err =    np.array([ 7.73,  6.47,  5.90,  6.20,  4.93,  4.74])
 monk_diff_means_err =   np.array([ 5.28,  5.90,  5.84,  6.28,  5.75,  5.76])
 monk_diff_stds_err =    np.array([ 8.36,  8.74,  8.01, 10.04,  8.51,  8.94])
+monk_std_diffs_err =    np.array([ 8.06,  7.44,  7.41,  8.04,  7.47,  7.13])
 monk_norm_covs_err =    np.array([ 0.1075,  0.1354,  0.1579,  0.1496,  0.1717,  0.1665])
 
 def calc_loss(zc_μrs,fc_μrs,zc_Σrs,fc_Σrs):
@@ -304,6 +306,7 @@ def calc_loss(zc_μrs,fc_μrs,zc_Σrs,fc_Σrs):
     zc_vsm_diff_means = zc_vsm_opto_means - zc_vsm_base_means
     zc_vsm_diff_stds = np.sqrt(0.8*np.mean(zc_ΣrEs[2,vsm_mask]+zc_μrEs[2,vsm_mask]**2) +\
         0.2*np.mean(zc_ΣrIs[2,vsm_mask]+zc_μrIs[2,vsm_mask]**2) - zc_vsm_diff_means**2)
+    zc_vsm_std_diffs = zc_vsm_opto_stds - zc_vsm_base_stds
     zc_vsm_norm_covs = (0.8*np.mean(zc_ΣrEs[3,vsm_mask]+zc_μrEs[0,vsm_mask]*zc_μrEs[2,vsm_mask]) +\
         0.2*np.mean(zc_ΣrIs[3,vsm_mask]+zc_μrIs[0,vsm_mask]*zc_μrIs[2,vsm_mask]) -\
         zc_vsm_base_means*zc_vsm_diff_means) / zc_vsm_diff_stds**2
@@ -317,6 +320,7 @@ def calc_loss(zc_μrs,fc_μrs,zc_Σrs,fc_Σrs):
     fc_vsm_diff_means = fc_vsm_opto_means - fc_vsm_base_means
     fc_vsm_diff_stds = np.sqrt(0.8*np.mean(fc_ΣrEs[2,vsm_mask]+fc_μrEs[2,vsm_mask]**2) +\
         0.2*np.mean(fc_ΣrIs[2,vsm_mask]+fc_μrIs[2,vsm_mask]**2) - fc_vsm_diff_means**2)
+    fc_vsm_std_diffs = fc_vsm_opto_stds - fc_vsm_base_stds
     fc_vsm_norm_covs = (0.8*np.mean(fc_ΣrEs[3,vsm_mask]+fc_μrEs[0,vsm_mask]*fc_μrEs[2,vsm_mask]) +\
         0.2*np.mean(fc_ΣrIs[3,vsm_mask]+fc_μrIs[0,vsm_mask]*fc_μrIs[2,vsm_mask]) -\
         fc_vsm_base_means*fc_vsm_diff_means) / fc_vsm_diff_stds**2
@@ -326,13 +330,17 @@ def calc_loss(zc_μrs,fc_μrs,zc_Σrs,fc_Σrs):
         (zc_vsm_opto_means-monk_opto_means[ 0])/monk_opto_means_err[ 0],
         (zc_vsm_base_stds - monk_base_stds[ 0])/ monk_base_stds_err[ 0],
         (zc_vsm_opto_stds - monk_opto_stds[ 0])/ monk_opto_stds_err[ 0],
+        (zc_vsm_diff_means-monk_diff_means[ 0])/monk_diff_means_err[ 0],
         (zc_vsm_diff_stds - monk_diff_stds[ 0])/ monk_diff_stds_err[ 0],
+        (zc_vsm_std_diffs - monk_std_diffs[ 0])/ monk_std_diffs_err[ 0],
         (zc_vsm_norm_covs - monk_norm_covs[ 0])/ monk_norm_covs_err[ 0],
         (fc_vsm_base_means-monk_base_means[-1])/monk_base_means_err[-1]*2,
         (fc_vsm_opto_means-monk_opto_means[-1])/monk_opto_means_err[-1]*2,
         (fc_vsm_base_stds - monk_base_stds[-1])/ monk_base_stds_err[-1]*2,
         (fc_vsm_opto_stds - monk_opto_stds[-1])/ monk_opto_stds_err[-1]*2,
+        (fc_vsm_diff_means-monk_diff_means[-1])/monk_diff_means_err[-1]*2,
         (fc_vsm_diff_stds - monk_diff_stds[-1])/ monk_diff_stds_err[-1]*2,
+        (fc_vsm_std_diffs - monk_std_diffs[-1])/ monk_std_diffs_err[-1]*2,
         (fc_vsm_norm_covs - monk_norm_covs[-1])/ monk_norm_covs_err[-1]*2,
     ])
     
