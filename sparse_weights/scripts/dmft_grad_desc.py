@@ -49,9 +49,12 @@ CVh = res_dict['best_monk_eX']
 bX = res_dict['best_monk_bX']
 aXs = res_dict['best_monk_aXs']
 K = prms['K']
-prms['SoriE'] = 35
-prms['SoriI'] = 35
-prms['SoriF'] = 25
+# prms['SoriE'] = 35
+# prms['SoriI'] = 35
+# prms['SoriF'] = 25
+SoriE = prms['SoriE']
+SoriI = prms['SoriI']
+SoriF = prms['SoriF']
 L = prms['L']
 CVL = prms['CVL']
 
@@ -77,9 +80,12 @@ def get_prm_vec(prms,bX,fc_aX,CVh):
 
 def get_prms_inps(prm_vec):
     prms = {'K': K,
-            'SoriE': 35,
-            'SoriI': 35,
-            'SoriF': 25,
+            # 'SoriE': 35,
+            # 'SoriI': 35,
+            # 'SoriF': 25,
+            'SoriE': SoriE,
+            'SoriI': SoriI,
+            'SoriF': SoriF,
             'J': 10**prm_vec[0],
             'beta': 10**prm_vec[1],
             'gE': prm_vec[2],

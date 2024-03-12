@@ -90,7 +90,7 @@ def apply_kernel(x,S,L,dx=None,kernel='gaussian'):
         return out*dx
 
 class BaseNetwork(ABC):
-    def __init__(self, seed=0, n=None, NC=None, Nloc=1, profile='gaussian', normalize_by_mean=False):
+    def __init__(self, seed=0, n=None, NC=None, NX=None, Nloc=1, profile='gaussian', normalize_by_mean=False):
         self.rng = np.random.default_rng(seed=seed)
 
         if NC is None:
@@ -115,6 +115,8 @@ class BaseNetwork(ABC):
                 self.NC = np.array(NC,dtype=int)
                 self.n = int(n)
                 assert self.n == len(self.NC)
+                
+        self.NX = NX
 
         self.NT = np.sum(self.NC)
         self.Nloc = Nloc
@@ -133,6 +135,11 @@ class BaseNetwork(ABC):
                 this_C_loc_idxs = np.arange(this_C_idxs[loc].start,this_C_idxs[loc].stop,dtype=int)
                 this_C_all = np.append(this_C_all,this_C_loc_idxs)
             self.C_all.append(this_C_all)
+            
+        if self.NX is not None:
+            self.X_idxs = [slice(int(loc*self.NX),int((loc+1)*self.NX)) for loc in range(self.Nloc)]
+
+            self.X_all = np.arange(0,self.Nloc*self.NX,dtype=np.int8)
         
         # Total number of neurons
         self.N = self.Nloc*self.NT
@@ -158,7 +165,10 @@ class BaseNetwork(ABC):
                 W = WKern[pstC][preC]
                 if W is None: continue
 
-                ps = np.fmax(K/self.NC[0] * W,1e-12)
+                if np.isscalar(K):
+                    ps = np.fmax(K/self.NC[0] * W,1e-12)
+                else:
+                    ps = np.fmax(K[pstC,preC]/self.NC[preC] * W,1e-12)
                 if np.any(ps > 1):
                     raise Exception("Error: p > 1, please decrease K or increase NC")
 
@@ -186,7 +196,10 @@ class BaseNetwork(ABC):
             W = WKern[pstC]
             if W is None: continue
 
-            ps = np.fmax(K/self.NX * W,1e-12)
+            if np.isscalar(K):
+                ps = np.fmax(K/self.NX * W,1e-12)
+            else:
+                ps = np.fmax(K[pstC]/self.NX * W,1e-12)
             if np.any(ps > 1):
                 raise Exception("Error: p > 1, please decrease K or increase NC")
 

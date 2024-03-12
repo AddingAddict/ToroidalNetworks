@@ -7,27 +7,48 @@ from torchdiffeq import odeint, odeint_event
 def sim_dyn(rc,T,L,M,H,LAM,E_all,I_all,mult_tau=False,max_min=7.5,stat_stop=True):
     LAS = LAM*L
 
-    F=np.zeros_like(H)
+    if callable(H):
+        N = len(H(0))
+    else:
+        N = len(H)
+    F=np.zeros(N)
     start = time.process_time()
     max_time = max_min*60
     timeout = False
 
     # This function computes the dynamics of the rate model
-    if mult_tau:
-        def ode_fn(t,R):
-            MU=np.matmul(M,R)+H
-            MU[E_all]=rc.tE*MU[E_all]
-            MU[I_all]=rc.tI*MU[I_all]
-            MU=MU+LAS
-            F[E_all] =(-R[E_all]+rc.phiE(MU[E_all]))/rc.tE;
-            F[I_all] =(-R[I_all]+rc.phiI(MU[I_all]))/rc.tI;
-            return F
+    if callable(H):
+        if mult_tau:
+            def ode_fn(t,R):
+                MU=np.matmul(M,R)+H(t)
+                MU[E_all]=rc.tE*MU[E_all]
+                MU[I_all]=rc.tI*MU[I_all]
+                MU=MU+LAS
+                F[E_all] =(-R[E_all]+rc.phiE(MU[E_all]))/rc.tE;
+                F[I_all] =(-R[I_all]+rc.phiI(MU[I_all]))/rc.tI;
+                return F
+        else:
+            def ode_fn(t,R):
+                MU=np.matmul(M,R)+H(t)+LAS
+                F[E_all] =(-R[E_all]+rc.phiE(MU[E_all]))/rc.tE;
+                F[I_all] =(-R[I_all]+rc.phiI(MU[I_all]))/rc.tI;
+                return F
     else:
-        def ode_fn(t,R):
-            MU=np.matmul(M,R)+H+LAS
-            F[E_all] =(-R[E_all]+rc.phiE(MU[E_all]))/rc.tE;
-            F[I_all] =(-R[I_all]+rc.phiI(MU[I_all]))/rc.tI;
-            return F
+        if mult_tau:
+            def ode_fn(t,R):
+                MU=np.matmul(M,R)+H
+                MU[E_all]=rc.tE*MU[E_all]
+                MU[I_all]=rc.tI*MU[I_all]
+                MU=MU+LAS
+                F[E_all] =(-R[E_all]+rc.phiE(MU[E_all]))/rc.tE;
+                F[I_all] =(-R[I_all]+rc.phiI(MU[I_all]))/rc.tI;
+                return F
+        else:
+            def ode_fn(t,R):
+                MU=np.matmul(M,R)+H+LAS
+                F[E_all] =(-R[E_all]+rc.phiE(MU[E_all]))/rc.tE;
+                F[I_all] =(-R[I_all]+rc.phiI(MU[I_all]))/rc.tI;
+                return F
 
     # This function determines if the system is stationary or not
     def stat_event(t,R):
@@ -43,7 +64,7 @@ def sim_dyn(rc,T,L,M,H,LAM,E_all,I_all,mult_tau=False,max_min=7.5,stat_stop=True
         return int_time
     time_event.terminal = True
 
-    rates=np.zeros((len(H),len(T)));
+    rates=np.zeros((N,len(T)));
     if stat_stop:
         sol = solve_ivp(ode_fn,[np.min(T),np.max(T)],rates[:,0], method='RK45', t_eval=T, events=[stat_event,time_event])
     else:
@@ -61,30 +82,52 @@ def sim_dyn(rc,T,L,M,H,LAM,E_all,I_all,mult_tau=False,max_min=7.5,stat_stop=True
     return rates,timeout
 
 def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False,max_min=30,method=None):
-    MU = torch.zeros_like(H,dtype=torch.float32)
-    F = torch.ones_like(H,dtype=torch.float32)
+    if callable(H):
+        N = len(H(0))
+    else:
+        N = len(H)
+    MU = torch.zeros(N,dtype=torch.float32)
+    F = torch.ones(N,dtype=torch.float32)
     LAS = LAM*L
 
     start = time.process_time()
     max_time = max_min*60
 
     # This function computes the dynamics of the rate model
-    if mult_tau:
-        def ode_fn(t,R):
-            MU=torch.matmul(M,R)#,out=MU)
-            MU=torch.add(MU,H)#,out=MU)
-            MU=torch.where(E_cond,rc.tE*MU,rc.tI*MU)#,out=MU)
-            MU=torch.add(MU,LAS)#,out=MU)
-            F=torch.where(E_cond,(-R+rc.phiE_tensor(MU))/rc.tE,(-R+rc.phiI_tensor(MU))/rc.tI)#,out=F)
-            if time.process_time() - start > max_time: raise Exception('Timeout')
-            return F
+    if callable(H):
+        if mult_tau:
+            def ode_fn(t,R):
+                MU=torch.matmul(M,R)#,out=MU)
+                MU=torch.add(MU,H(t))#,out=MU)
+                MU=torch.where(E_cond,rc.tE*MU,rc.tI*MU)#,out=MU)
+                MU=torch.add(MU,LAS)#,out=MU)
+                F=torch.where(E_cond,(-R+rc.phiE_tensor(MU))/rc.tE,(-R+rc.phiI_tensor(MU))/rc.tI)#,out=F)
+                if time.process_time() - start > max_time: raise Exception('Timeout')
+                return F
+        else:
+            def ode_fn(t,R):
+                MU=torch.matmul(M,R)#,out=MU)
+                MU=torch.add(MU,H(t) + LAS)#,out=MU)
+                F=torch.where(E_cond,(-R+rc.phiE_tensor(MU))/rc.tE,(-R+rc.phiI_tensor(MU))/rc.tI)#,out=F)
+                if time.process_time() - start > max_time: raise Exception('Timeout')
+                return F
     else:
-        def ode_fn(t,R):
-            MU=torch.matmul(M,R)#,out=MU)
-            MU=torch.add(MU,H + LAS)#,out=MU)
-            F=torch.where(E_cond,(-R+rc.phiE_tensor(MU))/rc.tE,(-R+rc.phiI_tensor(MU))/rc.tI)#,out=F)
-            if time.process_time() - start > max_time: raise Exception('Timeout')
-            return F
+        if mult_tau:
+            def ode_fn(t,R):
+                MU=torch.matmul(M,R)#,out=MU)
+                MU=torch.add(MU,H)#,out=MU)
+                MU=torch.where(E_cond,rc.tE*MU,rc.tI*MU)#,out=MU)
+                MU=torch.add(MU,LAS)#,out=MU)
+                F=torch.where(E_cond,(-R+rc.phiE_tensor(MU))/rc.tE,(-R+rc.phiI_tensor(MU))/rc.tI)#,out=F)
+                if time.process_time() - start > max_time: raise Exception('Timeout')
+                return F
+        else:
+            def ode_fn(t,R):
+                MU=torch.matmul(M,R)#,out=MU)
+                MU=torch.add(MU,H + LAS)#,out=MU)
+                F=torch.where(E_cond,(-R+rc.phiE_tensor(MU))/rc.tE,(-R+rc.phiI_tensor(MU))/rc.tI)#,out=F)
+                if time.process_time() - start > max_time: raise Exception('Timeout')
+                return F
 
     def event_fn(t,R):
         meanF = torch.mean(torch.abs(F)/torch.maximum(R,1e-1*torch.ones_like(R))) - 5e-3
@@ -96,9 +139,24 @@ def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False,max_min=30,method=None):
         rates = odeint(ode_fn,torch.zeros_like(H,dtype=torch.float32),T,method=method)
         timeout = False
     except:
-        rates = torch.randn((len(T),len(H)),dtype=torch.float32)*1e4+1e4
+        rates = torch.randn((len(T),N),dtype=torch.float32)*1e4+1e4
         timeout = True
     return torch.transpose(rates,0,1),timeout
+
+def sim_dyn_tensor_two_layer(rc,T,L,M,MX,RX,LAM,E_cond,mult_tau=False,max_min=30,method=None):
+    if callable(RX):
+        def H(t):
+            this_H=torch.matmul(MX,RX)#,out=this_H)
+            if mult_tau:
+                this_H=torch.where(E_cond,rc.tE*this_H,rc.tI*this_H)#,out=this_H)
+            return this_H
+            
+    else:
+        H=torch.matmul(MX,RX)#,out=H)
+        if mult_tau:
+            H=torch.where(E_cond,rc.tE*H,rc.tI*H)#,out=H)
+        
+    return sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=mult_tau,max_min=max_min,method=method)
 
 def calc_lyapunov_exp(rc,T,L,M,H,LAM,E_all,I_all,RATEs,NLE,TWONS,TONS,mult_tau=False,save_time=False,return_Q=False):
     if len(H) != RATEs.shape[0]:

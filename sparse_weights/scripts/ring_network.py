@@ -16,7 +16,7 @@ class RingNetwork(network.BaseNetwork):
         self.Nori = int(Nori)
         self.Nloc = self.Nori
 
-        super().__init__(seed=seed, n=n, NC=NC, Nloc=self.Nloc, profile='wrapgauss', normalize_by_mean=False)
+        super().__init__(seed=seed, n=n, NC=NC, NX=NX, Nloc=self.Nloc, profile='wrapgauss', normalize_by_mean=False)
 
         self.set_Z()
 
@@ -126,10 +126,10 @@ class RingNetwork(network.BaseNetwork):
             for pst_loc in range(self.Nloc):
                 pst_idxs = pstC_idxs[pst_loc]
 
-                W_mean_full[pst_idxs,preC_all] = WVec[pstC]
-                W_var_full[pst_idxs,preC_all] = VarVec[pstC]
+                W_mean_full[pst_idxs,:] = WVec[pstC]
+                W_var_full[pst_idxs,:] = VarVec[pstC]
 
-        C_full = self.generate_sparse_rec_conn(WKern=WKern,K=K)
+        C_full = self.generate_sparse_ff_conn(WKern=WKern,K=K)
 
         if return_mean_var:
             return C_full, W_mean_full,W_var_full
@@ -171,11 +171,14 @@ class RingNetwork(network.BaseNetwork):
         H_mean_full,H_var_full = self.generate_full_input(H,np.zeros((self.n)),SHori,basefrac,vis_ori)
         return H_mean_full+np.random.normal(size=(self.N))*np.sqrt(H_var_full)
 
-    # def generate_disorder(self,W,SWori,WX,SWoriX,K,basefrac=0):
     def generate_disorder(self,W,SWori,H,SHori,K,basefrac=0,vis_ori=None):
         self.M = self.generate_M(W,SWori,K,basefrac)
         # self.MX = self.generate_MX(W,SWori,K,basefrac)
         self.H = self.generate_H(H,SHori,basefrac,vis_ori=vis_ori)
+        
+    def generate_disorder_two_layer(self,W,SWori,K,WX,SWoriX,KX,basefrac=0):
+        self.M = self.generate_M(W,SWori,K,basefrac)
+        self.MX = self.generate_MX(WX,SWoriX,KX,basefrac)
 
     def generate_tensors(self):
         self.C_conds = []
