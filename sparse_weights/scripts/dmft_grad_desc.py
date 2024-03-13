@@ -104,7 +104,7 @@ prm_vec_range = np.array([
     [ 3, 7],    # gE
     [ 2, 6],    # gI
     [ 0.1, 6],    # hE
-    [ 0.1, 2],    # hI
+    [ 0.05, 2],    # hI
     [ 0,20],    # bX
     [ 3,28],    # aX
     [ 0,.4],    # CVh
@@ -390,7 +390,7 @@ for idx,dprm in enumerate(dprm_vec):
     
 grad = (pert_losses - init_loss) / dprm_vec
 
-final_prm_vec = init_prm_vec - 0.001*10**(-iter_idx/8)*grad
+final_prm_vec = init_prm_vec - 0.001*10**(-iter_idx/5)*grad
 final_prm_vec = np.clip(final_prm_vec,prm_vec_range[:,0],prm_vec_range[:,1])
 
 final_prms,final_bX,final_fc_aX,final_CVh = get_prms_inps(final_prm_vec)
