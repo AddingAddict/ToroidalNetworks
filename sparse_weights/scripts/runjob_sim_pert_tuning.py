@@ -83,8 +83,9 @@ def runjobs():
     
     #--------------------------------------------------------------------------
     # The array of hashes
+    c = 0
     t_Vec=range(9)
-    o_Vec=range(2)
+    o_Vec=range(2)[0:1]
     
     for t in t_Vec:
         for o in o_Vec:
@@ -96,9 +97,9 @@ def runjobs():
             #--------------------------------------------------------------------------
             # Make SBTACH
             inpath = currwd + "/sim_pert_tuning.py"
-            c1 = "{:s} -t {:d} -o {:d}".format(inpath,t,o)
+            c1 = "{:s} -c {:d} -t {:d} -o {:d}".format(inpath,c,t,o)
             
-            jobname="sim_pert_tuning"+"-t-{:d}-o-{:d}".format(t,o)
+            jobname="sim_pert_tuning"+"-c-{:d}-t-{:d}-o-{:d}".format(c,t,o)
             
             if not args2.test:
                 jobnameDir=os.path.join(ofilesdir, jobname)

@@ -16,10 +16,12 @@ import integrate as integ
 
 parser = argparse.ArgumentParser()
 
+parser.add_argument('--c_idx', '-c',  help='which visual contrast', type=int, default=-1)
 parser.add_argument('--tune_idx', '-t',  help='which tuning level for perturbation', type=int, default=0)
 parser.add_argument('--orth_pert', '-o',  help='whether perturbation is orthogonal to visual perturbation', type=int, default=0)
 args = vars(parser.parse_args())
 print(parser.parse_args())
+c_idx= args['c_idx']
 tune_idx= args['tune_idx']
 orth_pert= args['orth_pert']
 
@@ -86,7 +88,7 @@ print('simulating tune # '+str(tune_idx+1))
 print('')
 tune = tunes[tune_idx]
 
-cA = aXs[-1]/bX
+cA = aXs[c_idx]/bX
 rX = bX
 
 μrEs = np.zeros((len(seeds),3,Nori))
@@ -297,5 +299,5 @@ res_dict['osm_diff_stds'] = osm_diff_stds
 res_dict['osm_norm_covs'] = osm_norm_covs
 res_dict['timeouts'] = timeouts
 
-with open('./../results/vary_id_{:s}_tune_{:d}_ortho_{:d}'.format(str(id),tune_idx,orth_pert)+'.pkl', 'wb') as handle:
+with open('./../results/vary_id_{:s}_tune_{:d}_ortho_{:d}_c_{:d}'.format(str(id),tune_idx,orth_pert,c_idx)+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)
