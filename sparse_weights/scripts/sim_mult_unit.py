@@ -299,7 +299,7 @@ opto_mu_rates = np.zeros_like(base_rates[seed_mask,:][:,vsm_mask])
 
 for seed_idx,seed in enumerate(seeds[seed_mask]):
     rng = np.random.default_rng(seed)
-    for rate_idx,vsm_idx in np.arange(net.N)[vsm_mask]:
+    for rate_idx,vsm_idx in enumerate(np.arange(net.N)[vsm_mask]):
         base_mu_rates[seed_idx,rate_idx] = base_rates[seeds==seed,vsm_idx]
         opto_mu_rates[seed_idx,rate_idx] = opto_rates[seeds==seed,vsm_idx]
         
