@@ -20,6 +20,8 @@ import integrate as integ
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--c_idx', '-c',  help='which contrast', type=int, default=0)
+parser.add_argument('--opto_e', '-e',  help='opto target E cells?', type=int, default=1)
+parser.add_argument('--opto_i', '-i',  help='opto target I cells?', type=int, default=0)
 parser.add_argument('--SoriE_mult', '-SoriEm',  help='multiplier for SoriE', type=float, default=1.0)
 parser.add_argument('--SoriI_mult', '-SoriIm',  help='multiplier for SoriI', type=float, default=1.0)
 parser.add_argument('--SoriF_mult', '-SoriFm',  help='multiplier for SoriF', type=float, default=1.0)
@@ -35,6 +37,8 @@ parser.add_argument('--CVL_mult', '-CVLm',  help='multiplier for CVL', type=floa
 args = vars(parser.parse_args())
 print(parser.parse_args())
 c_idx= args['c_idx']
+opto_e= args['opto_e']
+opto_i= args['opto_i']
 SoriE_mult= args['SoriE_mult']
 SoriI_mult= args['SoriI_mult']
 SoriF_mult= args['SoriF_mult']
@@ -141,7 +145,13 @@ def simulate_networks(prms,rX,cA,CVh):
         
         start = time.process_time()
 
-        net,this_M,this_H,this_B,this_LAS,this_EPS = su.gen_ring_disorder_tensor(seed,prms,CVh)
+        opto_per_pop = np.zeros(2)
+        if opto_e:
+            opto_per_pop[0] = 1
+        if opto_i:
+            opto_per_pop[1] = prms['hI']/prms['hE']
+        net,this_M,this_H,this_B,this_LAS,this_EPS = su.gen_ring_disorder_tensor(seed,prms,CVh,
+                                                                                 opto_per_pop=opto_per_pop)
         M = this_M.cpu().numpy()
         H = (rX*(this_B+cA*this_H)*this_EPS).cpu().numpy()
         LAS = this_LAS.cpu().numpy()
@@ -224,32 +234,6 @@ balEs = np.zeros((len(seeds),2,Nori))
 balIs = np.zeros((len(seeds),2,Nori))
 Lexps = np.zeros((len(seeds),2))
 timeouts = np.zeros((len(seeds),2)).astype(bool)
-# μrEs = np.zeros((2,len(seeds),3,Nori))
-# μrIs = np.zeros((2,len(seeds),3,Nori))
-# ΣrEs = np.zeros((2,len(seeds),4,Nori))
-# ΣrIs = np.zeros((2,len(seeds),4,Nori))
-# μhEs = np.zeros((2,len(seeds),3,Nori))
-# μhIs = np.zeros((2,len(seeds),3,Nori))
-# ΣhEs = np.zeros((2,len(seeds),4,Nori))
-# ΣhIs = np.zeros((2,len(seeds),4,Nori))
-# balEs = np.zeros((2,len(seeds),2,Nori))
-# balIs = np.zeros((2,len(seeds),2,Nori))
-# Lexps = np.zeros((2,len(seeds),2))
-# timeouts = np.zeros((2,len(seeds),2)).astype(bool)
-# all_base_means = np.zeros(2)
-# all_base_stds = np.zeros(2)
-# all_opto_means = np.zeros(2)
-# all_opto_stds = np.zeros(2)
-# all_diff_means = np.zeros(2)
-# all_diff_stds = np.zeros(2)
-# all_norm_covs = np.zeros(2)
-# vsm_base_means = np.zeros(2)
-# vsm_base_stds = np.zeros(2)
-# vsm_opto_means = np.zeros(2)
-# vsm_opto_stds = np.zeros(2)
-# vsm_diff_means = np.zeros(2)
-# vsm_diff_stds = np.zeros(2)
-# vsm_norm_covs = np.zeros(2)
 
 net,rs,mus,muXs,muEs,muIs,Ls,TOs = simulate_networks(prms,rX,cA,CVh)
 
@@ -377,7 +361,7 @@ res_dict['osm_oves'] = osm_oves
 res_dict['osm_ovxs'] = osm_ovxs
 res_dict['timeouts'] = timeouts
 
-res_file = './../results/vary_opto_id_{:s}_Lx{:.2f}'.format(str(id),L_mult)
+res_file = './../results/vary_opto_id_{:s}_e_{:d}_i_{:d}_Lx{:.2f}'.format(str(id),opto_e,opto_i,L_mult)
 if not np.isclose(SoriE_mult,1.0):
     res_file = res_file + '_SoriEx{:.2f}'.format(SoriE_mult)
 if not np.isclose(SoriI_mult,1.0):

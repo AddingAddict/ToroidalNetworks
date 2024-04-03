@@ -8,7 +8,7 @@ import ring_network as ring_network
 import spat_ori_network as spat_network
 import integrate as integ
 
-def gen_ring_disorder(seed,prm_dict,eX,vis_ori=None,opto_pop=None):
+def gen_ring_disorder(seed,prm_dict,eX,vis_ori=None,opto_per_pop=None):
     net = ring_network.RingNetwork(seed=0,NC=[prm_dict.get('NE',4),prm_dict.get('NI',1)],
         Nori=prm_dict.get('Nori',180))
 
@@ -36,7 +36,7 @@ def gen_ring_disorder(seed,prm_dict,eX,vis_ori=None,opto_pop=None):
     B[net.C_all[0]] = HVec[0]
     B[net.C_all[1]] = HVec[1]
 
-    if opto_pop is None:
+    if opto_per_pop is None:
         LAS = np.zeros(net.N,dtype=np.float32)
         sigma_l = np.sqrt(np.log(1+CVL**2))
         mu_l = np.log(1e-3*L)-sigma_l**2/2
@@ -44,10 +44,11 @@ def gen_ring_disorder(seed,prm_dict,eX,vis_ori=None,opto_pop=None):
         LAS[net.C_all[0]] = LAS_E
     else:
         LAS = np.zeros(net.N,dtype=np.float32)
-        sigma_l = np.sqrt(np.log(1+CVL**2))
-        mu_l = np.log(1e-3*L)-sigma_l**2/2
-        LAS_P = np.random.default_rng(seed).lognormal(mu_l, sigma_l, net.NC[opto_pop]*net.Nloc).astype(np.float32)
-        LAS[net.C_all[opto_pop]] = LAS_P
+        for nc in net.n:
+            sigma_l = np.sqrt(np.log(1+CVL**2))
+            mu_l = np.log(1e-3*L)-sigma_l**2/2
+            LAS_P = np.random.default_rng(seed).lognormal(mu_l, sigma_l, net.NC[nc]*net.Nloc).astype(np.float32)
+            LAS[net.C_all[nc]] = opto_per_pop[nc]*LAS_P
 
     shape = 1/eX**2
     scale = 1/shape
@@ -55,7 +56,7 @@ def gen_ring_disorder(seed,prm_dict,eX,vis_ori=None,opto_pop=None):
 
     return net,net.M,net.H,B,LAS,eps
 
-def gen_ring_disorder_tensor(seed,prm_dict,eX,vis_ori=None,opto_pop=None):
+def gen_ring_disorder_tensor(seed,prm_dict,eX,vis_ori=None,opto_per_pop=None):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     net = ring_network.RingNetwork(seed=0,NC=[prm_dict.get('NE',4),prm_dict.get('NI',1)],
@@ -84,7 +85,7 @@ def gen_ring_disorder_tensor(seed,prm_dict,eX,vis_ori=None,opto_pop=None):
 
     B = torch.where(net.C_conds[0],HVec[0],HVec[1])
 
-    if opto_pop is None:
+    if opto_per_pop is None:
         LAS = torch.zeros(net.N,dtype=torch.float32)
         sigma_l = np.sqrt(np.log(1+CVL**2))
         mu_l = np.log(1e-3*L)-sigma_l**2/2
@@ -92,10 +93,11 @@ def gen_ring_disorder_tensor(seed,prm_dict,eX,vis_ori=None,opto_pop=None):
         LAS[net.C_conds[0]] = torch.from_numpy(LAS_E)
     else:
         LAS = torch.zeros(net.N,dtype=torch.float32)
-        sigma_l = np.sqrt(np.log(1+CVL**2))
-        mu_l = np.log(1e-3*L)-sigma_l**2/2
-        LAS_P = np.random.default_rng(seed).lognormal(mu_l, sigma_l, net.NC[opto_pop]*net.Nloc).astype(np.float32)
-        LAS[net.C_conds[opto_pop]] = torch.from_numpy(LAS_P)
+        for nc in net.n:
+            sigma_l = np.sqrt(np.log(1+CVL**2))
+            mu_l = np.log(1e-3*L)-sigma_l**2/2
+            LAS_P = np.random.default_rng(seed).lognormal(mu_l, sigma_l, net.NC[nc]*net.Nloc).astype(np.float32)
+            LAS[net.C_conds[nc]] = opto_per_pop[nc]*torch.from_numpy(LAS_P)
 
     B = B.to(device)
     LAS = LAS.to(device)
