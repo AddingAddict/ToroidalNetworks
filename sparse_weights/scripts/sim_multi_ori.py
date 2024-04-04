@@ -152,19 +152,19 @@ def simulate_networks(prms,rX,cA,CVh):
         print("Generating disorder took ",time.process_time() - start," s")
         print('')
 
-        start = time.process_time()
+        # start = time.process_time()
 
-        base_sol,base_timeout = integ.sim_dyn_tensor(ri,T,0.0,this_M,rX*(this_B+cA*this_H)*this_EPS,
-                                                     this_LAS,net.C_conds[0],mult_tau=True,max_min=30)
-        Ls[seed_idx,0] = np.max(integ.calc_lyapunov_exp_tensor(ri,T[T>=4*Nt],0.0,this_M,
-                                                               rX*(this_B+cA*this_H)*this_EPS,this_LAS,
-                                                               net.C_conds[0],base_sol[:,T>=4*Nt],10,2*Nt,2*ri.tE,
-                                                               mult_tau=True).cpu().numpy())
-        rs[seed_idx,0] = np.mean(base_sol[:,mask_time].cpu().numpy(),-1)
-        TOs[seed_idx,0] = base_timeout
+        # base_sol,base_timeout = integ.sim_dyn_tensor(ri,T,0.0,this_M,rX*(this_B+cA*this_H)*this_EPS,
+        #                                              this_LAS,net.C_conds[0],mult_tau=True,max_min=30)
+        # Ls[seed_idx,0] = np.max(integ.calc_lyapunov_exp_tensor(ri,T[T>=4*Nt],0.0,this_M,
+        #                                                        rX*(this_B+cA*this_H)*this_EPS,this_LAS,
+        #                                                        net.C_conds[0],base_sol[:,T>=4*Nt],10,2*Nt,2*ri.tE,
+        #                                                        mult_tau=True).cpu().numpy())
+        # rs[seed_idx,0] = np.mean(base_sol[:,mask_time].cpu().numpy(),-1)
+        # TOs[seed_idx,0] = base_timeout
 
-        print("Integrating base network took ",time.process_time() - start," s")
-        print('')
+        # print("Integrating base network took ",time.process_time() - start," s")
+        # print('')
 
         start = time.process_time()
         
