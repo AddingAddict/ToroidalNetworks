@@ -44,7 +44,7 @@ def gen_ring_disorder(seed,prm_dict,eX,vis_ori=None,opto_per_pop=None):
         LAS[net.C_all[0]] = LAS_E
     else:
         LAS = np.zeros(net.N,dtype=np.float32)
-        for nc in net.n:
+        for nc in range(net.n):
             sigma_l = np.sqrt(np.log(1+CVL**2))
             mu_l = np.log(1e-3*L)-sigma_l**2/2
             LAS_P = np.random.default_rng(seed).lognormal(mu_l, sigma_l, net.NC[nc]*net.Nloc).astype(np.float32)
@@ -93,7 +93,7 @@ def gen_ring_disorder_tensor(seed,prm_dict,eX,vis_ori=None,opto_per_pop=None):
         LAS[net.C_conds[0]] = torch.from_numpy(LAS_E)
     else:
         LAS = torch.zeros(net.N,dtype=torch.float32)
-        for nc in net.n:
+        for nc in range(net.n):
             sigma_l = np.sqrt(np.log(1+CVL**2))
             mu_l = np.log(1e-3*L)-sigma_l**2/2
             LAS_P = np.random.default_rng(seed).lognormal(mu_l, sigma_l, net.NC[nc]*net.Nloc).astype(np.float32)
