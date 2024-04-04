@@ -85,12 +85,12 @@ def runjobs():
     # The array of hashes
     c_Vec=np.arange(6)[[0,2,-1]]#12)
     # SoriE_mult_vec = (np.arange(4+1)/4)[2:]
-    SoriE_mult_vec = np.array([1.0,])
-    SoriI_mult_vec = np.array([1.0,])
-    SoriF_mult_vec = np.array([1.0,])
-    CVh_mult_vec = np.array([1.0,])
-    L_mult_vec = (np.arange(4+1)/4)
-    CVL_mult_vec = 10**(0.5*np.arange(4+1)/4-0.5)[-1:]
+    SoriE_mult = 1.0
+    SoriI_mult = 1.0
+    SoriF_mult = 1.0
+    CVh_mult = 1.0
+    L_mult_vec = (np.arange(-4,4+1)/4)
+    CVL_mult = 1.0
     J_mult = 1.0#0.9
     beta_mult = 1.0#0.9
     gE_mult = 1.0#1/0.9
@@ -99,12 +99,7 @@ def runjobs():
     hI_mult = 1.0
     
     for c in c_Vec:
-        for SoriE_mult in SoriE_mult_vec:
-            for SoriI_mult in SoriI_mult_vec:
-                for SoriF_mult in SoriF_mult_vec:
-                    for CVh_mult in CVh_mult_vec:
-                        for L_mult in L_mult_vec:
-                            for CVL_mult in CVL_mult_vec:
+        for L_mult in L_mult_vec:
 
                                 time.sleep(0.2)
                                 

@@ -94,7 +94,7 @@ prms['gE'] = prms['gE']*gE_mult
 prms['gI'] = prms['gI']*gI_mult
 prms['hE'] = prms['hE']*hE_mult
 prms['hI'] = prms['hI']*hI_mult
-prms['L'] = prms['L']*L_mult
+prms['L'] = prms['L']*np.abs(L_mult)
 prms['CVL'] = prms['CVL']*CVL_mult
 
 ri = ric.Ricciardi()
@@ -168,9 +168,9 @@ def simulate_networks(prms,rX,cA,CVh):
 
         start = time.process_time()
         
-        opto_sol,opto_timeout = integ.sim_dyn_tensor(ri,T,1.0,this_M,rX*(this_B+cA*this_H)*this_EPS,
+        opto_sol,opto_timeout = integ.sim_dyn_tensor(ri,T,np.sign(L_mult),this_M,rX*(this_B+cA*this_H)*this_EPS,
                                                      this_LAS,net.C_conds[0],mult_tau=True,max_min=30)
-        Ls[seed_idx,1] = np.max(integ.calc_lyapunov_exp_tensor(ri,T[T>=4*Nt],1.0,this_M,
+        Ls[seed_idx,1] = np.max(integ.calc_lyapunov_exp_tensor(ri,T[T>=4*Nt],np.sign(L_mult),this_M,
                                                                rX*(this_B+cA*this_H)*this_EPS,this_LAS,
                                                                net.C_conds[0],opto_sol[:,T>=4*Nt],10,2*Nt,2*ri.tE,
                                                                mult_tau=True).cpu().numpy())

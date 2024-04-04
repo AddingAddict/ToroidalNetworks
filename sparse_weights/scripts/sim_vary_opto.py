@@ -119,7 +119,7 @@ prms['Nori'] = Nori
 prms['NE'] = NE
 prms['NI'] = NI
 
-seeds = np.arange(50)
+seeds = np.arange(300)
 
 print('simulating contrast # '+str(c_idx+1))
 print('')
@@ -149,7 +149,7 @@ def simulate_networks(prms,rX,cA,CVh):
         if opto_e:
             opto_per_pop[0] = 1
         if opto_i:
-            opto_per_pop[1] = prms['hI']/prms['hE']
+            opto_per_pop[1] = 1#prms['hI']/prms['hE']
         net,this_M,this_H,this_B,this_LAS,this_EPS = su.gen_ring_disorder_tensor(seed,prms,CVh,
                                                                                  opto_per_pop=opto_per_pop)
         M = this_M.cpu().numpy()
