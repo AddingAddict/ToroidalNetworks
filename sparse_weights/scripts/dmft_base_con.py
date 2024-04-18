@@ -420,7 +420,7 @@ if not np.isclose(L_mult,1.0):
     res_file = res_file + '_Lx{:.2f}'.format(L_mult)
 if not np.isclose(CVL_mult,1.0):
     res_file = res_file + '_CVLx{:.2f}'.format(CVL_mult)
-res_file = res_file + '_c_{:d}'.format(c_idx)
+res_file = res_file + '_b_{:.2f}_c_{:d}'.format(base_con,c_idx)
 
 with open(res_file+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)

@@ -83,7 +83,7 @@ def runjobs():
     
     #--------------------------------------------------------------------------
     # The array of hashes
-    c_Vec=range(7)
+    c_Vec=np.arange(7)
     base_con_vec = np.arange(1,5+1)/10
     SoriE_mult = 1.0
     SoriI_mult = 1.0
