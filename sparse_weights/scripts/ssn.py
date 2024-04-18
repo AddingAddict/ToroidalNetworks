@@ -8,10 +8,9 @@ except:
 import numpy as np
 import torch
 import torch_interpolations
-from scipy.special import erf, erfi
-from scipy.integrate import solve_ivp, quad
+from scipy.special import erf
+from scipy.integrate import quad
 from scipy.interpolate import interp1d,interpn
-from mpmath import fp
 
 sr2 = np.sqrt(2)
 sr2pi = np.sqrt(2*np.pi)
@@ -31,6 +30,97 @@ def d(fun,u):
 
 def d2(fun,u):
     return (fun(u+du)-2*fun(u)+fun(u-du))/du**2
+
+def Mx(n,x):
+    pdf = np.exp(-0.5*x**2)/sr2pi
+    cdf = 0.5*(1+erf(x/sr2))
+    
+    if n == -4:
+        return -x*(x**2-3)*pdf
+    elif n == -3:
+        return (x**2-1)*pdf
+    elif n == -2:
+        return -x*pdf
+    elif n == -1:
+        return pdf
+    elif n == 0:
+        return cdf
+    elif n == 1:
+        return pdf+x*cdf
+    elif n == 2:
+        return x*pdf+(1+x**2)*cdf
+    elif n == 3:
+        return (2+x**2)*pdf+x*(3+x**2)*cdf
+    elif n == 4:
+        return x*(5+x**2)*pdf+(3+6*x**2+x**4)*cdf
+    elif n == 5:
+        return (8+9*x**2+x**4)*pdf+x*(15+10*x**2+x**4)*cdf
+    elif n == 6:
+        return x*(3+x**2)*(11+x**2)*pdf+(15+45*x**2+15*x**4+x**6)*cdf
+    elif n == 7:
+        return (48+87*x**2+20*x**4+x**6)*pdf+x*(105+105*x**2+21*x**4+x**6)*cdf
+    elif n == 8:
+        return x*(279+185*x**2+27*x**4+x**6)*pdf+(105+420*x**2+210*x**4+28*x**6+x**8)*cdf
+    else:
+        raise('Power not implemented')
+
+def Cx(n,x1,x2,c):
+    if x1 > x2:
+        xi = x1
+        xj = x2
+    else:
+        xi = x2
+        xj = x1
+        
+    if n == 0:
+        A = Mx(0,xj)
+    elif n == 1:
+        A = xi*Mx(1,xj) + Mx(0,xj)
+    elif n == 2:
+        A = (1+xi**2)*Mx(2,xj) + 4*xi*Mx(1,xj) + 2*Mx(0,xj)
+    elif n == 3:
+        A = xi*(3+xi**2)*Mx(3,xj) + 9*(1+xi**2)*Mx(2,xj) + 18*xi*Mx(1,xj) + 6*Mx(0,xj)
+    else:
+        raise('Power not implemented')
+
+    if x1 > - x2:
+        pdf1 = np.exp(-0.5*x1**2)/sr2pi
+        pdf2 = np.exp(-0.5*x2**2)/sr2pi
+        cdf1 = 0.5*(1+erf(x1/sr2))
+        cdf2 = 0.5*(1+erf(x2/sr2))
+        if n == 0:
+            B = cdf1+cdf2-1
+        elif n == 1:
+            B = (x1*x2-1)*(cdf1+cdf2-1) + x1*pdf2+x2*pdf1
+        elif n == 2:
+            B = (x1**2*x2**2+x1**2+x2**2-4*x1*x2+3)*(cdf1+cdf2-1) +\
+                (x1*(1+x2**2)-4*x2)*pdf1 + (x2*(1+x1**2)-4*x1)*pdf2
+        elif n == 3:
+            B = (x1**3*x2**3+3(x1**3*x2+x1*x2**3)-9(x1**2*x2**2+x1**2+x2**2)+\
+                    27*x1*x2-15)*(cdf1+cdf2-1) +\
+                (x1**2*x2*(3+x2**2)-9*x1*(1+x2**2)+2*x2*(12+x2**2))*pdf1 +\
+                (x2**2*x1*(3+x1**2)-9*x2*(1+x1**2)+2*x1*(12+x1**2))*pdf2
+        else:
+            raise('Power not implemented')
+    else:
+        B = 0
+
+    r1 = Mx(n,x1)
+    r2 = Mx(n,x2)
+
+    Λp = A-r1*r2
+    Λm = B-r1*r2
+
+    a0 = r1*r2
+    a1 = n**2*Mx(n-1,x1)*Mx(n-1,x2)
+    a2 = (n*np.fmax(n-1,1))**2*Mx(n-2,x1)*Mx(n-2,x2)/2
+    a3 = (n*np.fmax(n-1,1)*np.fmax(n-2,1))**2*Mx(n-3,x1)*Mx(n-3,x2)/6
+    a4 = (n*np.fmax(n-1,1)*np.fmax(n-2,1)*np.fmax(n-3,1))**2*Mx(n-4,x1)*Mx(n-4,x2)/24
+    a5 = (n*np.fmax(n-1,1)*np.fmax(n-2,1)*np.fmax(n-3,1)*np.fmax(n-4,1))**2*Mx(n-5,x1)*Mx(n-5,x2)/120
+    a6 = (Λp+Λm)/2 - a2 - a4
+    a7 = (Λp-Λm)/2 - a1 - a3 - a5
+
+    return a0 + a1*c + a2*c**2 + a3*c**3 + a4*c**4 + a5*c**5 + a6*c**6 + a7*c**7
     
 class SSN(object):
     def __init__(self,tE=0.02,tI=0.01,k=0.04,n=2.0,tht=0):
@@ -41,7 +131,7 @@ class SSN(object):
         self.n = n
         self.tht = tht
         
-    def calc_phi(self,u,t):
+    def calc_phi(self,u):
         r = np.zeros_like(u);
         umtht = u - self.tht
 
@@ -52,12 +142,36 @@ class SSN(object):
                 if(umtht[idx]>self.tht): r[idx]=self.k*umtht[idx]**self.n
         return r
 
-    def calc_phi_tensor(self,u,t,out=None):
+    def calc_phi_tensor(self,u,out=None):
         umtht = u - self.tht
         if not out:
             out = torch.zeros_like(u)
         torch.where(umtht>0,self.k*umtht**self.n,out,out=out)
         return out
+    
+    def calc_M(self,u,var):
+        if np.isclose(var,0): return self.calc_phi(u)
+        
+        if np.isclose(self.n,np.round(self.n)):
+            return self.k*var**(self.n/2)*Mx(int(np.round(self.n)),(u-self.tht)/np.sqrt(var))
+        else:
+            raise('Power not implemented')
+    
+    def calc_C(self,u1,u2,var1,var2,cov):
+        if np.isclose(cov,0):
+            return self.calc_M(u1,var1)*self.calc_M(u1,var1)
+        if np.isclose(var1,0) or np.isclose(var2,0):
+            c = 0
+        else:
+            c = np.sign(cov)*min(abs(cov)/(var1*var2),1)
+            
+        x1 = u1/np.sqrt(var1)
+        x2 = u2/np.sqrt(var2)
+        
+        if np.isclose(self.n,np.round(self.n)):
+            return self.k**2*var1**(self.n/2)*var2**(self.n/2)*Cx(int(np.round(self.n)),x1,x2,c)
+        else:
+            raise('Power not implemented')
 
     def set_up_nonlinearity_w_laser(self,LLam,CV_Lam,nameout=None):
         save_file = False
