@@ -94,10 +94,10 @@ ri = ric.Ricciardi()
 # Tsav = 0.1
 # Tsim = 1.0
 # dt = 0.01/15
-Twrm = 0.6
-Tsav = 0.2
+Twrm = 1.2
+Tsav = 0.4
 Tsim = 1.0
-dt = 0.01/4
+dt = 0.01/5
 
 Nori = 20
 
