@@ -8,7 +8,7 @@ except:
 import numpy as np
 import torch
 import torch_interpolations
-from scipy.special import erf, erfi
+from scipy.special import erf, erfi, dawsn
 from scipy.integrate import solve_ivp, quad
 from scipy.interpolate import interp1d,interpn
 from mpmath import fp
@@ -16,6 +16,10 @@ from mpmath import fp
 sr2 = np.sqrt(2)
 sr2pi = np.sqrt(2*np.pi)
 srpi = np.sqrt(np.pi)
+
+def int_dawsni_scal(x):
+    return -0.5*x**2*fp.hyp2f2(1.0,1.0,1.5,2.0,x**2)
+int_dawsni = np.vectorize(int_dawsni_scal)
 
 def expval(fun,us,sigs):
     if np.isscalar(us):
@@ -50,11 +54,9 @@ class Ricciardi(object):
         if np.isscalar(u):
             if(min_u>3):
                 r=max_u/t/srpi*np.exp(-max_u**2)
-            elif(min_u>-3):
-                r=1.0/(self.trp+t*(0.5*np.pi*\
-                                   (erfi(max_u)-erfi(min_u)) +
-                                   max_u**2*fp.hyp2f2(1.0,1.0,1.5,2.0,max_u**2) -
-                                   min_u**2*fp.hyp2f2(1.0,1.0,1.5,2.0,min_u**2)))
+            elif(min_u>-5):
+                r=1.0/(self.trp+t*(0.5*np.pi*(erfi(max_u[idx]) - erfi(min_u[idx])) -\
+                    2*(int_dawsni(max_u[idx]) - int_dawsni(min_u[idx]))))
             else:
                 r=1.0/(self.trp+t*(np.log(abs(min_u)) - np.log(abs(max_u)) +
                                    (0.25*min_u**-2 - 0.1875*min_u**-4 + 0.3125*min_u**-6 -
@@ -65,13 +67,9 @@ class Ricciardi(object):
             for idx in range(len(u)):
                 if(min_u[idx]>3):
                     r[idx]=max_u[idx]/t/srpi*np.exp(-max_u[idx]**2)
-                elif(min_u[idx]>-3):
-                    r[idx]=1.0/(self.trp+t*(0.5*np.pi*\
-                                       (erfi(max_u[idx]) - erfi(min_u[idx])) +
-                                       max_u[idx]**2*fp.hyp2f2(1.0,1.0,1.5,2.0,
-                                                                      max_u[idx]**2) -
-                                       min_u[idx]**2*fp.hyp2f2(1.0,1.0,1.5,2.0,
-                                                                      min_u[idx]**2)))
+                elif(min_u[idx]>-5):
+                    r[idx]=1.0/(self.trp+t*(0.5*np.pi*(erfi(max_u[idx]) - erfi(min_u[idx])) -\
+                        2*(int_dawsni(max_u[idx]) - int_dawsni(min_u[idx]))))
                 else:
                     r[idx]=1.0/(self.trp+t*(np.log(abs(min_u[idx])) -
                                             np.log(abs(max_u[idx])) +

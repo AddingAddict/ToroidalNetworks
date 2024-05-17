@@ -97,10 +97,10 @@ def runjobs():
                 
                 #--------------------------------------------------------------------------
                 # Make SBTACH
-                inpath = currwd + "/sim_opto_normalization.py"
+                inpath = currwd + "/sim_opto_normalization_45.py"
                 c1 = "{:s} -b {:f} -c1 {:d} -c2 {:d}".format(inpath,base,con1,con2)
                 
-                jobname="sim_opto_normalization"+"-b-{:.1f}-c1-{:d}-c2-{:d}".format(base,con1,con2)
+                jobname="sim_opto_normalization_45"+"-b-{:.1f}-c1-{:d}-c2-{:d}".format(base,con1,con2)
                 
                 if not args2.test:
                     jobnameDir=os.path.join(ofilesdir, jobname)
