@@ -8,6 +8,7 @@ from scipy.special import erf
 from mpmath import fp
 import time
 
+dmu = 1e-4
 sr2pi = np.sqrt(2*np.pi)
 
 jtheta = np.vectorize(fp.jtheta, 'D')
@@ -191,6 +192,32 @@ def grid_stat(stat,A,Tstat,dt):
         A_mat[mult_idx] = toeplitz(A_ext[mult_idx])
     return stat(A_mat,axis=(-1,-2))
 
+def d2_stencil(Tsav,dt):
+    Nsav = round(Tsav/dt)+1
+    d2_mat = np.zeros((Nsav,Nsav))
+    d2_mat[(np.arange(Nsav), np.arange(Nsav))] = -2/dt**2
+    d2_mat[(np.arange(Nsav-1), np.arange(1,Nsav))] = 1/dt**2
+    d2_mat[(np.arange(1,Nsav), np.arange(Nsav-1))] = 1/dt**2
+    d2_mat[0,1] = 2/dt**2
+    d2_mat[-1,-1] = -1/dt**2
+    return d2_mat
+
+def get_time_freq_func(f):
+    N = f.shape[-1]
+    new_shape = np.array(f.shape)
+    new_shape[-1] += N-2
+    ft = np.zeros(new_shape)
+    ft[...,:N] = f
+    ft[...,N:] = f[...,-1:1:-1]
+    fo = np.real(np.fft.fft(ft))
+    return ft,fo
+
+def smooth_func(f,dt,fcut=17,beta=1):
+    N = f.shape[-1]
+    _,fo = get_time_freq_func(f)
+    fo *= 1/(1 + np.exp((np.abs(np.fft.fftfreq(2*(N-1),dt)) - fcut)*beta))
+    return np.real(np.fft.ifft(fo))[...,:N]
+
 def gauss_dmft(tau,muW,SigW,muH,SigH,M_fn,C_fn,Twrm,Tsav,dt,r0=None,Cr0=None):
     Ntyp = len(muH)
     Nint = round((Twrm+Tsav)/dt)+1
@@ -311,6 +338,7 @@ def diff_gauss_dmft(tau,muW,SigW,muH,SigH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
         Cdr[:,:Nclc,0] = Cdr0[:,:Nclc]
         
     Rphi = np.empty((Ntyp),dtype=np.float32)
+    Cphi = Cr - (doub_vec(tau)**2 - dt*doub_vec(tau))[:,None] * np.einsum('ij,kj->ki',d2_stencil(Tsav,dt),Cr)
     
     for i in range(Nint-1):
         if i > Nclc-1:
@@ -328,7 +356,7 @@ def diff_gauss_dmft(tau,muW,SigW,muH,SigH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
             
             Cdr[:,i+1,j+1] = Cdr[:,i,j+1]+Cdr[:,i+1,j]-Cdr[:,i,j] +\
                 dttauinv*(-Cdr[:,i+1,j]-Cdr[:,i,j+1]+2*Cdr[:,i,j]) +\
-                dttauinv2*(-Cdr[:,i,j]+Cr[:Ntyp,ij_idx]+Cr[Ntyp:,ij_idx]-2*Rphi)
+                dttauinv2*(-Cdr[:,i,j]+Cphi[:Ntyp,ij_idx]+Cphi[Ntyp:,ij_idx]-2*Rphi)
                 
             Cdr[:,i+1,j+1] = np.maximum(Cdr[:,i+1,j+1],dr**2)
             
@@ -496,6 +524,7 @@ def diff_sparse_dmft(tau,W,K,H,eH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
         Cdr[:,:Nclc,0] = Cdr0[:,:Nclc]
         
     Rphi = np.empty((Ntyp),dtype=np.float32)
+    Cphi = Cr - (doub_vec(tau)**2 - dt*doub_vec(tau))[:,None] * np.einsum('ij,kj->ki',d2_stencil(Tsav,dt),Cr)
     
     for i in range(Nint-1):
         if i > Nclc-1:
@@ -513,7 +542,7 @@ def diff_sparse_dmft(tau,W,K,H,eH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
             
             Cdr[:,i+1,j+1] = Cdr[:,i,j+1]+Cdr[:,i+1,j]-Cdr[:,i,j] +\
                 dttauinv*(-Cdr[:,i+1,j]-Cdr[:,i,j+1]+2*Cdr[:,i,j]) +\
-                dttauinv2*(-Cdr[:,i,j]+Cr[:Ntyp,ij_idx]+Cr[Ntyp:,ij_idx]-2*Rphi)
+                dttauinv2*(-Cdr[:,i,j]+Cphi[:Ntyp,ij_idx]+Cphi[Ntyp:,ij_idx]-2*Rphi)
                 
             Cdr[:,i+1,j+1] = np.maximum(Cdr[:,i+1,j+1],dr**2)
             
@@ -1138,6 +1167,10 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
     Rphib = np.empty((Ntyp),dtype=np.float32)
     Rphia = np.empty((Ntyp),dtype=np.float32)
     Rphip = np.empty((Ntyp),dtype=np.float32)
+    d2_mat = d2_stencil(Tsav,dt)
+    Cphib = Crb - (doub_vec(tau)**2 - dt*doub_vec(tau))[:,None] * np.einsum('ij,kj->ki',d2_mat,Crb)
+    Cphia = Cra - (doub_vec(tau)**2 - dt*doub_vec(tau))[:,None] * np.einsum('ij,kj->ki',d2_mat,Cra)
+    Cphip = Crp - (doub_vec(tau)**2 - dt*doub_vec(tau))[:,None] * np.einsum('ij,kj->ki',d2_mat,Crp)
     
     for i in range(Nint-1):
         if i > Nclc-1:
@@ -1169,13 +1202,13 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
             
             Cdrb[:,i+1,j+1] = Cdrb[:,i,j+1]+Cdrb[:,i+1,j]-Cdrb[:,i,j] +\
                 dttauinv*(-Cdrb[:,i+1,j]-Cdrb[:,i,j+1]+2*Cdrb[:,i,j]) +\
-                dttauinv2*(-Cdrb[:,i,j]+Crb[:Ntyp,ij_idx]+Crb[Ntyp:,ij_idx]-2*Rphib)
+                dttauinv2*(-Cdrb[:,i,j]+Cphib[:Ntyp,ij_idx]+Cphib[Ntyp:,ij_idx]-2*Rphib)
             Cdra[:,i+1,j+1] = Cdra[:,i,j+1]+Cdra[:,i+1,j]-Cdra[:,i,j] +\
                 dttauinv*(-Cdra[:,i+1,j]-Cdra[:,i,j+1]+2*Cdra[:,i,j]) +\
-                dttauinv2*(-Cdra[:,i,j]+Cra[:Ntyp,ij_idx]+Cra[Ntyp:,ij_idx]-2*Rphia)
+                dttauinv2*(-Cdra[:,i,j]+Cphia[:Ntyp,ij_idx]+Cphia[Ntyp:,ij_idx]-2*Rphia)
             Cdrp[:,i+1,j+1] = Cdrp[:,i,j+1]+Cdrp[:,i+1,j]-Cdrp[:,i,j] +\
                 dttauinv*(-Cdrp[:,i+1,j]-Cdrp[:,i,j+1]+2*Cdrp[:,i,j]) +\
-                dttauinv2*(-Cdrp[:,i,j]+Crp[:Ntyp,ij_idx]+Crp[Ntyp:,ij_idx]-2*Rphip)
+                dttauinv2*(-Cdrp[:,i,j]+Cphip[:Ntyp,ij_idx]+Cphip[Ntyp:,ij_idx]-2*Rphip)
                 
             Cdrb[:,i+1,j+1] = np.maximum(Cdrb[:,i+1,j+1],drb**2)
             Cdra[:,i+1,j+1] = np.maximum(Cdra[:,i+1,j+1],dra**2)
@@ -1423,6 +1456,7 @@ def diff_sparse_full_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,R_fn,Twrm,Tsav,dt,rs,Crs,
         Cdrs[:,:,:Nclc,0] = Cdrs0[:,:,:Nclc]
         
     Rphis = np.empty((Nori,Ntyp),dtype=np.float32)
+    Cphis = Crs - (doub_vec(tau)**2 - dt*doub_vec(tau))[None,:,None] * np.einsum('ij,klj->kli',d2_stencil(Tsav,dt),Crs)
     
     for i in range(Nint-1):
         if i > Nclc-1:
@@ -2968,4 +3002,90 @@ def run_two_stage_full_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,No
         res_dict['full_Crs'] = full_Crs
         res_dict['full_Cdrs'] = full_Cdrs
     
+    return res_dict
+
+def lin_resp_mats(tau,muW,SigW,dmuH,dSigH,M_fn,C_fn,Tsav,dt,mu,Sig):
+    Ntyp = len(dmuH)
+    Nsav = round(Tsav/dt)+1
+    
+    def Md_fn(mu,Sig,out):
+        outr = np.zeros_like(out)
+        outl = np.zeros_like(out)
+        M_fn(mu+dmu,Sig,outr)
+        M_fn(mu-dmu,Sig,outl)
+        out[:] = (outr-outl)/(2*dmu)
+    
+    def Md2_fn(mu,Sig,out):
+        outr = np.zeros_like(out)
+        outl = np.zeros_like(out)
+        M_fn(mu,Sig+dmu**2,outr)
+        M_fn(mu,Sig-dmu**2,outl)
+        out[:] = (outr-outl)/dmu**2
+    
+    def Rd_fn(mu,Sig,Cov,out):
+        outr = np.zeros_like(out)
+        outl = np.zeros_like(out)
+        C_fn(mu+dmu,Sig,Cov,outr)
+        C_fn(mu-dmu,Sig,Cov,outl)
+        out[:] = (outr-outl)/(4*dmu)
+    
+    def Rd2_fn(mu,Sig,Cov,out):
+        outr = np.zeros_like(out)
+        outl = np.zeros_like(out)
+        C_fn(mu,np.fmax(Cov,Sig+dmu**2),Cov,outr)
+        C_fn(mu,np.fmax(Cov,Sig-dmu**2),Cov,outl)
+        out[:] = (outr-outl)/(np.fmax(Cov,Sig+dmu**2)-np.fmax(Cov,Sig-dmu**2))
+    
+    def Cd_fn(mu,Sig,Cov,out):
+        outr = np.zeros_like(out)
+        outl = np.zeros_like(out)
+        C_fn(mu,Sig,np.fmin(Sig,Cov+dmu**2),outr)
+        C_fn(mu,Sig,np.fmin(Sig,Cov-dmu**2),outl)
+        out[:] = (outr-outl)/(np.fmin(Sig,Cov+dmu**2)-np.fmin(Sig,Cov-dmu**2))
+    
+    Mdphi = np.empty((Ntyp),dtype=np.float32)
+    Md2phi = np.empty((Ntyp),dtype=np.float32)
+    Rdphi = np.empty((Ntyp,Nsav),dtype=np.float32)
+    Rd2phi = np.empty((Ntyp,Nsav),dtype=np.float32)
+    Cdphi = np.empty((Ntyp,Nsav),dtype=np.float32)
+    
+    Rd2phi = smooth_func(Rd2phi,dt)
+    Cdphi = smooth_func(Cdphi,dt)
+    
+    Md_fn(mu,Sig[:,0],Mdphi)
+    Md2_fn(mu,Sig[:,0],Md2phi)
+    for i in range(Nsav):
+        Rd_fn(mu,Sig[:,0],Sig[:,i],Rdphi[:,i])
+        Rd2_fn(mu,Sig[:,0],Sig[:,i],Rd2phi[:,i])
+        Cd_fn(mu,Sig[:,0],Sig[:,i],Cdphi[:,i])
+        
+    d2_mat = d2_stencil(Tsav,dt)
+    del_vec = np.concatenate(([1],np.zeros(Nsav-1)))
+    
+    res_dict = {}
+    
+    res_dict['d2_mat'] = d2_mat
+    res_dict['Mdphi'] = Mdphi
+    res_dict['Md2phi'] = Md2phi
+    res_dict['Rdphi'] = Rdphi
+    res_dict['Rd2phi'] = Rd2phi
+    res_dict['Cdphi'] = Cdphi
+    
+    res_dict['A'] = np.eye(Ntyp) - Mdphi[:,None] * muW
+    res_dict['B'] = -0.5 * Md2phi[:,None,None] * SigW[:,:,None] * del_vec[None,None,:]
+    res_dict['C'] = -2 * Rdphi[:,:,None] * muW[:,None,:]
+    res_dict['D'] = np.eye(Ntyp)[:,None,:,None]*np.eye(Nsav)[None,:,None,:] +\
+        - (np.diag(tau**2)[:,None,:,None] - dt*np.diag(tau)[:,None,:,None]) * d2_mat[None,:,None,:] +\
+        - Cdphi[:,:,None,None] * SigW[:,None,:,None] * np.eye(Nsav)[None,:,None,:] +\
+        - Rd2phi[:,:,None,None] * SigW[:,None,:,None] * del_vec[None,None,None,:]
+    res_dict['D0dis'] = np.eye(Ntyp)[:,None,:,None]*np.eye(Nsav)[None,:,None,:] +\
+        - (np.diag(tau**2)[:,None,:,None] - dt*np.diag(tau)[:,None,:,None]) * d2_mat[None,:,None,:]
+    
+    if dSigH.ndim==1:
+        res_dict['E'] = Mdphi * dmuH + 0.5 * Md2phi * dSigH
+        res_dict['F'] = 2 * Rdphi * dmuH[:,None] + (Cdphi + Rd2phi) * dSigH[:,None]
+    else:
+        res_dict['E'] = Mdphi * dmuH + 0.5 * Md2phi * dSigH[:,0]
+        res_dict['F'] = 2 * Rdphi * dmuH[:,None] + Cdphi * dSigH + Rd2phi * dSigH[:,0]
+        
     return res_dict
