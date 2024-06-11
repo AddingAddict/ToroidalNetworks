@@ -248,8 +248,8 @@ def gauss_dmft(tau,muW,SigW,muH,SigH,M_fn,C_fn,Twrm,Tsav,dt,r0=None,Cr0=None):
         Cr[:,0,:Nclc] = Cr0[:,:Nclc]
         Cr[:,:Nclc,0] = Cr0[:,:Nclc]
         
-    Mphi = np.empty((Ntyp),dtype=np.float32)
-    Cphi = np.empty((Ntyp),dtype=np.float32)
+    Mphi = np.empty((Ntyp,),dtype=np.float32)
+    Cphi = np.empty((Ntyp,),dtype=np.float32)
     
     def drdt(ri,Sigii):
         mui = muW@ri + muH
@@ -337,7 +337,7 @@ def diff_gauss_dmft(tau,muW,SigW,muH,SigH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
         Cdr[:,0,:Nclc] = Cdr0[:,:Nclc]
         Cdr[:,:Nclc,0] = Cdr0[:,:Nclc]
         
-    Rphi = np.empty((Ntyp),dtype=np.float32)
+    Rphi = np.empty((Ntyp,),dtype=np.float32)
     Cphi = Cr - (doub_vec(tau)**2 - dt*doub_vec(tau))[:,None] * np.einsum('ij,kj->ki',d2_stencil(Tsav,dt),Cr)
     
     for i in range(Nint-1):
@@ -412,8 +412,8 @@ def sparse_dmft(tau,W,K,H,eH,M_fn,C_fn,Twrm,Tsav,dt,r0=None,Cr0=None):
         Cr[:,0,:Nclc] = Cr0[:,:Nclc]
         Cr[:,:Nclc,0] = Cr0[:,:Nclc]
         
-    Mphi = np.empty((Ntyp),dtype=np.float32)
-    Cphi = np.empty((Ntyp),dtype=np.float32)
+    Mphi = np.empty((Ntyp,),dtype=np.float32)
+    Cphi = np.empty((Ntyp,),dtype=np.float32)
     
     def drdt(ri,Sigii):
         mui = muW@ri + muH
@@ -523,7 +523,7 @@ def diff_sparse_dmft(tau,W,K,H,eH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
         Cdr[:,0,:Nclc] = Cdr0[:,:Nclc]
         Cdr[:,:Nclc,0] = Cdr0[:,:Nclc]
         
-    Rphi = np.empty((Ntyp),dtype=np.float32)
+    Rphi = np.empty((Ntyp,),dtype=np.float32)
     Cphi = Cr - (doub_vec(tau)**2 - dt*doub_vec(tau))[:,None] * np.einsum('ij,kj->ki',d2_stencil(Tsav,dt),Cr)
     
     for i in range(Nint-1):
@@ -561,10 +561,21 @@ def diff_sparse_dmft(tau,W,K,H,eH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
     return Cdr,\
         (np.max(Cdr_diag[:,-Nsav:],axis=1)-np.min(Cdr_diag[:,-Nsav:],axis=1))/\
             np.mean(Cdr_diag[:,-Nsav:],axis=1) < 1e-3
-            
+    
 def get_solve_width(sa,L=180):
     widths = np.linspace(1,L*3/4,135)
-    fbars = np.array([basesubwrapnorm(sa,S,L) for S in widths])
+    fbars = basesubwrapnorm(sa,widths,L)
+    max_fbar = np.max(fbars)
+    min_fbar = np.min(fbars)
+    widths_vs_fbars_itp = interp1d(fbars,widths)
+    def solve_widths(fbar):
+        return widths_vs_fbars_itp(np.fmax(min_fbar,np.fmin(max_fbar,fbar)))
+    return solve_widths
+    
+def get_2feat_solve_width(sa,dori=45,L=180):
+    widths = np.linspace(1,L*3/4,135)
+    fbars = (basesubwrapnorm(sa,widths,L) + basesubwrapnorm(sa+dori,widths,L)) /\
+        (1 + basesubwrapnorm(dori,widths,L))
     max_fbar = np.max(fbars)
     min_fbar = np.min(fbars)
     widths_vs_fbars_itp = interp1d(fbars,widths)
@@ -578,6 +589,10 @@ def unstruct_fact(s,L=180):
 def struct_fact(x,sconv,sorig,L=180):
     return (wrapnormdens(x,sconv,L)-wrapnormdens(L/2,sorig,L))/\
         (wrapnormdens(0,sorig,L)-wrapnormdens(L/2,sorig,L))
+    
+def inv_overlap(xs,ss,L=180):
+    overlap_mat = basesubwrapnorm(xs[None,:,None]-xs[None,None,:],ss[:,None,:],L)
+    return np.linalg.inv(overlap_mat)
 
 def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
                 rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None,L=180):
@@ -659,12 +674,12 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
         Crp[:,0,:Nclc] = Crp0[:,:Nclc]
         Crp[:,:Nclc,0] = Crp0[:,:Nclc]
         
-    Mphib = np.empty((Ntyp),dtype=np.float32)
-    Mphia = np.empty((Ntyp),dtype=np.float32)
-    Mphip = np.empty((Ntyp),dtype=np.float32)
-    Cphib = np.empty((Ntyp),dtype=np.float32)
-    Cphia = np.empty((Ntyp),dtype=np.float32)
-    Cphip = np.empty((Ntyp),dtype=np.float32)
+    Mphib = np.empty((Ntyp,),dtype=np.float32)
+    Mphia = np.empty((Ntyp,),dtype=np.float32)
+    Mphip = np.empty((Ntyp,),dtype=np.float32)
+    Cphib = np.empty((Ntyp,),dtype=np.float32)
+    Cphia = np.empty((Ntyp,),dtype=np.float32)
+    Cphip = np.empty((Ntyp,),dtype=np.float32)
     
     def drdt(rbi,rai,rpi,Sigbii,Sigaii,Sigpii):
         sri = solve_width((rai-rbi)/(rpi-rbi))
@@ -796,7 +811,7 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
             np.mean(Crp_diag[:,-Nsav:],axis=1) < 1e-3
 
 def sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
-                rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None,L=180):
+                rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None,dori=45,L=180):
     if Kb is None:
         Kb = np.zeros_like(K)
         
@@ -829,7 +844,7 @@ def sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
     dttauinv = dt/tau
     dttauinv2 = dttauinv**2
     
-    solve_width = get_solve_width(sa,L)
+    solve_width = get_2feat_solve_width(sa,dori,L)
     
     sW2 = sW**2
         
@@ -875,20 +890,25 @@ def sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
         Crp[:,0,:Nclc] = Crp0[:,:Nclc]
         Crp[:,:Nclc,0] = Crp0[:,:Nclc]
         
-    Mphib = np.empty((Ntyp),dtype=np.float32)
-    Mphia = np.empty((Ntyp),dtype=np.float32)
-    Mphip = np.empty((Ntyp),dtype=np.float32)
-    Cphib = np.empty((Ntyp),dtype=np.float32)
-    Cphia = np.empty((Ntyp),dtype=np.float32)
-    Cphip = np.empty((Ntyp),dtype=np.float32)
+    Mphib = np.empty((Ntyp,),dtype=np.float32)
+    Mphia = np.empty((Ntyp,),dtype=np.float32)
+    Mphip = np.empty((Ntyp,),dtype=np.float32)
+    Cphib = np.empty((Ntyp,),dtype=np.float32)
+    Cphia = np.empty((Ntyp,),dtype=np.float32)
+    Cphip = np.empty((Ntyp,),dtype=np.float32)
+    
+    xpeaks = np.array([0,-dori])
+    rOinv = np.empty((Ntyp,),dtype=np.float32)
+    CrOinv = np.empty((Ntyp,),dtype=np.float32)
     
     def drdt(rbi,rai,rpi,Sigbii,Sigaii,Sigpii):
         sri = solve_width((rai-rbi)/(rpi-rbi))
+        rOinv[:] = np.sum(inv_overlap(xpeaks,sri[:,None])[:,:,0],-1)
         sWri = np.sqrt(sW2+sri**2)
-        rpmbi = rpi - rbi
+        rpmbi = (rpi - rbi)*rOinv
         mubi = (muW+muWb)@rbi + (unstruct_fact(sri,L)*muWb)@rpmbi + muHb
-        muai = mubi + ((struct_fact(sa,sWri,sri,L)+struct_fact(L/2,sWri,sri,L))*muW)@rpmbi + muHa-muHb
-        mupi = mubi + ((struct_fact(0,sWri,sri,L)+struct_fact(L/2,sWri,sri,L))*muW)@rpmbi + muHp-muHb
+        muai = mubi + ((struct_fact(sa,sWri,sri,L)+struct_fact(sa+dori,sWri,sri,L))*muW)@rpmbi + muHa-muHb
+        mupi = mubi + ((struct_fact(0,sWri,sri,L)+struct_fact(dori,sWri,sri,L))*muW)@rpmbi + muHp-muHb
         mubi = mubi + (2*struct_fact(L/2,sWri,sri,L)*muW)@rpmbi
         M_fn(mubi,Sigbii,Mphib)
         M_fn(muai,Sigaii,Mphia)
@@ -900,11 +920,14 @@ def sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
         Craii = Cra[:,i,i]
         Crpii = Crp[:,i,i]
         sCrii = solve_width((Craii-Crbii)/(Crpii-Crbii))
+        CrOinv[:] = np.sum(inv_overlap(xpeaks,sCrii[:,None])[:,:,0],-1)
         sWCrii = np.sqrt(sW2+sCrii**2)
-        Crpmbii = Crpii - Crbii
+        Crpmbii = (Crpii - Crbii)*CrOinv
         Sigbii = (SigW+SigWb)@Crbii + (unstruct_fact(sCrii,L)*SigWb)@Crpmbii + SigHb
-        Sigaii = Sigbii + ((struct_fact(sa,sWCrii,sCrii,L)+struct_fact(L/2,sWCrii,sCrii,L))*SigW)@Crpmbii + SigHa-SigHb
-        Sigpii = Sigbii + ((struct_fact(0,sWCrii,sCrii,L)+struct_fact(L/2,sWCrii,sCrii,L))*SigW)@Crpmbii + SigHp-SigHb
+        Sigaii = Sigbii + ((struct_fact(sa,sWCrii,sCrii,L)+\
+            struct_fact(sa+dori,sWCrii,sCrii,L))*SigW)@Crpmbii + SigHa-SigHb
+        Sigpii = Sigbii + ((struct_fact(0,sWCrii,sCrii,L)+\
+            struct_fact(dori,sWCrii,sCrii,L))*SigW)@Crpmbii + SigHp-SigHb
         Sigbii = Sigbii + (2*struct_fact(L/2,sWCrii,sCrii,L)*SigW)@Crpmbii
             
         kb1,ka1,kp1 = drdt(rb[:,i]           ,ra[:,i]           ,rp[:,i]           ,Sigbii,Sigaii,Sigpii)
@@ -919,11 +942,12 @@ def sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
         rai = ra[:,i]
         rpi = rp[:,i]
         sri = solve_width((rai-rbi)/(rpi-rbi))
+        rOinv[:] = np.sum(inv_overlap(xpeaks,sri[:,None])[:,:,0],-1)
         sWri = np.sqrt(sW2+sri**2)
-        rpmbi = rpi - rbi
+        rpmbi = (rpi - rbi)*rOinv
         mubi = (muW+muWb)@rbi + (unstruct_fact(sri,L)*muWb)@rpmbi + muHb
-        muai = mubi + ((struct_fact(sa,sWri,sri,L)+struct_fact(L/2,sWri,sri,L))*muW)@rpmbi + muHa-muHb
-        mupi = mubi + ((struct_fact(0,sWri,sri,L)+struct_fact(L/2,sWri,sri,L))*muW)@rpmbi + muHp-muHb
+        muai = mubi + ((struct_fact(sa,sWri,sri,L)+struct_fact(sa+dori,sWri,sri,L))*muW)@rpmbi + muHa-muHb
+        mupi = mubi + ((struct_fact(0,sWri,sri,L)+struct_fact(dori,sWri,sri,L))*muW)@rpmbi + muHp-muHb
         mubi = mubi + (2*struct_fact(L/2,sWri,sri,L)*muW)@rpmbi
         
         if np.any(np.abs(rb[:,i+1]) > 1e10) or np.any(np.isnan(rb[:,i+1])):
@@ -952,13 +976,14 @@ def sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
             Craij = Cra[:,i,j]
             Crpij = Crp[:,i,j]
             sCrij = solve_width((Craij-Crbij)/(Crpij-Crbij))
+            CrOinv[:] = np.sum(inv_overlap(xpeaks,sCrij[:,None])[:,:,0],-1)
             sWCrij = np.sqrt(sW2+sCrij**2)
-            Crpmbij = Crpij - Crbij
+            Crpmbij = (Crpij - Crbij)*CrOinv
             Sigbij = (SigW+SigWb)@Crbij + (unstruct_fact(sCrij,L)*SigWb)@Crpmbij + SigHb
             Sigaij = Sigbij + ((struct_fact(sa,sWCrij,sCrij,L)+\
-                                struct_fact(L/2,sWCrij,sCrij,L))*SigW)@Crpmbij + SigHa-SigHb
+                                struct_fact(sa+dori,sWCrij,sCrij,L))*SigW)@Crpmbij + SigHa-SigHb
             Sigpij = Sigbij + ((struct_fact(0,sWCrij,sCrij,L)+\
-                                struct_fact(L/2,sWCrij,sCrij,L))*SigW)@Crpmbij + SigHp-SigHb
+                                struct_fact(dori,sWCrij,sCrij,L))*SigW)@Crpmbij + SigHp-SigHb
             Sigbij = Sigbij + (2*struct_fact(L/2,sWCrij,sCrij,L)*SigW)@Crpmbij
             C_fn(mubi,Sigbii,Sigbij,Cphib)
             C_fn(muai,Sigaii,Sigaij,Cphia)
@@ -1164,9 +1189,9 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
         Cdrp[:,0,:Nclc] = Cdrp0[:,:Nclc]
         Cdrp[:,:Nclc,0] = Cdrp0[:,:Nclc]
         
-    Rphib = np.empty((Ntyp),dtype=np.float32)
-    Rphia = np.empty((Ntyp),dtype=np.float32)
-    Rphip = np.empty((Ntyp),dtype=np.float32)
+    Rphib = np.empty((Ntyp,),dtype=np.float32)
+    Rphia = np.empty((Ntyp,),dtype=np.float32)
+    Rphip = np.empty((Ntyp,),dtype=np.float32)
     d2_mat = d2_stencil(Tsav,dt)
     Cphib = Crb - (doub_vec(tau)**2 - dt*doub_vec(tau))[:,None] * np.einsum('ij,kj->ki',d2_mat,Crb)
     Cphia = Cra - (doub_vec(tau)**2 - dt*doub_vec(tau))[:,None] * np.einsum('ij,kj->ki',d2_mat,Cra)
@@ -3043,8 +3068,8 @@ def lin_resp_mats(tau,muW,SigW,dmuH,dSigH,M_fn,C_fn,Tsav,dt,mu,Sig):
         C_fn(mu,Sig,np.fmin(Sig,Cov-dmu**2),outl)
         out[:] = (outr-outl)/(np.fmin(Sig,Cov+dmu**2)-np.fmin(Sig,Cov-dmu**2))
     
-    Mdphi = np.empty((Ntyp),dtype=np.float32)
-    Md2phi = np.empty((Ntyp),dtype=np.float32)
+    Mdphi = np.empty((Ntyp,),dtype=np.float32)
+    Md2phi = np.empty((Ntyp,),dtype=np.float32)
     Rdphi = np.empty((Ntyp,Nsav),dtype=np.float32)
     Rd2phi = np.empty((Ntyp,Nsav),dtype=np.float32)
     Cdphi = np.empty((Ntyp,Nsav),dtype=np.float32)
