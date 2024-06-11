@@ -123,7 +123,7 @@ normCEs = np.zeros((2,Nori))
 normCIs = np.zeros((2,Nori))
 convs = np.zeros((2,2)).astype(bool)
 
-def predict_networks(prms,rX,cA,CVh):
+def predict_networks(prms,rX,cA,CVh,dori=45):    
     tau = np.array([ri.tE,ri.tI],dtype=np.float32)
     W = prms['J']*np.array([[1,-prms['gE']],[1./prms['beta'],-prms['gI']/prms['beta']]],dtype=np.float32)
     Ks = (1-prms.get('basefrac',0))*np.array([prms['K'],prms['K']/4],dtype=np.float32)
@@ -160,11 +160,13 @@ def predict_networks(prms,rX,cA,CVh):
     normC = np.zeros((2,2,Nori))
     conv = np.zeros((2,2)).astype(bool)
     
+    xpeaks = np.array([0,-dori])    
     oris = np.arange(Nori)*180/Nori
     oris[oris > 90] = 180 - oris[oris > 90]
         
     def gauss(x,b,p,s):
-        return b + (p-b)*dmft.basesubwrapnorm(x,s) + (p-b)*dmft.basesubwrapnorm(x-90,s)
+        amp = (p-b)*np.sum(dmft.inv_overlap(xpeaks,s[:,None])[:,:,0],-1)
+        return b + amp*dmft.basesubwrapnorm(x,s) + amp*dmft.basesubwrapnorm(x+dori,s)
     
     if cA == 0 or prms.get('basefrac',0)==1:
         res_dict = dmft.run_first_stage_dmft(prms,rX*(1+cA),CVh,'./../results',ri,Twrm,Tsav,dt)
@@ -216,22 +218,27 @@ def predict_networks(prms,rX,cA,CVh):
     sWro = np.sqrt(sW2+sro**2)
     sWCro = np.sqrt(sW2+sCro**2)
     
+    rvpmb = (rvp - rvb)*np.sum(dmft.inv_overlap(xpeaks,srv[:,None])[:,:,0],-1)
+    ropmb = (rop - rob)*np.sum(dmft.inv_overlap(xpeaks,sro[:,None])[:,:,0],-1)
+    Crvpmb = (Crvp - Crvb)*np.sum(dmft.inv_overlap(xpeaks,sCrv[:,None])[:,:,0],-1)
+    Cropmb = (Crop - Crob)*np.sum(dmft.inv_overlap(xpeaks,sCro[:,None])[:,:,0],-1)
+    
     muvb = (muW+dmft.unstruct_fact(srv)*muWb)*rvb
-    muvp = muvb + (dmft.struct_fact(0,sWrv,srv)+dmft.struct_fact(90,sWrv,srv))*muW*(rvp-rvb)
-    muvb = muvb + 2*dmft.struct_fact(90,sWrv,srv)*muW*(rvp-rvb)
+    muvp = muvb + (dmft.struct_fact(0,sWrv,srv)+dmft.struct_fact(dori,sWrv,srv))*muW*rvpmb
+    muvb = muvb + 2*dmft.struct_fact(90,sWrv,srv)*muW*rvpmb
     smuv = sWrv
     muob = (muW+dmft.unstruct_fact(sro)*muWb)*rob
-    muop = muob + (dmft.struct_fact(0,sWro,sro)+dmft.struct_fact(90,sWro,sro))*muW*(rop-rob)
-    muob = muob + 2*dmft.struct_fact(90,sWro,sro)*muW*(rop-rob)
+    muop = muob + (dmft.struct_fact(0,sWro,sro)+dmft.struct_fact(dori,sWro,sro))*muW*ropmb
+    muob = muob + 2*dmft.struct_fact(90,sWro,sro)*muW*ropmb
     smuo = sWro
     
     Sigvb = (SigW+dmft.unstruct_fact(sCrv)*SigWb)*Crvb
-    Sigvp = Sigvb + (dmft.struct_fact(0,sWCrv,sCrv)+dmft.struct_fact(90,sWCrv,sCrv))*SigW*(Crvp-Crvb)
-    Sigvb = Sigvb + 2*dmft.struct_fact(90,sWCrv,sCrv)*SigW*(Crvp-Crvb)
+    Sigvp = Sigvb + (dmft.struct_fact(0,sWCrv,sCrv)+dmft.struct_fact(dori,sWCrv,sCrv))*SigW*Crvpmb
+    Sigvb = Sigvb + 2*dmft.struct_fact(90,sWCrv,sCrv)*SigW*Crvpmb
     sSigv = sWCrv
     Sigob = (SigW+dmft.unstruct_fact(sCro)*SigWb)*Crob
-    Sigop = Sigob + (dmft.struct_fact(0,sWCro,sCro)+dmft.struct_fact(90,sWCro,sCro))*SigW*(Crop-Crob)
-    Sigob = Sigob + 2*dmft.struct_fact(90,sWCro,sCro)*SigW*(Crop-Crob)
+    Sigop = Sigob + (dmft.struct_fact(0,sWCro,sCro)+dmft.struct_fact(dori,sWCro,sCro))*SigW*Cropmb
+    Sigob = Sigob + 2*dmft.struct_fact(90,sWCro,sCro)*SigW*Cropmb
     sSigo = sWCro
     
     for i in range(2):
