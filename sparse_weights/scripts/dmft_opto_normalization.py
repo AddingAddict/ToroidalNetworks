@@ -162,11 +162,11 @@ def predict_networks(prms,rX,cA,CVh,dori=45):
     
     xpeaks = np.array([0,-dori])    
     oris = np.arange(Nori)*180/Nori
-    oris[oris > 90] = 180 - oris[oris > 90]
+    # oris[oris > 90] = 180 - oris[oris > 90]
         
     def gauss(x,b,p,s):
         amp = (p-b)*np.sum(dmft.inv_overlap(xpeaks,s[:,None])[:,:,0],-1)
-        return b + amp*dmft.basesubwrapnorm(x,s) + amp*dmft.basesubwrapnorm(x+dori,s)
+        return b + amp*dmft.basesubwrapnorm(x,s) + amp*dmft.basesubwrapnorm(x-dori,s)
     
     if cA == 0 or prms.get('basefrac',0)==1:
         res_dict = dmft.run_first_stage_dmft(prms,rX*(1+cA),CVh,'./../results',ri,Twrm,Tsav,dt)
@@ -295,7 +295,7 @@ convs[:] = conv
 oris = np.arange(Nori)*180/Nori
 oris[oris > 90] = 180 - oris[oris > 90]
 vsm_mask = np.abs(oris) < 4.5
-oris = np.abs(np.arange(Nori)*180/Nori - 90)
+oris = np.abs(np.arange(Nori)*180/Nori - (90 + 45/2))
 oris[oris > 90] = 180 - oris[oris > 90]
 osm_mask = np.abs(oris) < 4.5
 
