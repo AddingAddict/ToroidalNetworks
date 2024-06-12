@@ -70,7 +70,6 @@ else:
             id[0],id[1],id[2]), 'rb') as handle:
         res_dict = pickle.load(handle)[id[-1]]
 prms = res_dict['prms']
-prms['K'] //= 10
 CVh = res_dict['best_monk_eX']
 bX = base_mult*res_dict['best_monk_bX']
 if bX <= 1e-8:
@@ -113,7 +112,7 @@ T = torch.linspace(0,5*Nt,round(5*Nt/dt)+1)
 mask_time = T>(4*Nt)
 T_mask = T.cpu().numpy()[mask_time]
 
-N = 10000//10
+N = 10000
 Nori = 20
 NE = 4*(N//Nori)//5
 NI = 1*(N//Nori)//5
@@ -122,7 +121,7 @@ prms['Nori'] = Nori
 prms['NE'] = NE
 prms['NI'] = NI
 
-seeds = np.arange(1)#50)
+seeds = np.arange(50)
 
 print('simulating baseline mult {:.1f}'.format(base_mult))
 print('')
