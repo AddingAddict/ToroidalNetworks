@@ -85,6 +85,7 @@ def runjobs():
     # The array of hashes
     c_Vec=np.arange(7)
     base_con_vec = np.arange(1,5+1)/10
+    base_prob_vec = np.arange(1,5+1)/10
     SoriE_mult = 1.0
     SoriI_mult = 1.0
     SoriF_mult = 1.0
@@ -100,50 +101,51 @@ def runjobs():
     
     for c in c_Vec:
         for base_con in base_con_vec:
+            for base_prob in base_prob_vec:
 
-            time.sleep(0.2)
-            
-            #--------------------------------------------------------------------------
-            # Make SBTACH
-            inpath = currwd + "/dmft_base_con.py"
-            c1 = "{:s} -c {:d} -b {:f} -SoriEm {:f} -SoriIm {:f} -SoriFm {:f} -CVhm {:f} -Jm {:f} -betam {:f} -gEm {:f} -gIm {:f} -hEm {:f} -hIm {:f} -Lm {:f} -CVLm {:f}".format(
-                inpath,c,base_con,SoriE_mult,SoriI_mult,SoriF_mult,CVh_mult,J_mult,beta_mult,gE_mult,gI_mult,hE_mult,hI_mult,L_mult,CVL_mult)
-            
-            if np.isclose(SoriE_mult,1.0) and np.isclose(SoriI_mult,1.0) and\
-                np.isclose(SoriF_mult,1.0) and np.isclose(CVh_mult,1.0) and\
-                np.isclose(J_mult,1.0) and np.isclose(beta_mult,1.0) and\
-                np.isclose(gE_mult,1.0) and np.isclose(gI_mult,1.0) and\
-                np.isclose(hE_mult,1.0) and np.isclose(hI_mult,1.0) and\
-                np.isclose(L_mult,1.0) and np.isclose(CVL_mult,1.0):
-                jobname="dmft_base_con"+"-c-{:d}-b-{:.2f}".format(c,base_con)
-            else:
-                jobname="dmft_base_con"+"-SoriEx{:.2f}-SoriIx{:.2f}-SoriFx{:.2f}-CVhx{:.2f}-Jx{:.2f}-betax{:.2f}-gEx{:.2f}-gIx{:.2f}-hEx{:.2f}-hIx{:.2f}-Lx{:.2f}-CVLx{:.2f}-c-{:d}-b-{:.2f}".format(
-                    SoriE_mult,SoriI_mult,SoriF_mult,CVh_mult,J_mult,beta_mult,gE_mult,gI_mult,hE_mult,hI_mult,L_mult,CVL_mult,c,base_con)
-                    
-            if not args2.test:
-                jobnameDir=os.path.join(ofilesdir, jobname)
-                text_file=open(jobnameDir, "w");
-                os.system("chmod u+x "+ jobnameDir)
-                text_file.write("#!/bin/sh \n")
-                if cluster=='haba' or cluster=='moto' or cluster=='burg':
-                    text_file.write("#SBATCH --account=theory \n")
-                text_file.write("#SBATCH --job-name="+jobname+ "\n")
-                text_file.write("#SBATCH -t 0-1:59  \n")
-                text_file.write("#SBATCH --mem-per-cpu=10gb \n")
-                text_file.write("#SBATCH -c 1 \n")
-                text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
-                text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
-                text_file.write("python  -W ignore " + c1+" \n")
-                text_file.write("echo $PATH  \n")
-                text_file.write("exit 0  \n")
-                text_file.close()
-
-                if cluster=='axon':
-                    os.system("sbatch -p burst " +jobnameDir);
+                time.sleep(0.2)
+                
+                #--------------------------------------------------------------------------
+                # Make SBTACH
+                inpath = currwd + "/dmft_base_con.py"
+                c1 = "{:s} -c {:d} -b {:f} -u {:f} -SoriEm {:f} -SoriIm {:f} -SoriFm {:f} -CVhm {:f} -Jm {:f} -betam {:f} -gEm {:f} -gIm {:f} -hEm {:f} -hIm {:f} -Lm {:f} -CVLm {:f}".format(
+                    inpath,c,base_con,base_prob,SoriE_mult,SoriI_mult,SoriF_mult,CVh_mult,J_mult,beta_mult,gE_mult,gI_mult,hE_mult,hI_mult,L_mult,CVL_mult)
+                
+                if np.isclose(SoriE_mult,1.0) and np.isclose(SoriI_mult,1.0) and\
+                    np.isclose(SoriF_mult,1.0) and np.isclose(CVh_mult,1.0) and\
+                    np.isclose(J_mult,1.0) and np.isclose(beta_mult,1.0) and\
+                    np.isclose(gE_mult,1.0) and np.isclose(gI_mult,1.0) and\
+                    np.isclose(hE_mult,1.0) and np.isclose(hI_mult,1.0) and\
+                    np.isclose(L_mult,1.0) and np.isclose(CVL_mult,1.0):
+                    jobname="dmft_base_con"+"-c-{:d}-b-{:.2f}-u-{:.2f}".format(c,base_con,base_prob)
                 else:
-                    os.system("sbatch " +jobnameDir);
-            else:
-                print (c1)
+                    jobname="dmft_base_con"+"-SoriEx{:.2f}-SoriIx{:.2f}-SoriFx{:.2f}-CVhx{:.2f}-Jx{:.2f}-betax{:.2f}-gEx{:.2f}-gIx{:.2f}-hEx{:.2f}-hIx{:.2f}-Lx{:.2f}-CVLx{:.2f}-c-{:d}-b-{:.2f}-u-{:.2f}".format(
+                        SoriE_mult,SoriI_mult,SoriF_mult,CVh_mult,J_mult,beta_mult,gE_mult,gI_mult,hE_mult,hI_mult,L_mult,CVL_mult,c,base_con,base_prob)
+                        
+                if not args2.test:
+                    jobnameDir=os.path.join(ofilesdir, jobname)
+                    text_file=open(jobnameDir, "w");
+                    os.system("chmod u+x "+ jobnameDir)
+                    text_file.write("#!/bin/sh \n")
+                    if cluster=='haba' or cluster=='moto' or cluster=='burg':
+                        text_file.write("#SBATCH --account=theory \n")
+                    text_file.write("#SBATCH --job-name="+jobname+ "\n")
+                    text_file.write("#SBATCH -t 0-1:59  \n")
+                    text_file.write("#SBATCH --mem-per-cpu=10gb \n")
+                    text_file.write("#SBATCH -c 1 \n")
+                    text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
+                    text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
+                    text_file.write("python  -W ignore " + c1+" \n")
+                    text_file.write("echo $PATH  \n")
+                    text_file.write("exit 0  \n")
+                    text_file.close()
+
+                    if cluster=='axon':
+                        os.system("sbatch -p burst " +jobnameDir);
+                    else:
+                        os.system("sbatch " +jobnameDir);
+                else:
+                    print (c1)
 
 
 

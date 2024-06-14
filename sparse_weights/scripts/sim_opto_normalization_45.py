@@ -302,27 +302,27 @@ vsm1_peak1_means = np.mean(peak1_rates[seed_mask,:][:,vsm1_mask])
 vsm1_peak1_stds = np.std(peak1_rates[seed_mask,:][:,vsm1_mask])
 vsm1_norm_means = np.mean(norm_rates[seed_mask,:][:,vsm1_mask])
 vsm1_norm_stds = np.std(norm_rates[seed_mask,:][:,vsm1_mask])
-vsm1_diff1_means = np.mean(diff1_rates[seed_mask,vsm1_mask])
-vsm1_diff2_means = np.mean(diff2_rates[seed_mask,vsm1_mask])
-vsm1_diff1_stds = np.std(diff1_rates[seed_mask,vsm1_mask])
-vsm1_diff2_stds = np.std(diff2_rates[seed_mask,vsm1_mask])
-vsm1_norm1_covs = np.cov(peak1_rates[seed_mask,vsm1_mask].flatten(),
-    diff1_rates[seed_mask,vsm1_mask].flatten())[0,1] / vsm1_diff1_stds**2
-vsm1_norm2_covs = np.cov(peak2_rates[seed_mask,vsm1_mask].flatten(),
-    diff2_rates[seed_mask,vsm1_mask].flatten())[0,1] / vsm1_diff2_stds**2
+vsm1_diff1_means = np.mean(diff1_rates[seed_mask,:][:,vsm1_mask])
+vsm1_diff2_means = np.mean(diff2_rates[seed_mask,:][:,vsm1_mask])
+vsm1_diff1_stds = np.std(diff1_rates[seed_mask,:][:,vsm1_mask])
+vsm1_diff2_stds = np.std(diff2_rates[seed_mask,:][:,vsm1_mask])
+vsm1_norm1_covs = np.cov(peak1_rates[seed_mask,:][:,vsm1_mask].flatten(),
+    diff1_rates[seed_mask,:][:,vsm1_mask].flatten())[0,1] / vsm1_diff1_stds**2
+vsm1_norm2_covs = np.cov(peak2_rates[seed_mask,:][:,vsm1_mask].flatten(),
+    diff2_rates[seed_mask,:][:,vsm1_mask].flatten())[0,1] / vsm1_diff2_stds**2
 
 vsm2_peak1_means = np.mean(peak1_rates[seed_mask,:][:,vsm2_mask])
 vsm2_peak1_stds = np.std(peak1_rates[seed_mask,:][:,vsm2_mask])
 vsm2_norm_means = np.mean(norm_rates[seed_mask,:][:,vsm2_mask])
 vsm2_norm_stds = np.std(norm_rates[seed_mask,:][:,vsm2_mask])
-vsm2_diff1_means = np.mean(diff1_rates[seed_mask,vsm2_mask])
-vsm2_diff2_means = np.mean(diff2_rates[seed_mask,vsm2_mask])
-vsm2_diff1_stds = np.std(diff1_rates[seed_mask,vsm2_mask])
-vsm2_diff2_stds = np.std(diff2_rates[seed_mask,vsm2_mask])
-vsm2_norm1_covs = np.cov(peak1_rates[seed_mask,vsm2_mask].flatten(),
-    diff1_rates[seed_mask,vsm2_mask].flatten())[0,1] / vsm2_diff1_stds**2
-vsm2_norm2_covs = np.cov(peak2_rates[seed_mask,vsm2_mask].flatten(),
-    diff2_rates[seed_mask,vsm2_mask].flatten())[0,1] / vsm2_diff2_stds**2
+vsm2_diff1_means = np.mean(diff1_rates[seed_mask,:][:,vsm2_mask])
+vsm2_diff2_means = np.mean(diff2_rates[seed_mask,:][:,vsm2_mask])
+vsm2_diff1_stds = np.std(diff1_rates[seed_mask,:][:,vsm2_mask])
+vsm2_diff2_stds = np.std(diff2_rates[seed_mask,:][:,vsm2_mask])
+vsm2_norm1_covs = np.cov(peak1_rates[seed_mask,:][:,vsm2_mask].flatten(),
+    diff1_rates[seed_mask,:][:,vsm2_mask].flatten())[0,1] / vsm2_diff1_stds**2
+vsm2_norm2_covs = np.cov(peak2_rates[seed_mask,:][:,vsm2_mask].flatten(),
+    diff2_rates[seed_mask,:][:,vsm2_mask].flatten())[0,1] / vsm2_diff2_stds**2
 
 print("Saving statistics took ",time.process_time() - start," s")
 print('')

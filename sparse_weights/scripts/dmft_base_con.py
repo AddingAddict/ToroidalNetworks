@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--c_idx', '-c',  help='which contrast', type=int, default=0)
 parser.add_argument('--base_con', '-b',  help='contrast-dependent baseline fraction', type=float, default=0)
+parser.add_argument('--base_prob', '-u',  help='baseline probability fraction', type=float, default=0)
 parser.add_argument('--SoriE_mult', '-SoriEm',  help='multiplier for SoriE', type=float, default=1.0)
 parser.add_argument('--SoriI_mult', '-SoriIm',  help='multiplier for SoriI', type=float, default=1.0)
 parser.add_argument('--SoriF_mult', '-SoriFm',  help='multiplier for SoriF', type=float, default=1.0)
@@ -30,6 +31,7 @@ args = vars(parser.parse_args())
 print(parser.parse_args())
 c_idx= args['c_idx']
 base_con= args['base_con']
+base_prob= args['base_prob']
 SoriE_mult= args['SoriE_mult']
 SoriI_mult= args['SoriI_mult']
 SoriF_mult= args['SoriF_mult']
@@ -129,8 +131,8 @@ convs = np.zeros((2,3)).astype(bool)
 def predict_networks(prms,rX,cA,CVh):
     tau = np.array([ri.tE,ri.tI],dtype=np.float32)
     W = prms['J']*np.array([[1,-prms['gE']],[1./prms['beta'],-prms['gI']/prms['beta']]],dtype=np.float32)
-    Ks = (1-prms.get('basefrac',0))*np.array([prms['K'],prms['K']/4],dtype=np.float32)
-    Kbs =   prms.get('basefrac',0) *np.array([prms['K'],prms['K']/4],dtype=np.float32)
+    Ks  =  (1-base_prob)*(1-prms.get('basefrac',0))   *np.array([prms['K'],prms['K']/4],dtype=np.float32)
+    Kbs = ((1-base_prob)*(1-prms.get('basefrac',0))-1)*np.array([prms['K'],prms['K']/4],dtype=np.float32)
     Hb = rX*(1+prms.get('basefrac',0)*cA)*prms['K']*prms['J']*\
         np.array([prms['hE'],prms['hI']/prms['beta']],dtype=np.float32)
     Hp = rX*(1+                       cA)*prms['K']*prms['J']*\
@@ -420,7 +422,7 @@ if not np.isclose(L_mult,1.0):
     res_file = res_file + '_Lx{:.2f}'.format(L_mult)
 if not np.isclose(CVL_mult,1.0):
     res_file = res_file + '_CVLx{:.2f}'.format(CVL_mult)
-res_file = res_file + '_b_{:.2f}_c_{:d}'.format(base_con,c_idx)
+res_file = res_file + '_b_{:.2f}_u_{:.2f}_c_{:d}'.format(base_con,base_prob,c_idx)
 
 with open(res_file+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)
