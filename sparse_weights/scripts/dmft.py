@@ -1789,13 +1789,15 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180
     hE = prms['hE']
     hI = prms['hI']
     basefrac = prms.get('basefrac',0)
+    baseinp = prms.get('baseinp',0)
+    baseprob = prms.get('baseprob',0)
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
-    Ks = (1-basefrac)*np.array([K,K/4],dtype=np.float32)
-    Kbs =   basefrac *np.array([K,K/4],dtype=np.float32)
-    Hb = rX*(1+basefrac*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
-    Hp = rX*(1+         cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Ks =  (1-basefrac)*(1-baseprob)   *np.array([K,K/4],dtype=np.float32)
+    Kbs =((1-basefrac)*(1-baseprob)-1)*np.array([K,K/4],dtype=np.float32)
+    Hb = rX*(1+((1-basefrac)*(1-baseinp)-1)*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hp = rX*(1+                             cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
     eH = CVh
     sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
     sH = np.array([SoriF,SoriF],dtype=np.float32)
@@ -1945,13 +1947,15 @@ def run_decoupled_two_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,
     hE = prms['hE']
     hI = prms['hI']
     basefrac = prms.get('basefrac',0)
+    baseinp = prms.get('baseinp',0)
+    baseprob = prms.get('baseprob',0)
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
-    Ks = (1-basefrac)*np.array([K,K/4],dtype=np.float32)
-    Kbs =   basefrac *np.array([K,K/4],dtype=np.float32)
-    Hb = rX*(1+basefrac*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
-    Hp = rX*(1+         cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Ks =  (1-basefrac)*(1-baseprob)   *np.array([K,K/4],dtype=np.float32)
+    Kbs =((1-basefrac)*(1-baseprob)-1)*np.array([K,K/4],dtype=np.float32)
+    Hb = rX*(1+((1-basefrac)*(1-baseinp)-1)*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hp = rX*(1+                             cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
     eH = CVh
     sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
     
@@ -2081,13 +2085,15 @@ def run_decoupled_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,Nori=20
     hE = prms['hE']
     hI = prms['hI']
     basefrac = prms.get('basefrac',0)
+    baseinp = prms.get('baseinp',0)
+    baseprob = prms.get('baseprob',0)
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
-    Ks = (1-basefrac)*np.array([K,K/4],dtype=np.float32)
-    Kbs =   basefrac *np.array([K,K/4],dtype=np.float32)
-    Hb = rX*(1+basefrac*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
-    Hp = rX*(1+         cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Ks =  (1-basefrac)*(1-baseprob)   *np.array([K,K/4],dtype=np.float32)
+    Kbs =((1-basefrac)*(1-baseprob)-1)*np.array([K,K/4],dtype=np.float32)
+    Hb = rX*(1+((1-basefrac)*(1-baseinp)-1)*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hp = rX*(1+                             cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
     eH = CVh
     sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
     sH = np.array([SoriF,SoriF],dtype=np.float32)
@@ -2215,13 +2221,15 @@ def run_second_stage_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twrm,Tsa
     hE = prms['hE']
     hI = prms['hI']
     basefrac = prms.get('basefrac',0)
+    baseinp = prms.get('baseinp',0)
+    baseprob = prms.get('baseprob',0)
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
-    Ks = (1-basefrac)*np.array([K,K/4],dtype=np.float32)
-    Kbs =   basefrac *np.array([K,K/4],dtype=np.float32)
-    Hb = rX*(1+basefrac*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
-    Hp = rX*(1+         cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Ks =  (1-basefrac)*(1-baseprob)   *np.array([K,K/4],dtype=np.float32)
+    Kbs =((1-basefrac)*(1-baseprob)-1)*np.array([K,K/4],dtype=np.float32)
+    Hb = rX*(1+((1-basefrac)*(1-baseinp)-1)*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hp = rX*(1+                             cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
     eH = CVh
     sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
     sH = np.array([SoriF,SoriF],dtype=np.float32)
@@ -2348,13 +2356,15 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,r
     hE = prms['hE']
     hI = prms['hI']
     basefrac = prms.get('basefrac',0)
+    baseinp = prms.get('baseinp',0)
+    baseprob = prms.get('baseprob',0)
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
-    Ks = (1-basefrac)*np.array([K,K/4],dtype=np.float32)
-    Kbs =   basefrac *np.array([K,K/4],dtype=np.float32)
-    Hb = rX*(1+basefrac*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
-    Hp = rX*(1+         cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Ks =  (1-basefrac)*(1-baseprob)   *np.array([K,K/4],dtype=np.float32)
+    Kbs =((1-basefrac)*(1-baseprob)-1)*np.array([K,K/4],dtype=np.float32)
+    Hb = rX*(1+((1-basefrac)*(1-baseinp)-1)*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hp = rX*(1+                             cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
     eH = CVh
     sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
     sH = np.array([SoriF,SoriF],dtype=np.float32)
@@ -2529,13 +2539,15 @@ def run_2feat_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,dori=45,L=1
     hE = prms['hE']
     hI = prms['hI']
     basefrac = prms.get('basefrac',0)
+    baseinp = prms.get('baseinp',0)
+    baseprob = prms.get('baseprob',0)
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
-    Ks = (1-basefrac)*np.array([K,K/4],dtype=np.float32)
-    Kbs =   basefrac *np.array([K,K/4],dtype=np.float32)
-    Hb = rX*(1+basefrac*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
-    Hp = rX*(1+         cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Ks =  (1-basefrac)*(1-baseprob)   *np.array([K,K/4],dtype=np.float32)
+    Kbs =((1-basefrac)*(1-baseprob)-1)*np.array([K,K/4],dtype=np.float32)
+    Hb = rX*(1+((1-basefrac)*(1-baseinp)-1)*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hp = rX*(1+                             cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
     eH = CVh
     sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
     sH = np.array([SoriF,SoriF],dtype=np.float32)
@@ -2696,13 +2708,15 @@ def run_first_stage_full_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,
     hE = prms['hE']
     hI = prms['hI']
     basefrac = prms.get('basefrac',0)
+    baseinp = prms.get('baseinp',0)
+    baseprob = prms.get('baseprob',0)
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
-    Ks = (1-basefrac)*np.array([K,K/4],dtype=np.float32)
-    Kbs =   basefrac *np.array([K,K/4],dtype=np.float32)
-    Hb = rX*(1+basefrac*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
-    Hp = rX*(1+         cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Ks =  (1-basefrac)*(1-baseprob)   *np.array([K,K/4],dtype=np.float32)
+    Kbs =((1-basefrac)*(1-baseprob)-1)*np.array([K,K/4],dtype=np.float32)
+    Hb = rX*(1+((1-basefrac)*(1-baseinp)-1)*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hp = rX*(1+                             cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
     eH = CVh
     sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
     sH = np.array([SoriF,SoriF],dtype=np.float32)
@@ -2819,13 +2833,15 @@ def run_second_stage_full_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twr
     hE = prms['hE']
     hI = prms['hI']
     basefrac = prms.get('basefrac',0)
+    baseinp = prms.get('baseinp',0)
+    baseprob = prms.get('baseprob',0)
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
-    Ks = (1-basefrac)*np.array([K,K/4],dtype=np.float32)
-    Kbs =   basefrac *np.array([K,K/4],dtype=np.float32)
-    Hb = rX*(1+basefrac*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
-    Hp = rX*(1+         cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Ks =  (1-basefrac)*(1-baseprob)   *np.array([K,K/4],dtype=np.float32)
+    Kbs =((1-basefrac)*(1-baseprob)-1)*np.array([K,K/4],dtype=np.float32)
+    Hb = rX*(1+((1-basefrac)*(1-baseinp)-1)*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hp = rX*(1+                             cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
     eH = CVh
     sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
     sH = np.array([SoriF,SoriF],dtype=np.float32)
@@ -2917,13 +2933,15 @@ def run_two_stage_full_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,No
     hE = prms['hE']
     hI = prms['hI']
     basefrac = prms.get('basefrac',0)
+    baseinp = prms.get('baseinp',0)
+    baseprob = prms.get('baseprob',0)
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
-    Ks = (1-basefrac)*np.array([K,K/4],dtype=np.float32)
-    Kbs =   basefrac *np.array([K,K/4],dtype=np.float32)
-    Hb = rX*(1+basefrac*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
-    Hp = rX*(1+         cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Ks =  (1-basefrac)*(1-baseprob)   *np.array([K,K/4],dtype=np.float32)
+    Kbs =((1-basefrac)*(1-baseprob)-1)*np.array([K,K/4],dtype=np.float32)
+    Hb = rX*(1+((1-basefrac)*(1-baseinp)-1)*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hp = rX*(1+                             cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
     eH = CVh
     sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
     sH = np.array([SoriF,SoriF],dtype=np.float32)
