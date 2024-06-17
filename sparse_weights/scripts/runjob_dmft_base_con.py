@@ -84,8 +84,8 @@ def runjobs():
     #--------------------------------------------------------------------------
     # The array of hashes
     c_Vec=np.arange(7)
-    base_con_vec = np.arange(1,5+1)/10
-    base_prob_vec = np.arange(1,5+1)/10
+    base_con_vec = np.arange(0,5+1)/10
+    base_prob_vec = np.arange(0,5+1)/10
     SoriE_mult = 1.0
     SoriI_mult = 1.0
     SoriF_mult = 1.0
