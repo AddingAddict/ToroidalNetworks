@@ -397,7 +397,7 @@ if not np.isclose(L_mult,1.0):
     res_file = res_file + '_Lx{:.2f}'.format(L_mult)
 if not np.isclose(CVL_mult,1.0):
     res_file = res_file + '_CVLx{:.2f}'.format(CVL_mult)
-res_file = res_file + '_base_{:.1f}_c1_{:d}_c2_{:d}'.format(base_mult,c1_idx,c2_idx)
+res_file = res_file + '_base_{:.1f}_o_{:d}_c1_{:d}_c2_{:d}'.format(base_mult,o_idx,c1_idx,c2_idx)
 
 with open(res_file+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)
