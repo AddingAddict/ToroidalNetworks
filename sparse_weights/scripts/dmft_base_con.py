@@ -79,6 +79,8 @@ SoriI = prms['SoriI']
 # L = prms['L']
 # CVL = prms['CVL']
 
+prms['baseinp'] = base_con
+prms['baseprob'] = base_prob
 CVh = CVh*CVh_mult
 prms['SoriE'] = prms['SoriE']*SoriE_mult
 prms['SoriI'] = prms['SoriI']*SoriI_mult
@@ -108,8 +110,6 @@ Nori = 20
 print('simulating contrast # '+str(c_idx+1))
 print('')
 aXs = np.concatenate([aXs,aXs[-1]*np.arange(1.0+0.2,2.0+0.2,0.2)])
-aX = (1-base_con)*aXs[c_idx]
-bX = bX + base_con*aXs[c_idx]
 
 cA = aX/bX
 rX = bX
@@ -133,9 +133,9 @@ def predict_networks(prms,rX,cA,CVh):
     W = prms['J']*np.array([[1,-prms['gE']],[1./prms['beta'],-prms['gI']/prms['beta']]],dtype=np.float32)
     Ks  =  (1-base_prob)*(1-prms.get('basefrac',0))   *np.array([prms['K'],prms['K']/4],dtype=np.float32)
     Kbs = ((1-base_prob)*(1-prms.get('basefrac',0))-1)*np.array([prms['K'],prms['K']/4],dtype=np.float32)
-    Hb = rX*(1+prms.get('basefrac',0)*cA)*prms['K']*prms['J']*\
+    Hb = rX*(1+((1-base_con)*(1-prms.get('basefrac',0))-1)*cA)*prms['K']*prms['J']*\
         np.array([prms['hE'],prms['hI']/prms['beta']],dtype=np.float32)
-    Hp = rX*(1+                       cA)*prms['K']*prms['J']*\
+    Hp = rX*(1+                                            cA)*prms['K']*prms['J']*\
         np.array([prms['hE'],prms['hI']/prms['beta']],dtype=np.float32)
     eH = CVh
     sW = np.array([[prms['SoriE'],prms['SoriI']],[prms['SoriE'],prms['SoriI']]],dtype=np.float32)
