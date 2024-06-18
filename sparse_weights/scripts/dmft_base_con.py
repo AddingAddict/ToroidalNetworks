@@ -131,9 +131,9 @@ convs = np.zeros((2,3)).astype(bool)
 def predict_networks(prms,rX,cA,CVh):
     tau = np.array([ri.tE,ri.tI],dtype=np.float32)
     W = prms['J']*np.array([[1,-prms['gE']],[1./prms['beta'],-prms['gI']/prms['beta']]],dtype=np.float32)
-    Ks  =  (1-base_prob)*(1-prms.get('basefrac',0))   *np.array([prms['K'],prms['K']/4],dtype=np.float32)
-    Kbs = ((1-base_prob)*(1-prms.get('basefrac',0))-1)*np.array([prms['K'],prms['K']/4],dtype=np.float32)
-    Hb = rX*(1+((1-base_con)*(1-prms.get('basefrac',0))-1)*cA)*prms['K']*prms['J']*\
+    Ks  =    (1-base_prob)*(1-prms.get('basefrac',0)) *np.array([prms['K'],prms['K']/4],dtype=np.float32)
+    Kbs = (1-(1-base_prob)*(1-prms.get('basefrac',0)))*np.array([prms['K'],prms['K']/4],dtype=np.float32)
+    Hb = rX*(1+(1-(1-base_con)*(1-prms.get('basefrac',0)))*cA)*prms['K']*prms['J']*\
         np.array([prms['hE'],prms['hI']/prms['beta']],dtype=np.float32)
     Hp = rX*(1+                                            cA)*prms['K']*prms['J']*\
         np.array([prms['hE'],prms['hI']/prms['beta']],dtype=np.float32)
