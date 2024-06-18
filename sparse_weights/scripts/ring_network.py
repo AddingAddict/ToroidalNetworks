@@ -60,7 +60,7 @@ class RingNetwork(network.BaseNetwork):
         full_kernel /= np.sum(full_kernel,1)[:,None]
         return full_kernel
 
-    def generate_full_rec_conn(self,WMat,VarMat,SoriMat,K,baseprob=0,return_mean_var=False):
+    def generate_full_rec_conn(self,WMat,VarMat,SoriMat,K,baseprob=0,rho=0,return_mean_var=False):
         WKern = [[None]*self.n]*self.n
         W_mean_full = np.zeros((self.N,self.N),np.float32)
         W_var_full = np.zeros((self.N,self.N),np.float32)
@@ -93,14 +93,17 @@ class RingNetwork(network.BaseNetwork):
                     W_mean_full[pst_idxs,preC_all] = WMat[pstC,preC]
                     W_var_full[pst_idxs,preC_all] = VarMat[pstC,preC]
 
-        C_full = self.generate_sparse_rec_conn(WKern=WKern,K=K)
+        if (np.isscalar(rho) and np.isclose(rho,0)) or np.all(np.isclose(rho,0)):
+            C_full = self.generate_sparse_rec_conn(WKern=WKern,K=K)
+        else:
+            C_full = self.generate_corr_sparse_rec_conn(WKern=WKern,K=K,rho=rho)
 
         if return_mean_var:
             return C_full, W_mean_full,W_var_full
         else:
             return C_full
 
-    def generate_full_ff_conn(self,WVec,VarVec,SoriVec,K,baseprob=0,return_mean_var=False):
+    def generate_full_ff_conn(self,WVec,VarVec,SoriVec,K,baseprob=0,rho=0,return_mean_var=False):
         WKern = [None]*self.n
         W_mean_full = np.zeros((self.N,self.NX*self.Nloc),np.float32)
         W_var_full = np.zeros((self.N,self.NX*self.Nloc),np.float32)
@@ -129,7 +132,10 @@ class RingNetwork(network.BaseNetwork):
                 W_mean_full[pst_idxs,:] = WVec[pstC]
                 W_var_full[pst_idxs,:] = VarVec[pstC]
 
-        C_full = self.generate_sparse_ff_conn(WKern=WKern,K=K)
+        if (np.isscalar(rho) and np.isclose(rho,0)) or np.all(np.isclose(rho,0)):
+            C_full = self.generate_sparse_ff_conn(WKern=WKern,K=K)
+        else:
+            C_full = self.generate_corr_sparse_ff_conn(WKern=WKern,K=K,rho=rho)
 
         if return_mean_var:
             return C_full, W_mean_full,W_var_full
@@ -157,28 +163,28 @@ class RingNetwork(network.BaseNetwork):
 
         return H_mean_full,H_var_full
 
-    def generate_M(self,W,SWori,K,baseprob=0):
+    def generate_M(self,W,SWori,K,baseprob=0,rho=0):
         C_full, W_mean_full,W_var_full = self.generate_full_rec_conn(W,np.zeros((self.n,self.n)),
-            SWori,K,baseprob,True)
+            SWori,K,baseprob,rho,True)
         return C_full*(W_mean_full+np.random.normal(size=(self.N,self.N))*np.sqrt(W_var_full))
 
-    def generate_MX(self,WX,SWoriX,K,baseprob=0):
+    def generate_MX(self,WX,SWoriX,K,baseprob=0,rho=0):
         CX_full, WX_mean_full,WX_var_full = self.generate_full_ff_conn(WX,np.zeros(self.n),
-            SWoriX,K,baseprob,True)
+            SWoriX,K,baseprob,rho,True)
         return CX_full*(WX_mean_full+np.random.normal(size=(self.N,self.NX*self.Nloc))*np.sqrt(WX_var_full))
 
     def generate_H(self,H,SHori,baseinp=0,vis_ori=None):
         H_mean_full,H_var_full = self.generate_full_input(H,np.zeros((self.n)),SHori,baseinp,vis_ori)
         return H_mean_full+np.random.normal(size=(self.N))*np.sqrt(H_var_full)
 
-    def generate_disorder(self,W,SWori,H,SHori,K,baseinp=0,baseprob=0,vis_ori=None):
-        self.M = self.generate_M(W,SWori,K,baseprob)
-        # self.MX = self.generate_MX(W,SWori,K,baseprob)
+    def generate_disorder(self,W,SWori,H,SHori,K,baseinp=0,baseprob=0,rho=0,vis_ori=None):
+        self.M = self.generate_M(W,SWori,K,baseprob,rho)
+        # self.MX = self.generate_MX(W,SWori,K,baseprob,rho)
         self.H = self.generate_H(H,SHori,baseinp,vis_ori=vis_ori)
         
-    def generate_disorder_two_layer(self,W,SWori,K,WX,SWoriX,KX,baseprob=0):
-        self.M = self.generate_M(W,SWori,K,baseprob)
-        self.MX = self.generate_MX(WX,SWoriX,KX,baseprob)
+    def generate_disorder_two_layer(self,W,SWori,K,WX,SWoriX,KX,baseprob=0,rho=0):
+        self.M = self.generate_M(W,SWori,K,baseprob,rho)
+        self.MX = self.generate_MX(WX,SWoriX,KX,baseprob,rho)
 
     def generate_tensors(self):
         self.C_conds = []

@@ -151,7 +151,7 @@ class BaseNetwork(ABC):
         self.rng = np.random.default_rng(seed=seed)
 
     def generate_sparse_rec_conn(self,WKern,K):
-        C_full = np.zeros((self.N,self.N),np.float32)
+        C_full = np.zeros((self.N,self.N),np.uint32)
 
         for pstC in range(self.n):
             pstC_idxs = self.C_idxs[pstC]
@@ -180,9 +180,85 @@ class BaseNetwork(ABC):
                         C_full[pst_idxs,pre_idxs] = self.rng.binomial(1,p,size=(NpstC,NpreC))
 
         return C_full
+    
+    def generate_corr_sparse_rec_conn(self,WKern,K,rho):
+        p_full = np.zeros((self.n,self.Nloc,self.n,self.Nloc),np.float32)
+        C_full = np.zeros((self.N,self.N),np.uint32)
+
+        for pstC in range(self.n):
+            pstC_idxs = self.C_idxs[pstC]
+            pstC_all = self.C_all[pstC]
+            NpstC = self.NC[pstC]
+            for preC in range(self.n):
+                preC_idxs = self.C_idxs[preC]
+                preC_all = self.C_all[preC]
+                NpreC = self.NC[preC]
+
+                W = WKern[pstC][preC]
+                if W is None: continue
+
+                if np.isscalar(K):
+                    ps = np.fmax(K/self.NC[0] * W,1e-12)
+                else:
+                    ps = np.fmax(K[pstC,preC]/self.NC[preC] * W,1e-12)
+                if np.any(ps > 1):
+                    raise Exception("Error: p > 1, please decrease K or increase NC")
+
+                for pst_loc in range(self.Nloc):
+                    for pre_loc in range(self.Nloc):
+                        p_full[pstC,pst_loc,preC,pre_loc] = ps[pst_loc,pre_loc]
+        
+        if np.isscalar(rho):
+            a_full = np.log(1 + rho*np.sqrt((1-p_full)/p_full * ((1-p_full)/p_full).transpose((2,3,0,1))))
+        else:
+            a_full = np.log(1 + rho[:,None,:,None]*np.sqrt((1-p_full)/p_full *\
+                ((1-p_full)/p_full).transpose((2,3,0,1))))
+        
+        for pstC in range(self.n):
+            pstC_idxs = self.C_idxs[pstC]
+            pstC_all = self.C_all[pstC]
+            NpstC = self.NC[pstC]
+            for preC in range(self.n):
+                preC_idxs = self.C_idxs[preC]
+                preC_all = self.C_all[preC]
+                NpreC = self.NC[preC]
+                for pst_loc in range(self.Nloc):
+                    pst_idxs = pstC_idxs[pst_loc]
+                    for pre_loc in range(self.Nloc):
+                        p = p_full[pstC,pst_loc,preC,pre_loc]
+                        a = a_full[pstC,pst_loc,preC,pre_loc]
+                        pre_idxs = preC_idxs[pre_loc]
+                        C_full[pst_idxs,pre_idxs] = self.rng.poisson(-np.log(p)-a,size=(NpstC,NpreC))
+                            
+        for pstC in range(self.n):
+            pstC_idxs = self.C_idxs[pstC]
+            pstC_all = self.C_all[pstC]
+            NpstC = self.NC[pstC]
+            for preC in range(pstC,self.n):
+                preC_idxs = self.C_idxs[preC]
+                preC_all = self.C_all[preC]
+                NpreC = self.NC[preC]
+                for pst_loc in range(self.Nloc):
+                    pst_idxs = pstC_idxs[pst_loc]
+                    if pstC==preC:
+                        init_loc = pst_loc
+                    else:
+                        init_loc = 0
+                    for pre_loc in range(init_loc,self.Nloc):
+                        pre_idxs = preC_idxs[pre_loc]
+                        a = a_full[pstC,pst_loc,preC,pre_loc]
+                        shared_var = self.rng.poisson(a,size=(NpstC,NpreC)).astype(np.uint32)
+                        if pstC==preC and pst_loc==pre_loc:
+                            C_full[pst_idxs,pre_idxs] += np.tril(shared_var)
+                            C_full[pre_idxs,pst_idxs] += np.tril(shared_var,-1).T
+                        else:
+                            C_full[pst_idxs,pre_idxs] += shared_var
+                            C_full[pre_idxs,pst_idxs] += shared_var.T
+
+        return C_full==0
 
     def generate_sparse_ff_conn(self,WKern,K):
-        C_full = np.zeros((self.N,self.NX*self.Nloc),np.float32)
+        C_full = np.zeros((self.N,self.NX*self.Nloc),np.uint32)
 
         preC_idxs = self.X_idxs
         preC_all = self.X_all
