@@ -30,8 +30,8 @@ def gen_ring_disorder(seed,prm_dict,eX,vis_ori=None,opto_per_pop=None):
 
     net.set_seed(seed)
     net.generate_disorder(WMat,np.array([[SoriE,SoriI],[SoriE,SoriI]]),HVec,SoriF*np.ones(2),K,
-                          baseinp=(1-prm_dict.get('baseinp',0))*(1-prm_dict.get('basefrac',0))-1,
-                          baseprob=(1-prm_dict.get('baseprob',0))*(1-prm_dict.get('basefrac',0))-1,vis_ori=vis_ori)
+                          baseinp=1-(1-prm_dict.get('baseinp',0))*(1-prm_dict.get('basefrac',0)),
+                          baseprob=1-(1-prm_dict.get('baseprob',0))*(1-prm_dict.get('basefrac',0)),vis_ori=vis_ori)
 
     B = np.zeros(net.N,dtype=np.float32)
     B[net.C_all[0]] = HVec[0]
@@ -81,8 +81,8 @@ def gen_ring_disorder_tensor(seed,prm_dict,eX,vis_ori=None,opto_per_pop=None):
 
     net.set_seed(seed)
     net.generate_disorder(WMat,np.array([[SoriE,SoriI],[SoriE,SoriI]]),HVec,SoriF*np.ones(2),K,
-                          baseinp=(1-prm_dict.get('baseinp',0))*(1-prm_dict.get('basefrac',0))-1,
-                          baseprob=(1-prm_dict.get('baseprob',0))*(1-prm_dict.get('basefrac',0))-1,vis_ori=vis_ori)
+                          baseinp=1-(1-prm_dict.get('baseinp',0))*(1-prm_dict.get('basefrac',0)),
+                          baseprob=1-(1-prm_dict.get('baseprob',0))*(1-prm_dict.get('basefrac',0)),vis_ori=vis_ori)
     net.generate_tensors()
 
     B = torch.where(net.C_conds[0],HVec[0],HVec[1])
