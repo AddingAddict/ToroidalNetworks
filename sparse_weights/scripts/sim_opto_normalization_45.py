@@ -276,8 +276,8 @@ Lexps[:,:] = Ls
 timeouts[:,:] = TOs
 
 seed_mask = np.logical_not(np.any(timeouts,axis=-1))
-vsm1_mask = net.get_oriented_neurons()[0]
-vsm2_mask = net.get_oriented_neurons(vis_ori=45)[0]
+vsm1_mask = net.get_oriented_neurons(delta_ori=4.5,)[0]
+vsm2_mask = net.get_oriented_neurons(delta_ori=4.5,vis_ori=45)[0]
 
 peak1_rates = rs[:,0,:]
 peak2_rates = rs[:,1,:]
