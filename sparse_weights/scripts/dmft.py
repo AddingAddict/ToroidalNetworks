@@ -3134,6 +3134,6 @@ def lin_resp_mats(tau,muW,SigW,dmuH,dSigH,M_fn,C_fn,Tsav,dt,mu,Sig):
         res_dict['F'] = 2 * Rdphi * dmuH[:,None] + (Cdphi + Rd2phi) * dSigH[:,None]
     else:
         res_dict['E'] = Mdphi * dmuH + 0.5 * Md2phi * dSigH[:,0]
-        res_dict['F'] = 2 * Rdphi * dmuH[:,None] + Cdphi * dSigH + Rd2phi * dSigH[:,0]
+        res_dict['F'] = 2 * Rdphi * dmuH[:,None] + Cdphi * dSigH + Rd2phi * dSigH[:,0][:,None]
         
     return res_dict

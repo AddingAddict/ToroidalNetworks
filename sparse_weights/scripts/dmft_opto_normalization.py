@@ -164,6 +164,10 @@ def predict_networks(prms,rX,cA,CVh,dori=45):
     oris = np.arange(Nori)*180/Nori
     # oris[oris > 90] = 180 - oris[oris > 90]
         
+    def gauss_naive(x,b,p,s):
+        amp = (p-b)
+        return b + amp*dmft.basesubwrapnorm(x,s) + amp*dmft.basesubwrapnorm(x-dori,s)
+    
     def gauss(x,b,p,s):
         amp = (p-b)*np.sum(dmft.inv_overlap(xpeaks,s[:,None])[:,:,0],-1)
         return b + amp*dmft.basesubwrapnorm(x,s) + amp*dmft.basesubwrapnorm(x-dori,s)
@@ -247,13 +251,13 @@ def predict_networks(prms,rX,cA,CVh,dori=45):
         Σrs[i,0] = np.fmax(gauss(oris,Crvb[i],Crvp[i],sCrv[i]*np.ones((1))) - μrs[i,0]**2,0)
         Σrs[i,1] = np.fmax(gauss(oris,Crob[i],Crop[i],sCro[i]*np.ones((1))) - μrs[i,1]**2,0)
         μmuEs[i,0] = gauss(oris,muvb[i,0],muvp[i,0],smuv[i,0]*np.ones((1))) +\
-            gauss(oris,muHb[i],muHp[i],smuH[i]*np.ones((1)))
+            gauss_naive(oris,muHb[i],muHp[i],smuH[i]*np.ones((1)))
         μmuEs[i,1] = gauss(oris,muob[i,0],muop[i,0],smuo[i,0]*np.ones((1))) +\
-            gauss(oris,muHb[i],muHp[i],smuH[i]*np.ones((1))) + prms['L']*1e-3
+            gauss_naive(oris,muHb[i],muHp[i],smuH[i]*np.ones((1))) + prms['L']*1e-3
         ΣmuEs[i,0] = gauss(oris,Sigvb[i,0],Sigvp[i,0],sSigv[i,0]*np.ones((1))) +\
-            (gauss(oris,muHb[i],muHp[i],smuH[i]*np.ones((1)))*eH)**2
+            (gauss_naive(oris,muHb[i],muHp[i],smuH[i]*np.ones((1)))*eH)**2
         ΣmuEs[i,1] = gauss(oris,Sigob[i,0],Sigop[i,0],sSigo[i,0]*np.ones((1))) +\
-            (gauss(oris,muHb[i],muHp[i],smuH[i]*np.ones((1)))*eH)**2 +\
+            (gauss_naive(oris,muHb[i],muHp[i],smuH[i]*np.ones((1)))*eH)**2 +\
             (prms['CVL']*prms['L']*1e-3)**2
         μmuIs[i,0] = gauss(oris,muvb[i,1],muvp[i,1],smuv[i,1]*np.ones((1)))
         μmuIs[i,1] = gauss(oris,muob[i,1],muop[i,1],smuo[i,1]*np.ones((1)))
