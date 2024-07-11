@@ -91,6 +91,7 @@ def runjobs():
     for base in base_mults:
         for con1 in con1_Vec:
             for con2 in con2_Vec:
+                if con2 > con1: continue
                 for o in o_Vec:
 
                     time.sleep(0.2)
@@ -110,7 +111,7 @@ def runjobs():
                         if cluster=='haba' or cluster=='moto' or cluster=='burg':
                             text_file.write("#SBATCH --account=theory \n")
                         text_file.write("#SBATCH --job-name="+jobname+ "\n")
-                        text_file.write("#SBATCH -t 0-3:59  \n")
+                        text_file.write("#SBATCH -t 0-5:59  \n")
                         text_file.write("#SBATCH --mem-per-cpu=40gb \n")
                         text_file.write("#SBATCH --gres=gpu\n")
                         text_file.write("#SBATCH -c 1 \n")
