@@ -962,9 +962,11 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
         sWCr = np.sqrt(doub_mat(sW2)[:,:,None]+sCr[None,:,:]**2)
         Crpmb = Crs[2] - Crs[0]
         Sigs[0] = each_matmul((SigWs[1]+SigWs[0])[:,:,None],Crs[0]) +\
-            each_matmul(unstruct_fact(sCr,L)*SigWs[0][:,:,None],Crpmb) + SigHs[0]
-        Sigs[1] = Sigs[0] + each_matmul(struct_fact(sa,sWCr,sCr,L)*SigWs[1][:,:,None],Crpmb) + SigHs[1]-SigHs[0]
-        Sigs[2] = Sigs[0] + each_matmul(struct_fact(0,sWCr,sCr,L)*SigWs[1][:,:,None],Crpmb) + SigHs[2]-SigHs[0]
+            each_matmul(unstruct_fact(sCr,L)*SigWs[0][:,:,None],Crpmb) + SigHs[0][:,None]
+        Sigs[1] = Sigs[0] + each_matmul(struct_fact(sa,sWCr,sCr,L)*SigWs[1][:,:,None],Crpmb) +\
+            (SigHs[1]-SigHs[0])[:,None]
+        Sigs[2] = Sigs[0] + each_matmul(struct_fact(0,sWCr,sCr,L)*SigWs[1][:,:,None],Crpmb) +\
+            (SigHs[2]-SigHs[0])[:,None]
         Sigs[0] = Sigs[0] + each_matmul(struct_fact(L/2,sWCr,sCr,L)*SigWs[1][:,:,None],Crpmb)
         
     def Sigd_fn(Cdrsi,SigWs,Sigdsi):
