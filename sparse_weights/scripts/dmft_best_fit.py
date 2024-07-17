@@ -261,12 +261,11 @@ def predict_networks(prms,rX,cA,CVh):
         Σrs[i,2] = np.fmax(gauss(oris,Cdrb[i],Cdrp[i],sCdr[i]) - μrs[i,2]**2,0)
         Σrs[i,3] = 0.5*(Σrs[i,1] - Σrs[i,0] - Σrs[i,2])
         μmuEs[i,0] = gauss(oris,muvb[i,0],muvp[i,0],smuv[i,0]) + gauss(oris,muHb[i],muHp[i],smuH[i])
-        μmuEs[i,1] = gauss(oris,muob[i,0],muop[i,0],smuo[i,0]) + gauss(oris,muHb[i],muHp[i],smuH[i]) + prms['L']*1e-3
+        μmuEs[i,1] = gauss(oris,muob[i,0],muop[i,0],smuo[i,0]) + gauss(oris,muHb[i],muHp[i],smuH[i])
         μmuEs[i,2] = μmuEs[i,1] - μmuEs[i,0]
         ΣmuEs[i,0] = gauss(oris,Sigvb[i,0],Sigvp[i,0],sSigv[i,0]) + (gauss(oris,muHb[i],muHp[i],smuH[i])*eH)**2
-        ΣmuEs[i,1] = gauss(oris,Sigob[i,0],Sigop[i,0],sSigo[i,0]) + (gauss(oris,muHb[i],muHp[i],smuH[i])*eH)**2 +\
-            (prms['CVL']*prms['L']*1e-3)**2
-        ΣmuEs[i,2] = gauss(oris,Sigdb[i,0],Sigdp[i,0],sSigd[i,0]) + (prms['CVL']*prms['L']*1e-3)**2
+        ΣmuEs[i,1] = gauss(oris,Sigob[i,0],Sigop[i,0],sSigo[i,0]) + (gauss(oris,muHb[i],muHp[i],smuH[i])*eH)**2
+        ΣmuEs[i,2] = gauss(oris,Sigdb[i,0],Sigdp[i,0],sSigd[i,0])
         ΣmuEs[i,3] =  0.5*(ΣmuEs[i,1] - ΣmuEs[i,0] - ΣmuEs[i,2])
         μmuIs[i,0] = gauss(oris,muvb[i,1],muvp[i,1],smuv[i,1])
         μmuIs[i,1] = gauss(oris,muob[i,1],muop[i,1],smuo[i,1])
@@ -280,9 +279,19 @@ def predict_networks(prms,rX,cA,CVh):
 
     return μrs,Σrs,μmus,Σmus,μmuEs,ΣmuEs,μmuIs,ΣmuIs,normC,conv,dmft_res
 
-def calc_bal(μmuE,μmuI,ΣmuE,ΣmuI,N=10000):
-    muEs = np.fmax(μmuE + np.sqrt(ΣmuE)*np.random.randn(N),1e-12)
-    muIs = np.fmin(μmuI + np.sqrt(ΣmuI)*np.random.randn(N),-1e-12)
+def calc_bal(μmuE,μmuI,ΣmuE,ΣmuI,N=20000,seed=0):
+    rng = np.random.default_rng(seed)
+    muEs = np.fmax(μmuE + np.sqrt(ΣmuE)*rng.normal(size=N),1e-12)
+    muIs = np.fmin(μmuI + np.sqrt(ΣmuI)*rng.normal(size=N),-1e-12)
+    return np.mean(np.abs(muEs+muIs)/muEs)
+
+def calc_opto_bal(μmuE,μmuI,ΣmuE,ΣmuI,L,CVL,N=20000,seed=0):
+    sigma_l = np.sqrt(np.log(1+CVL**2))
+    mu_l = np.log(1e-3*L)-sigma_l**2/2
+    rng = np.random.default_rng(seed)
+    muEs = np.fmax(μmuE + np.sqrt(ΣmuE)*rng.normal(size=N) +\
+        rng.lognormal(mu_l, sigma_l, N),1e-12)
+    muIs = np.fmin(μmuI + np.sqrt(ΣmuI)*rng.normal(size=N),-1e-12)
     return np.mean(np.abs(muEs+muIs)/muEs)
 
 # Simulate zero and full contrast networks with ring connectivity
@@ -302,8 +311,10 @@ start = time.process_time()
 ΣhEs[:] = Σmus[0]
 ΣhIs[:] = Σmus[1]
 for nloc in range(Nori):
-    balEs[:,nloc] = calc_bal(μmuEs[0,0,nloc],μmuIs[0,0,nloc],ΣmuEs[0,0,nloc],ΣmuIs[0,0,nloc])
-    balIs[:,nloc] = calc_bal(μmuEs[1,0,nloc],μmuIs[1,0,nloc],ΣmuEs[1,0,nloc],ΣmuIs[1,0,nloc])
+    balEs[0,nloc] = calc_bal(μmuEs[0,0,nloc],μmuIs[0,0,nloc],ΣmuEs[0,0,nloc],ΣmuIs[0,0,nloc])
+    balIs[0,nloc] = calc_bal(μmuEs[1,0,nloc],μmuIs[1,0,nloc],ΣmuEs[1,0,nloc],ΣmuIs[1,0,nloc])
+    balEs[1,nloc] = calc_opto_bal(μmuEs[0,1,nloc],μmuIs[0,1,nloc],ΣmuEs[0,1,nloc],ΣmuIs[0,1,nloc],prms['L'],prms['CVL'])
+    balIs[1,nloc] = calc_bal(μmuEs[1,1,nloc],μmuIs[1,1,nloc],ΣmuEs[1,1,nloc],ΣmuIs[1,1,nloc])
 normCEs[:] = normC[0]
 normCIs[:] = normC[1]
 convs[:] = conv

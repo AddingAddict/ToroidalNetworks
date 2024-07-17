@@ -1792,6 +1792,7 @@ def run_decoupled_three_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,dori=45
     Hp = rX*(1+                             cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
     eH = CVh
     sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
+    sH = np.array([SoriF,SoriF],dtype=np.float32)
     
     xpeaks = np.array([0,-dori])
     sW2 = sW**2
@@ -1810,21 +1811,21 @@ def run_decoupled_three_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,dori=45
     sWr = np.sqrt(sW2+sr**2)
     sWCr = np.sqrt(sW2+sCr**2)
     
-    muWbb = (1 - struct_fact(180/2,sWr,sr,180)*np.sum(rOinv,-1)[None,:]) * muW +\
-        (1 - unstruct_fact(sr,L)*np.sum(rOinv,-1)[None,:]) * muWb
+    muWbb = (1 - 2*struct_fact(180/2,sWr,sr,180)*np.sum(rOinv,-1)[None,:]) * muW +\
+        (1 - 2*unstruct_fact(sr,L)*np.sum(rOinv,-1)[None,:]) * muWb
     muWbp = (struct_fact(180/2,sWr,sr,180) * muW + unstruct_fact(sr,L) * muWb)*np.sum(rOinv,-1)[None,:]
-    muWpb = (1 - struct_fact(0,sWr,sr,180)*np.sum(rOinv,-1)[None,:]) * muW +\
-        (1 - unstruct_fact(sr,L)*np.sum(rOinv,-1)[None,:]) * muWb
+    muWpb = (1 - (struct_fact(0,sWr,sr,180) + struct_fact(dori,sWr,sr,180))*np.sum(rOinv,-1)[None,:]) * muW +\
+        (1 - 2*unstruct_fact(sr,L)*np.sum(rOinv,-1)[None,:]) * muWb
     muWps = (struct_fact(0,sWr,sr,180)*rOinv[None,:,0] + struct_fact(dori,sWr,sr,180)*rOinv[None,:,1]) * muW +\
         unstruct_fact(sr,L)*np.sum(rOinv,-1)[None,:] * muWb
     muWpc = (struct_fact(dori,sWr,sr,180)*rOinv[None,:,0] + struct_fact(0,sWr,sr,180)*rOinv[None,:,1]) * muW +\
         unstruct_fact(sr,L)*np.sum(rOinv,-1)[None,:] * muWb
 
-    SigWbb = (1 - struct_fact(180/2,sWCr,sCr,180)*np.sum(CrOinv,-1)[None,:]) * SigW +\
-        (1 - unstruct_fact(sCr,L)*np.sum(CrOinv,-1)[None,:]) * SigWb
+    SigWbb = (1 - 2*struct_fact(180/2,sWCr,sCr,180)*np.sum(CrOinv,-1)[None,:]) * SigW +\
+        (1 - 2*unstruct_fact(sCr,L)*np.sum(CrOinv,-1)[None,:]) * SigWb
     SigWbp = (struct_fact(180/2,sWCr,sCr,180) * SigW + unstruct_fact(sCr,L) * SigWb)*np.sum(CrOinv,-1)[None,:]
-    SigWpb = (1 - struct_fact(0,sWCr,sCr,180)*np.sum(CrOinv,-1)[None,:]) * SigW +\
-        (1 - unstruct_fact(sCr,L)*np.sum(CrOinv,-1)[None,:]) * SigWb
+    SigWpb = (1 - (struct_fact(0,sWCr,sCr,180) + struct_fact(dori,sWCr,sCr,180))*np.sum(CrOinv,-1)[None,:]) * SigW +\
+        (1 - 2*unstruct_fact(sCr,L)*np.sum(CrOinv,-1)[None,:]) * SigWb
     SigWps = (struct_fact(0,sWCr,sCr,180)*CrOinv[None,:,0] + struct_fact(dori,sWCr,sCr,180)*CrOinv[None,:,1]) * SigW +\
         unstruct_fact(sCr,L)*np.sum(CrOinv,-1) * SigWb
     SigWpc = (struct_fact(dori,sWCr,sCr,180)*CrOinv[None,:,0] + struct_fact(0,sWCr,sCr,180)*CrOinv[None,:,1]) * SigW +\
@@ -1832,8 +1833,9 @@ def run_decoupled_three_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,dori=45
     
     muHb = tau*Hb + 2*muWbp@struct_dict.get('rp',0)
     SigHb = ((tau*Hb*eH)**2)[:,None] + 2*SigWbp@struct_dict.get('Crp',0)
-    muHp = tau*Hp + muWpb@struct_dict.get('rb',0) + muWpc@struct_dict.get('rp',0)
-    SigHp = ((tau*Hp*eH)**2)[:,None] + SigWpb@struct_dict.get('Crb',0) + SigWpc@struct_dict.get('Crp',0)
+    muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L)) + muWpb@struct_dict.get('rb',0) + muWpc@struct_dict.get('rp',0)
+    SigHp = ((tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))*eH)**2)[:,None] +\
+        SigWpb@struct_dict.get('Crb',0) + SigWpc@struct_dict.get('Crp',0)
     
     Norig = SigHb.shape[1]
     if Norig!=Nsav:
