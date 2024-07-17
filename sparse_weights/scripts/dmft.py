@@ -751,9 +751,9 @@ def sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
     
     muHb = tau*Hb
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
+    muHa = tau*(Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L)))
     SigHa = (muHa*eH)**2
-    muHp = tau*Hp
+    muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
     SigHp = (muHp*eH)**2
     
     muWs = np.concatenate([muWb[None,:,:],muW[None,:,:]],0)
@@ -1019,9 +1019,9 @@ def diff_sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,r
     
     muHb = tau*Hb
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
+    muHa = tau*(Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L)))
     SigHa = (muHa*eH)**2
-    muHp = tau*Hp
+    muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
     SigHp = (muHp*eH)**2
     
     muWs = np.concatenate([muWb[None,:,:],muW[None,:,:]],0)
@@ -1077,7 +1077,7 @@ def diff_sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,r
         Sigpi = Sigs[2]
         """
         sCr = solve_width((Crs[1]-Crs[0])/(Crs[2]-Crs[0]))
-        CrOinv = np.sum(inv_overlap(xpeaks,sCr[:,None].flatten()[:,None])[:,:,0],-1).reshape(-1,Nsav)
+        CrOinv = np.sum(inv_overlap(xpeaks,sCr.flatten()[:,None])[:,:,0],-1).reshape(-1,Nsav)
         sWCr = np.sqrt(doub_mat(sW2)[:,:,None]+sCr[None,:,:]**2)
         Crpmb = (Crs[2] - Crs[0])*CrOinv
         Sigs[0] = each_matmul((SigWs[1]+SigWs[0])[:,:,None],Crs[0]) +\
@@ -1766,6 +1766,158 @@ def run_decoupled_two_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,
     
     return res_dict
 
+def run_decoupled_three_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,dori=45,L=180,
+                                  struct_dict=None,which='both',return_full=False):
+    Nsav = round(Tsav/dt)+1
+    
+    K = prms['K']
+    SoriE = prms['SoriE']
+    SoriI = prms['SoriI']
+    SoriF = prms['SoriF']
+    J = prms['J']
+    beta = prms['beta']
+    gE = prms['gE']
+    gI = prms['gI']
+    hE = prms['hE']
+    hI = prms['hI']
+    basefrac = prms.get('basefrac',0)
+    baseinp = prms.get('baseinp',0)
+    baseprob = prms.get('baseprob',0)
+    
+    tau = np.array([rc.tE,rc.tI],dtype=np.float32)
+    W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
+    Ks =    (1-basefrac)*(1-baseprob) *np.array([K,K/4],dtype=np.float32)
+    Kbs =(1-(1-basefrac)*(1-baseprob))*np.array([K,K/4],dtype=np.float32)
+    Hb = rX*(1+(1-(1-basefrac)*(1-baseinp))*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hp = rX*(1+                             cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    eH = CVh
+    sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
+    
+    xpeaks = np.array([0,-dori])
+    sW2 = sW**2
+    
+    muW = tau[:,None]*W*Ks
+    SigW = tau[:,None]**2*W**2*Ks
+    muWb = tau[:,None]*W*Kbs
+    SigWb = tau[:,None]**2*W**2*Kbs
+    
+    sr = struct_dict['sr']
+    sCr = struct_dict['sCr'][:,-1]
+    
+    rOinv = inv_overlap(xpeaks,sr[:,None])[:,:,0]
+    CrOinv = inv_overlap(xpeaks,sCr[:,None])[:,:,0]
+    
+    sWr = np.sqrt(sW2+sr**2)
+    sWCr = np.sqrt(sW2+sCr**2)
+    
+    muWbb = (1 - struct_fact(180/2,sWr,sr,180)*np.sum(rOinv,-1)[None,:]) * muW +\
+        (1 - unstruct_fact(sr,L)*np.sum(rOinv,-1)[None,:]) * muWb
+    muWbp = (struct_fact(180/2,sWr,sr,180) * muW + unstruct_fact(sr,L) * muWb)*np.sum(rOinv,-1)[None,:]
+    muWpb = (1 - struct_fact(0,sWr,sr,180)*np.sum(rOinv,-1)[None,:]) * muW +\
+        (1 - unstruct_fact(sr,L)*np.sum(rOinv,-1)[None,:]) * muWb
+    muWps = (struct_fact(0,sWr,sr,180)*rOinv[None,:,0] + struct_fact(dori,sWr,sr,180)*rOinv[None,:,1]) * muW +\
+        unstruct_fact(sr,L)*np.sum(rOinv,-1)[None,:] * muWb
+    muWpc = (struct_fact(dori,sWr,sr,180)*rOinv[None,:,0] + struct_fact(0,sWr,sr,180)*rOinv[None,:,1]) * muW +\
+        unstruct_fact(sr,L)*np.sum(rOinv,-1)[None,:] * muWb
+
+    SigWbb = (1 - struct_fact(180/2,sWCr,sCr,180)*np.sum(CrOinv,-1)[None,:]) * SigW +\
+        (1 - unstruct_fact(sCr,L)*np.sum(CrOinv,-1)[None,:]) * SigWb
+    SigWbp = (struct_fact(180/2,sWCr,sCr,180) * SigW + unstruct_fact(sCr,L) * SigWb)*np.sum(CrOinv,-1)[None,:]
+    SigWpb = (1 - struct_fact(0,sWCr,sCr,180)*np.sum(CrOinv,-1)[None,:]) * SigW +\
+        (1 - unstruct_fact(sCr,L)*np.sum(CrOinv,-1)[None,:]) * SigWb
+    SigWps = (struct_fact(0,sWCr,sCr,180)*CrOinv[None,:,0] + struct_fact(dori,sWCr,sCr,180)*CrOinv[None,:,1]) * SigW +\
+        unstruct_fact(sCr,L)*np.sum(CrOinv,-1) * SigWb
+    SigWpc = (struct_fact(dori,sWCr,sCr,180)*CrOinv[None,:,0] + struct_fact(0,sWCr,sCr,180)*CrOinv[None,:,1]) * SigW +\
+        unstruct_fact(sCr,L)*np.sum(CrOinv,-1) * SigWb
+    
+    muHb = tau*Hb + 2*muWbp@struct_dict.get('rp',0)
+    SigHb = ((tau*Hb*eH)**2)[:,None] + 2*SigWbp@struct_dict.get('Crp',0)
+    muHp = tau*Hp + muWpb@struct_dict.get('rb',0) + muWpc@struct_dict.get('rp',0)
+    SigHp = ((tau*Hp*eH)**2)[:,None] + SigWpb@struct_dict.get('Crb',0) + SigWpc@struct_dict.get('Crp',0)
+    
+    Norig = SigHb.shape[1]
+    if Norig!=Nsav:
+        temp = SigHb.copy()
+        SigHb = np.zeros((2,Nsav))
+        SigHb[:,:Norig] = temp
+        SigHb[:,Norig:] = temp[:,-1]
+        
+        temp = SigHp.copy()
+        SigHp = np.zeros((2,Nsav))
+        SigHp[:,:Norig] = temp
+        SigHp[:,Norig:] = temp[:,-1]
+    
+    FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
+    FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
+    
+    def base_M(mui,Sigii,out):
+        out[0] = ME(mui[0],Sigii[0])[0]
+        out[1] = MI(mui[1],Sigii[1])[0]
+        
+    def base_C(mui,Sigii,Sigij,out):
+        out[0] = CE(mui[0],Sigii[0],Sigij[0])[0]
+        out[1] = CI(mui[1],Sigii[1],Sigij[1])[0]
+    
+    def opto_M(mui,Sigii,out):
+        out[0] = ML(mui[0],Sigii[0])[0]
+        out[1] = MI(mui[1],Sigii[1])[0]
+        
+    def opto_C(mui,Sigii,Sigij,out):
+        out[0] = CL(mui[0],Sigii[0],Sigij[0])[0]
+        out[1] = CI(mui[1],Sigii[1],Sigij[1])[0]
+    
+    start = time.process_time()
+    
+    if which=='base':
+        full_rb,full_Crb,convb = gauss_dmft(tau,muWbb,SigWbb,muHb,SigHb,base_M,base_C,Twrm,Tsav,dt)
+        full_rp,full_Crp,convp = gauss_dmft(tau,muWps,SigWps,muHp,SigHp,base_M,base_C,Twrm,Tsav,dt)
+    elif which=='opto':
+        full_rb,full_Crb,convb = gauss_dmft(tau,muWbb,SigWbb,muHb,SigHb,opto_M,opto_C,Twrm,Tsav,dt)
+        full_rp,full_Crp,convp = gauss_dmft(tau,muWps,SigWps,muHp,SigHp,opto_M,opto_C,Twrm,Tsav,dt)
+    else:
+        raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\' and \'opto\'')
+        
+    print('integrating first stage took',time.process_time() - start,'s')
+
+    # extract predicted moments after long time evolution
+    rb = full_rb[:,-1]
+    rp = full_rp[:,-1]
+    Crb = full_Crb[:,-1,-1:-Nsav-1:-1]
+    Crp = full_Crp[:,-1,-1:-Nsav-1:-1]
+    
+    if which in ('base','opto'):
+        mub = muWbb@rb + muHb
+        Sigb = SigWbb@Crb + SigHb
+        mup = muWps@rp + muHp
+        Sigp = SigWps@Crp + SigHp
+    else:
+        raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
+    
+    res_dict = {}
+    
+    res_dict['rb'] = rb
+    res_dict['rp'] = rp
+    res_dict['sr'] = sr
+    res_dict['Crb'] = Crb
+    res_dict['Crp'] = Crp
+    res_dict['sCr'] = sCr
+    
+    res_dict['mub'] = mub
+    res_dict['mup'] = mup
+    res_dict['Sigb'] = Sigb
+    res_dict['Sigp'] = Sigp
+    
+    res_dict['convb'] = convb
+    res_dict['convp'] = convp
+    
+    if return_full:
+        res_dict['full_rb'] = full_rb
+        res_dict['full_rp'] = full_rp
+        res_dict['full_Crb'] = full_Crb
+        res_dict['full_Crp'] = full_Crp
+    
+    return res_dict
+
 def run_decoupled_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,Nori=20,
                                 struct_dict=None,which='both',return_full=False):
     Nsav = round(Tsav/dt)+1
@@ -2256,9 +2408,9 @@ def run_first_stage_2feat_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15
     
     muHb = tau*Hb
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
+    muHa = tau*(Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L)))
     SigHa = (muHa*eH)**2
-    muHp = tau*Hp
+    muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
     SigHp = (muHp*eH)**2
     
     FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
@@ -2427,9 +2579,9 @@ def run_second_stage_2feat_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Tw
     
     muHb = tau*Hb
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
+    muHa = tau*(Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L)))
     SigHa = (muHa*eH)**2
-    muHp = tau*Hp
+    muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
     SigHp = (muHp*eH)**2
     
     FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
@@ -2568,9 +2720,9 @@ def run_two_stage_2feat_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,d
     
     muHb = tau*Hb
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
+    muHa = tau*(Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L)))
     SigHa = (muHa*eH)**2
-    muHp = tau*Hp
+    muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
     SigHp = (muHp*eH)**2
     
     FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
@@ -3121,20 +3273,24 @@ def lin_resp_mats(tau,muW,SigW,dmuH,dSigH,M_fn,C_fn,Tsav,dt,mu,Sig):
         C_fn(mu,Sig,np.fmin(Sig,Cov-dmu**2),outl)
         out[:] = (outr-outl)/(np.fmin(Sig,Cov+dmu**2)-np.fmin(Sig,Cov-dmu**2))
     
+    Mphi = np.empty((Ntyp,),dtype=np.float32)
     Mdphi = np.empty((Ntyp,),dtype=np.float32)
     Md2phi = np.empty((Ntyp,),dtype=np.float32)
     Rdphi = np.empty((Ntyp,Nsav),dtype=np.float32)
     Rd2phi = np.empty((Ntyp,Nsav),dtype=np.float32)
+    Cphi = np.empty((Ntyp,Nsav),dtype=np.float32)
     Cdphi = np.empty((Ntyp,Nsav),dtype=np.float32)
     
     Rd2phi = smooth_func(Rd2phi,dt)
     Cdphi = smooth_func(Cdphi,dt)
     
+    M_fn(mu,Sig[:,0],Mphi)
     Md_fn(mu,Sig[:,0],Mdphi)
     Md2_fn(mu,Sig[:,0],Md2phi)
     for i in range(Nsav):
         Rd_fn(mu,Sig[:,0],Sig[:,i],Rdphi[:,i])
         Rd2_fn(mu,Sig[:,0],Sig[:,i],Rd2phi[:,i])
+        C_fn(mu,Sig[:,0],Sig[:,i],Cphi[:,i])
         Cd_fn(mu,Sig[:,0],Sig[:,i],Cdphi[:,i])
         
     d2_mat = d2_stencil(Tsav,dt)
@@ -3143,10 +3299,12 @@ def lin_resp_mats(tau,muW,SigW,dmuH,dSigH,M_fn,C_fn,Tsav,dt,mu,Sig):
     res_dict = {}
     
     res_dict['d2_mat'] = d2_mat
+    res_dict['Mphi'] = Mphi
     res_dict['Mdphi'] = Mdphi
     res_dict['Md2phi'] = Md2phi
     res_dict['Rdphi'] = Rdphi
     res_dict['Rd2phi'] = Rd2phi
+    res_dict['Cphi'] = Cphi
     res_dict['Cdphi'] = Cdphi
     
     res_dict['A'] = np.eye(Ntyp) - Mdphi[:,None] * muW
