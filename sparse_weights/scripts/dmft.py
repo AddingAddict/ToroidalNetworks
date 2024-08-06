@@ -3285,9 +3285,6 @@ def lin_resp_mats(tau,muW,SigW,dmuH,dSigH,M_fn,C_fn,Tsav,dt,mu,Sig):
     Cphi = np.empty((Ntyp,Nsav),dtype=np.float32)
     Cdphi = np.empty((Ntyp,Nsav),dtype=np.float32)
     
-    Rd2phi = smooth_func(Rd2phi,dt)
-    Cdphi = smooth_func(Cdphi,dt)
-    
     M_fn(mu,Sig[:,0],Mphi)
     Md_fn(mu,Sig[:,0],Mdphi)
     Md2_fn(mu,Sig[:,0],Md2phi)
@@ -3296,6 +3293,9 @@ def lin_resp_mats(tau,muW,SigW,dmuH,dSigH,M_fn,C_fn,Tsav,dt,mu,Sig):
         Rd2_fn(mu,Sig[:,0],Sig[:,i],Rd2phi[:,i])
         C_fn(mu,Sig[:,0],Sig[:,i],Cphi[:,i])
         Cd_fn(mu,Sig[:,0],Sig[:,i],Cdphi[:,i])
+    
+    Rd2phi = smooth_func(Rd2phi,dt)
+    Cdphi = smooth_func(Cdphi,dt)
         
     d2_mat = d2_stencil(Tsav,dt)
     del_vec = np.concatenate(([1],np.zeros(Nsav-1)))
@@ -3303,6 +3303,7 @@ def lin_resp_mats(tau,muW,SigW,dmuH,dSigH,M_fn,C_fn,Tsav,dt,mu,Sig):
     res_dict = {}
     
     res_dict['d2_mat'] = d2_mat
+    res_dict['del_vec'] = del_vec
     res_dict['Mphi'] = Mphi
     res_dict['Mdphi'] = Mdphi
     res_dict['Md2phi'] = Md2phi
