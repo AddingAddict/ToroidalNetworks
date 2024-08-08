@@ -13,6 +13,7 @@ import ring_network as network
 import sim_util as su
 import ricciardi as ric
 import integrate as integ
+import dmft as dmft
 
 parser = argparse.ArgumentParser()
 
