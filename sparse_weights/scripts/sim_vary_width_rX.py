@@ -185,7 +185,6 @@ def simulate_networks(prms,rX,cA,CVh):
 print('simulating baseline fraction network')
 print('')
 this_prms = prms.copy()
-this_prms['J'] = newJ
 this_prms['SoriE'] *= width
 this_prms['SoriI'] *= width
 this_prms['SoriF'] *= width
