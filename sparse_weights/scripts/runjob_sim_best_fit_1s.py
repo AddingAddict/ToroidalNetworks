@@ -83,7 +83,7 @@ def runjobs():
     
     #--------------------------------------------------------------------------
     # The array of hashes
-    c_Vec=np.arange(7)[[0,1,3,5,6]]#12)
+    c_Vec=np.arange(6)#12)
     # SoriE_mult_vec = (np.arange(4+1)/4)[2:]
     SoriE_mult_vec = np.array([1.0,])
     SoriI_mult_vec = np.array([1.0,])
@@ -91,11 +91,11 @@ def runjobs():
     CVh_mult_vec = np.array([1.0,])
     L_mult_vec = 10**(0.5*np.arange(4+1)/4)[:1]
     CVL_mult_vec = 10**(0.5*np.arange(4+1)/4-0.5)[-1:]
-    J_mult = 0.9
-    beta_mult = 0.9
-    gE_mult = 1/0.9
+    J_mult = 1.0#0.9
+    beta_mult = 1.0#0.9
+    gE_mult = 1.0#1/0.9
     gI_mult = 1.0
-    hE_mult = 1.07/0.9
+    hE_mult = 1.0#1.07/0.9
     hI_mult = 1.0
     
     for c in c_Vec:
@@ -133,7 +133,7 @@ def runjobs():
                                     if cluster=='haba' or cluster=='moto' or cluster=='burg':
                                         text_file.write("#SBATCH --account=theory \n")
                                     text_file.write("#SBATCH --job-name="+jobname+ "\n")
-                                    text_file.write("#SBATCH -t 0-3:59  \n")
+                                    text_file.write("#SBATCH -t 0-11:59  \n")
                                     text_file.write("#SBATCH --mem-per-cpu=10gb \n")
                                     text_file.write("#SBATCH --gres=gpu\n")
                                     text_file.write("#SBATCH -c 1 \n")

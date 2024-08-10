@@ -78,8 +78,8 @@ prms['NI'] = NI
 
 seeds = np.arange(50)
 
-structs = np.arange(0,8+1)/8
-Js = J*10**(np.arange(0,8+1)/8-0.5)
+structs = np.arange(0,6+1)/6
+Js = J*10**(np.arange(0,6+1)/6-0.5)
 
 print('simulating struct # '+str(struct_idx+1))
 print('')

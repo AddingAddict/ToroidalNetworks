@@ -119,7 +119,7 @@ prms['Nori'] = Nori
 prms['NE'] = NE
 prms['NI'] = NI
 
-seeds = np.arange(50)
+seeds = np.arange(200)
 
 print('simulating baseline mult {:.1f}'.format(base_mult))
 print('')
