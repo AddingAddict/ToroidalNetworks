@@ -99,7 +99,7 @@ Tsav = 0.4
 Tsim = 1.0
 dt = 0.01/5
 
-Nori = 36
+Nori = 20
 
 print('simulating contrast # '+str(c_idx+1))
 print('')
@@ -340,10 +340,10 @@ convs[:] = conv
 
 oris = np.arange(Nori)*180/Nori
 oris[oris > 90] = 180 - oris[oris > 90]
-vsm_mask = np.abs(oris) < 2.5
+vsm_mask = np.abs(oris) < 4.5
 oris = np.abs(np.arange(Nori)*180/Nori - (90 + 45/2))
 oris[oris > 90] = 180 - oris[oris > 90]
-osm_mask = np.abs(oris) < 2.5
+osm_mask = np.abs(oris) < 4.5
 
 all_base_means = 0.8*np.mean(μrEs[0]) + 0.2*np.mean(μrIs[0])
 all_base_stds = np.sqrt(0.8*np.mean(ΣrEs[0]+μrEs[0]**2) + 0.2*np.mean(ΣrIs[0]+μrIs[0]**2) - all_base_means**2)

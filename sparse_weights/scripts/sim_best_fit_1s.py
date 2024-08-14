@@ -106,8 +106,8 @@ T = torch.linspace(0,5*Nt,round(5*Nt/dt)+1)
 mask_time = T>(4*Nt)
 T_mask = T.cpu().numpy()[mask_time]
 
-N = 14400
-Nori = 36
+N = 10000
+Nori = 20
 NE = 4*(N//Nori)//5
 NI = 1*(N//Nori)//5
 
@@ -115,7 +115,7 @@ prms['Nori'] = Nori
 prms['NE'] = NE
 prms['NI'] = NI
 
-seeds = np.arange(100)
+seeds = np.arange(200)
 
 print('simulating contrast # '+str(c_idx+1))
 print('')
@@ -285,8 +285,8 @@ Lexps[:,:] = Ls
 timeouts[:,:] = TOs
 
 seed_mask = np.logical_not(np.any(timeouts,axis=-1))
-vsm_mask = net.get_oriented_neurons(delta_ori=2.5)[0]
-osm_mask = net.get_oriented_neurons(delta_ori=2.5,vis_ori=90)[0]
+vsm_mask = net.get_oriented_neurons(delta_ori=4.5)[0]
+osm_mask = net.get_oriented_neurons(delta_ori=4.5,vis_ori=90)[0]
 
 base_rates = rs[:,0,:]
 opto_rates = rs[:,1,:]

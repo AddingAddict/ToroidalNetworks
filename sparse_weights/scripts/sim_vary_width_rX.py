@@ -68,8 +68,8 @@ T = torch.linspace(0,5*Nt,round(5*Nt/dt)+1)
 mask_time = T>(4*Nt)
 T_mask = T.cpu().numpy()[mask_time]
 
-N = 14400
-Nori = [144, 90, 60, 36, 20, 15,  9][width_idx]
+N = 10000
+Nori = [80,50,40,20,16,10, 8][width_idx]
 NE = 4*(N//Nori)//5
 NI = 1*(N//Nori)//5
 
@@ -77,7 +77,7 @@ prms['Nori'] = Nori
 prms['NE'] = NE
 prms['NI'] = NI
 
-seeds = np.arange(50)
+seeds = np.arange(100)
 
 widths = 4**(2*np.arange(0,6+1)/6 - 1)
 rXs = bX*10**(np.arange(0,6+1)/6-0.5)
@@ -225,8 +225,8 @@ Lexps[:,:] = Ls
 timeouts[:,:] = TOs
 
 seed_mask = np.logical_not(np.any(timeouts,axis=-1))
-vsm_mask = net.get_oriented_neurons(delta_ori=2.5*width)[0]
-osm_mask = net.get_oriented_neurons(delta_ori=2.5*width,vis_ori=90)[0]
+vsm_mask = net.get_oriented_neurons(delta_ori=4.5*width)[0]
+osm_mask = net.get_oriented_neurons(delta_ori=4.5*width,vis_ori=90)[0]
 
 base_rates = rs[:,0,:]
 opto_rates = rs[:,1,:]
