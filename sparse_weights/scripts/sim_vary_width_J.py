@@ -68,7 +68,7 @@ T = torch.linspace(0,5*Nt,round(5*Nt/dt)+1)
 mask_time = T>(4*Nt)
 T_mask = T.cpu().numpy()[mask_time]
 
-N = 18000
+N = 14400
 Nori = [144, 90, 60, 36, 20, 15,  9][width_idx]
 NE = 4*(N//Nori)//5
 NI = 1*(N//Nori)//5
