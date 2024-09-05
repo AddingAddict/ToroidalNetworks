@@ -117,7 +117,7 @@ prms['Nori'] = Nori
 prms['NE'] = NE
 prms['NI'] = NI
 
-seeds = np.arange(100)
+seeds = np.arange(50)
 
 print('simulating contrast # '+str(c_idx+1))
 print('')
