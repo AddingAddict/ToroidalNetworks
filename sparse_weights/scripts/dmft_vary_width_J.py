@@ -362,5 +362,5 @@ res_dict['osm_diff_means'] = osm_diff_means
 res_dict['osm_diff_stds'] = osm_diff_stds
 res_dict['osm_norm_covs'] = osm_norm_covs
 
-with open('./../results/dmft_vary_struct_{:d}_J_{:d}'.format(struct_idx,J_idx)+'.pkl', 'wb') as handle:
+with open('./../results/dmft_vary_width_{:d}_J_{:d}'.format(width_idx,J_idx)+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)
