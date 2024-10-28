@@ -54,15 +54,10 @@ aXs = res_dict['best_monk_aXs']
 
 ri = ric.Ricciardi()
 
-Twrm = 1.0
-Tsav = 0.25
+Twrm = 1.2
+Tsav = 0.4
 Tsim = 1.0
-if J_idx < 4:
-    dt = 0.01/5
-elif J_idx < 7:
-    dt = 0.01/10
-else:
-    dt = 0.01/15
+dt = 0.01/10
 
 Nori = [80,50,40,20,16,10, 8][width_idx]
 
