@@ -85,43 +85,45 @@ def runjobs():
     # The array of hashes
     w_Vec=range(7)
     j_Vec=range(7)
+    s_Vec=np.linspace(0.85,1.15,3)
     
     for w in w_Vec:
         for j in j_Vec:
+            for s in s_Vec:
 
-            time.sleep(0.2)
-            
-            #--------------------------------------------------------------------------
-            # Make SBTACH
-            inpath = currwd + "/dmft_vary_width_J.py"
-            c1 = "{:s} -w {:d} -j {:d}".format(inpath,w,j)
-            
-            jobname="dmft_vary_width_J"+"-w-{:d}-j-{:d}".format(w,j)
-            
-            if not args2.test:
-                jobnameDir=os.path.join(ofilesdir, jobname)
-                text_file=open(jobnameDir, "w");
-                os.system("chmod u+x "+ jobnameDir)
-                text_file.write("#!/bin/sh \n")
-                if cluster=='haba' or cluster=='moto' or cluster=='burg':
-                    text_file.write("#SBATCH --account=theory \n")
-                text_file.write("#SBATCH --job-name="+jobname+ "\n")
-                text_file.write("#SBATCH -t 0-11:59  \n")
-                text_file.write("#SBATCH --mem-per-cpu=10gb \n")
-                text_file.write("#SBATCH -c 1 \n")
-                text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
-                text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
-                text_file.write("python  -W ignore " + c1+" \n")
-                text_file.write("echo $PATH  \n")
-                text_file.write("exit 0  \n")
-                text_file.close()
+                time.sleep(0.2)
+                
+                #--------------------------------------------------------------------------
+                # Make SBTACH
+                inpath = currwd + "/dmft_vary_width_J.py"
+                c1 = "{:s} -w {:d} -j {:d} -s {:.2f}".format(inpath,w,j,s)
+                
+                jobname="dmft_vary_width_J"+"-w-{:d}-j-{:d}-s-{:.2f}".format(w,j,s)
+                
+                if not args2.test:
+                    jobnameDir=os.path.join(ofilesdir, jobname)
+                    text_file=open(jobnameDir, "w");
+                    os.system("chmod u+x "+ jobnameDir)
+                    text_file.write("#!/bin/sh \n")
+                    if cluster=='haba' or cluster=='moto' or cluster=='burg':
+                        text_file.write("#SBATCH --account=theory \n")
+                    text_file.write("#SBATCH --job-name="+jobname+ "\n")
+                    text_file.write("#SBATCH -t 0-11:59  \n")
+                    text_file.write("#SBATCH --mem-per-cpu=10gb \n")
+                    text_file.write("#SBATCH -c 1 \n")
+                    text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
+                    text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
+                    text_file.write("python  -W ignore " + c1+" \n")
+                    text_file.write("echo $PATH  \n")
+                    text_file.write("exit 0  \n")
+                    text_file.close()
 
-                if cluster=='axon':
-                    os.system("sbatch -p burst " +jobnameDir);
+                    if cluster=='axon':
+                        os.system("sbatch -p burst " +jobnameDir);
+                    else:
+                        os.system("sbatch " +jobnameDir);
                 else:
-                    os.system("sbatch " +jobnameDir);
-            else:
-                print (c1)
+                    print (c1)
 
 
 

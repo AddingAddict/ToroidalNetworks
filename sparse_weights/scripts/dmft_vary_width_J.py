@@ -14,10 +14,12 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--width_idx', '-w',  help='which width', type=int, default=0)
 parser.add_argument('--J_idx', '-j',  help='which J', type=int, default=0)
+parser.add_argument('--sa_mult', '-s',  help='multiplier for auxiliary site location', type=float, default=1.0)
 args = vars(parser.parse_args())
 print(parser.parse_args())
 width_idx= args['width_idx']
 J_idx= args['J_idx']
+sa_mult= args['sa_mult']
 
 id = None#(133, 0)
 if id is None:
@@ -57,7 +59,12 @@ ri = ric.Ricciardi()
 Twrm = 1.2
 Tsav = 0.4
 Tsim = 1.0
-dt = 0.01/10
+if J_idx < 4:
+    dt = 0.01/5
+elif J_idx < 6:
+    dt = 0.01/8
+else:
+    dt = 0.01/10
 
 Nori = [80,50,40,20,16,10, 8][width_idx]
 
@@ -158,7 +165,7 @@ def predict_networks(prms,rX,cA,CVh):
         dmft_res = res_dict.copy()
     else:
         res_dict = dmft.run_two_stage_ring_dmft(prms,rX,cA,CVh,'./../results',ri,Twrm,Tsav,dt,
-                                                sa=15*width)
+                                                sa=15*width*sa_mult)
         rvb = res_dict['rb'][:2]
         rvp = res_dict['rp'][:2]
         srv2 = res_dict['sr'][:2]**2
@@ -360,5 +367,9 @@ res_dict['osm_diff_stds'] = osm_diff_stds
 res_dict['osm_norm_covs'] = osm_norm_covs
 res_dict['dmft_res'] = dmft_res
 
-with open('./../results/dmft_vary_width_{:d}_J_{:d}'.format(width_idx,J_idx)+'.pkl', 'wb') as handle:
-    pickle.dump(res_dict,handle)
+if np.isclose(sa_mult,1.0):
+    with open('./../results/dmft_vary_width_{:d}_J_{:d}'.format(width_idx,J_idx)+'.pkl', 'wb') as handle:
+        pickle.dump(res_dict,handle)
+else:
+    with open('./../results/dmft_vary_width_{:d}_J_{:d}_sa_{:.2f}'.format(width_idx,J_idx,sa_mult)+'.pkl', 'wb') as handle:
+        pickle.dump(res_dict,handle)
