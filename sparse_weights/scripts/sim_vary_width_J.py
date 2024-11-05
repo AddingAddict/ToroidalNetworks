@@ -80,7 +80,7 @@ prms['NI'] = NI
 seeds = np.arange(100)
 
 widths = 4**(2*np.arange(0,6+1)/6 - 1)
-Js = J*5**(np.arange(0,6+1)/6-0.5)
+Js = J*4**(2*np.arange(0,6+1)/6 - 1)
 
 print('simulating width # '+str(width_idx+1))
 print('')

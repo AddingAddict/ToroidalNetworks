@@ -69,7 +69,7 @@ else:
 Nori = [80,50,40,20,16,10, 8][width_idx]
 
 widths = 4**(2*np.arange(0,6+1)/6 - 1)
-Js = prms['J']*5**(np.arange(0,6+1)/6-0.5)
+Js = prms['J']*4**(2*np.arange(0,6+1)/6 - 1)
 
 print('simulating width # '+str(width_idx+1))
 print('')
