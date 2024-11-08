@@ -59,9 +59,9 @@ ri = ric.Ricciardi()
 Twrm = 1.2
 Tsav = 0.4
 Tsim = 1.0
-if J_idx < 4:
+if J_idx < 3:
     dt = 0.01/5
-elif J_idx < 6:
+elif J_idx < 5:
     dt = 0.01/8
 else:
     dt = 0.01/10
