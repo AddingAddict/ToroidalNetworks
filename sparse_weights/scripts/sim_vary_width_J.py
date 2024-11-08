@@ -101,6 +101,14 @@ rX = bX
 μhIs = np.zeros((len(seeds),3,Nori))
 ΣhEs = np.zeros((len(seeds),4,Nori))
 ΣhIs = np.zeros((len(seeds),4,Nori))
+μhEEs = np.zeros((len(seeds),2,Nori))
+μhEIs = np.zeros((len(seeds),2,Nori))
+μhIEs = np.zeros((len(seeds),2,Nori))
+μhIIs = np.zeros((len(seeds),2,Nori))
+ΣhEEs = np.zeros((len(seeds),2,Nori))
+ΣhEIs = np.zeros((len(seeds),2,Nori))
+ΣhIEs = np.zeros((len(seeds),2,Nori))
+ΣhIIs = np.zeros((len(seeds),2,Nori))
 balEs = np.zeros((len(seeds),2,Nori))
 balIs = np.zeros((len(seeds),2,Nori))
 Lexps = np.zeros((len(seeds),2))
@@ -205,6 +213,14 @@ for nloc in range(Nori):
     μhIs[:,:2,nloc] = np.mean(mus[:,:,net.C_idxs[1][nloc]],axis=-1)
     ΣhEs[:,:2,nloc] = np.var(mus[:,:,net.C_idxs[0][nloc]],axis=-1)
     ΣhIs[:,:2,nloc] = np.var(mus[:,:,net.C_idxs[1][nloc]],axis=-1)
+    μhEEs[:,:2,nloc] = np.mean(muEs[:,:,net.C_idxs[0][nloc]],axis=-1)
+    μhIEs[:,:2,nloc] = np.mean(muEs[:,:,net.C_idxs[1][nloc]],axis=-1)
+    μhEIs[:,:2,nloc] = np.mean(muIs[:,:,net.C_idxs[0][nloc]],axis=-1)
+    μhIIs[:,:2,nloc] = np.mean(muIs[:,:,net.C_idxs[1][nloc]],axis=-1)
+    ΣhEEs[:,:2,nloc] = np.var(muEs[:,:,net.C_idxs[0][nloc]],axis=-1)
+    ΣhIEs[:,:2,nloc] = np.var(muEs[:,:,net.C_idxs[1][nloc]],axis=-1)
+    ΣhEIs[:,:2,nloc] = np.var(muIs[:,:,net.C_idxs[0][nloc]],axis=-1)
+    ΣhIIs[:,:2,nloc] = np.var(muIs[:,:,net.C_idxs[1][nloc]],axis=-1)
     balEs[:,:,nloc] = np.mean(np.abs(mus[:,:,net.C_idxs[0][nloc]])/muEs[:,:,net.C_idxs[0][nloc]],axis=-1)
     balIs[:,:,nloc] = np.mean(np.abs(mus[:,:,net.C_idxs[1][nloc]])/muEs[:,:,net.C_idxs[1][nloc]],axis=-1)
 
@@ -273,6 +289,14 @@ res_dict['μhEs'] = μhEs
 res_dict['μhIs'] = μhIs
 res_dict['ΣhEs'] = ΣhEs
 res_dict['ΣhIs'] = ΣhIs
+res_dict['μhEEs'] = μhEEs
+res_dict['μhEIs'] = μhEIs
+res_dict['μhIEs'] = μhIEs
+res_dict['μhIIs'] = μhIIs
+res_dict['ΣhEEs'] = ΣhEEs
+res_dict['ΣhEIs'] = ΣhEIs
+res_dict['ΣhIEs'] = ΣhIEs
+res_dict['ΣhIIs'] = ΣhIIs
 res_dict['balEs'] = balEs
 res_dict['balIs'] = balIs
 res_dict['Lexps'] = Lexps
