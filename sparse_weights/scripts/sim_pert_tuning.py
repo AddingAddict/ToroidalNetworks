@@ -25,7 +25,12 @@ c_idx= args['c_idx']
 tune_idx= args['tune_idx']
 orth_pert= args['orth_pert']
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+elif torch.backends.mps.is_available():
+    device = torch.device('mps')
+else:
+    device = torch.device('cpu')
 
 id = None
 if id is None:

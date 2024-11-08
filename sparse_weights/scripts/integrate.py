@@ -238,7 +238,12 @@ def calc_lyapunov_exp(rc,T,L,M,H,LAM,E_all,I_all,RATEs,NLE,TWONS,TONS,mult_tau=F
         return Ls
 
 def calc_lyapunov_exp_tensor(rc,T,L,M,H,LAM,E_cond,RATEs,NLE,TWONS,TONS,mult_tau=False,save_time=False,return_Q=False):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+    elif torch.backends.mps.is_available():
+        device = torch.device('mps')
+    else:
+        device = torch.device('cpu')
 
     if len(H) != RATEs.shape[0]:
         raise("Rates must have shape Ncell x Ntime")

@@ -15,7 +15,12 @@ import sim_util as su
 import ricciardi as ric
 import integrate as integ
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+elif torch.backends.mps.is_available():
+    device = torch.device('mps')
+else:
+    device = torch.device('cpu')
 
 parser = argparse.ArgumentParser(description=('This python script takes results from sampled spatial model parameters, '
     'trains a net to interpolate the results, and finds parameters that best fit the experimental results'))

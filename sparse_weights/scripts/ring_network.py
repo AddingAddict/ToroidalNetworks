@@ -197,8 +197,13 @@ class RingNetwork(network.BaseNetwork):
         self.M_torch = torch.from_numpy(self.M.astype(dtype=np.float32))
         # self.MX_torch = torch.from_numpy(self.MX.astype(dtype=np.float32))
         self.H_torch = torch.from_numpy(self.H.astype(dtype=np.float32))
-
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
+        if torch.cuda.is_available():
+            device = torch.device('cuda')
+        elif torch.backends.mps.is_available():
+            device = torch.device('mps')
+        else:
+            device = torch.device('cpu')
         print("Using",device)
 
         for cidx in range(self.n):

@@ -51,7 +51,12 @@ hI_mult= args['hI_mult']
 L_mult= args['L_mult']
 CVL_mult= args['CVL_mult']
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+elif torch.backends.mps.is_available():
+    device = torch.device('mps')
+else:
+    device = torch.device('cpu')
 
 id = None
 if id is None:

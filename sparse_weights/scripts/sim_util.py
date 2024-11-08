@@ -59,7 +59,12 @@ def gen_ring_disorder(seed,prm_dict,eX,vis_ori=None,opto_per_pop=None):
     return net,net.M,net.H,B,LAS,eps
 
 def gen_ring_disorder_tensor(seed,prm_dict,eX,vis_ori=None,opto_per_pop=None):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+    elif torch.backends.mps.is_available():
+        device = torch.device('mps')
+    else:
+        device = torch.device('cpu')
     
     net = ring_network.RingNetwork(seed=0,NC=[prm_dict.get('NE',4),prm_dict.get('NI',1)],
         Nori=prm_dict.get('Nori',180))

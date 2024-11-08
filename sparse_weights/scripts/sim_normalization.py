@@ -25,7 +25,12 @@ c1_idx= args['c1_idx']
 c2_idx= args['c2_idx']
 base_mult= args['base_mult']
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+elif torch.backends.mps.is_available():
+    device = torch.device('mps')
+else:
+    device = torch.device('cpu')
 
 id = None
 if id is None:

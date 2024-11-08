@@ -24,7 +24,12 @@ args = vars(parser.parse_args())
 print(parser.parse_args())
 c_idx= args['c_idx']
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+elif torch.backends.mps.is_available():
+    device = torch.device('mps')
+else:
+    device = torch.device('cpu')
 
 ri = ric.Ricciardi()
 ri.set_up_nonlinearity('./phi_int')
