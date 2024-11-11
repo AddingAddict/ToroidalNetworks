@@ -47,8 +47,8 @@ Nori = 20
 NE = 4*(N//Nori)//5
 NI = 1*(N//Nori)//5
 
-basefracs = np.arange(8+1)/8
-disords = 50**(np.arange(0,8+1)/8)
+basefracs = np.arange(6+1)/6
+disords = 50**(np.arange(0,6+1)/6)
 seeds = np.arange(5)
 
 rX = 20

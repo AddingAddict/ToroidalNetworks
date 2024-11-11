@@ -114,6 +114,11 @@ balIs = np.zeros((len(seeds),2,Nori))
 Lexps = np.zeros((len(seeds),2))
 timeouts = np.zeros((len(seeds),2)).astype(bool)
 
+if J_idx < 4:
+    method = None
+else:
+    method = 'rk4'
+
 def simulate_networks(prms,rX,cA,CVh):
     N = prms.get('Nori',180) * (prms.get('NE',4) + prms.get('NI',1))
     rs = np.zeros((len(seeds),2,N))
@@ -140,7 +145,7 @@ def simulate_networks(prms,rX,cA,CVh):
         start = time.process_time()
 
         base_sol,base_timeout = integ.sim_dyn_tensor(ri,T,0.0,this_M,rX*(this_B+cA*this_H)*this_EPS,
-                                                     this_LAS,net.C_conds[0],mult_tau=True,max_min=30)
+                                                     this_LAS,net.C_conds[0],mult_tau=True,max_min=30,method=method)
         Ls[seed_idx,0] = np.max(integ.calc_lyapunov_exp_tensor(ri,T[T>=3*Nt],0.0,this_M,
                                                                rX*(this_B+cA*this_H)*this_EPS,this_LAS,
                                                                net.C_conds[0],base_sol[:,T>=3*Nt],10,1*Nt,2*ri.tE,
@@ -154,7 +159,7 @@ def simulate_networks(prms,rX,cA,CVh):
         start = time.process_time()
         
         opto_sol,opto_timeout = integ.sim_dyn_tensor(ri,T,1.0,this_M,rX*(this_B+cA*this_H)*this_EPS,
-                                                     this_LAS,net.C_conds[0],mult_tau=True,max_min=30)
+                                                     this_LAS,net.C_conds[0],mult_tau=True,max_min=30,method=method)
         Ls[seed_idx,1] = np.max(integ.calc_lyapunov_exp_tensor(ri,T[T>=3*Nt],1.0,this_M,
                                                                rX*(this_B+cA*this_H)*this_EPS,this_LAS,
                                                                net.C_conds[0],opto_sol[:,T>=3*Nt],10,1*Nt,2*ri.tE,

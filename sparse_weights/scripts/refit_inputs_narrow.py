@@ -33,7 +33,7 @@ CVh_mult= args['CVh_mult']
 CVL_mult= args['CVL_mult']
 
 # id = None
-id = (291,1,255,3)
+id = (291,1,289,0)
 if id is None:
     with open('./../results/best_fit.pkl', 'rb') as handle:
         res_dict = pickle.load(handle)
