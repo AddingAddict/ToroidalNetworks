@@ -88,6 +88,28 @@ def apply_kernel(x,S,L,dx=None,kernel='gaussian'):
         return out
     else:
         return out*dx
+    
+def bin_corr_bnds(p1,p2):
+    '''
+    Compute the lower and upper bounds for the correlations between joint Bernoulli variables
+
+    Parameters
+    ----------
+    p1 : array-like
+        Array of probabilities of first binary variable
+    p2 : array-like
+        Array of probabilities of second binary variable
+
+    Returns
+    -------
+    lo_bnd: array-like
+        Array of lower bounds for each pair
+    up_bnd: array-like 
+        Array of upper bounds for each pair
+    '''
+    lo_bnd = np.fmax(-np.sqrt(((1-p1)/p1)*((1-p2)/p2)), -1/np.sqrt(((1-p2)/p2)*((1-p1)/p1)))
+    up_bnd = np.fmin( np.sqrt(((1-p1)/p1)/((1-p2)/p2)),    np.sqrt(((1-p2)/p2)/((1-p1)/p1)))
+    return lo_bnd,up_bnd
 
 class BaseNetwork(ABC):
     def __init__(self, seed=0, n=None, NC=None, NX=None, Nloc=1, profile='gaussian', normalize_by_mean=False):
@@ -208,11 +230,12 @@ class BaseNetwork(ABC):
                     for pre_loc in range(self.Nloc):
                         p_full[pstC,pst_loc,preC,pre_loc] = ps[pst_loc,pre_loc]
         
+        lo_bnd,up_bnd = bin_corr_bnds(p_full,p_full.transpose((2,3,0,1)))
         if np.isscalar(rho):
-            a_full = np.log(1 + rho*np.sqrt((1-p_full)/p_full * ((1-p_full)/p_full).transpose((2,3,0,1))))
+            rho_full = np.clip(rho,0.99*lo_bnd,0.99*up_bnd)
         else:
-            a_full = np.log(1 + rho[:,None,:,None]*np.sqrt((1-p_full)/p_full *\
-                ((1-p_full)/p_full).transpose((2,3,0,1))))
+            rho_full = np.clip(rho[:,None,:,None],0.99*lo_bnd,0.99*up_bnd)
+        a_full = np.log(1 + rho_full*np.sqrt((1-p_full)/p_full * ((1-p_full)/p_full).transpose((2,3,0,1))))
         
         for pstC in range(self.n):
             pstC_idxs = self.C_idxs[pstC]

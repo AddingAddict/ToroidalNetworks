@@ -168,18 +168,23 @@ def predict_networks(prms,rX,cA,CVh):
                                                 sa=15*width*sa_mult)
         rvb = res_dict['rb'][:2]
         rvp = res_dict['rp'][:2]
+        srv = res_dict['sr'][:2]
         srv2 = res_dict['sr'][:2]**2
         rob = res_dict['rb'][2:]
         rop = res_dict['rp'][2:]
+        sro = res_dict['sr'][2:]
         sro2 = res_dict['sr'][2:]**2
         Crvb = dmft.grid_stat(np.mean,res_dict['Crb'][:2],Tsim,dt)
         Crvp = dmft.grid_stat(np.mean,res_dict['Crp'][:2],Tsim,dt)
+        sCrv = dmft.grid_stat(np.mean,res_dict['sCr'][:2],Tsim,dt)
         sCrv2 = dmft.grid_stat(np.mean,res_dict['sCr'][:2],Tsim,dt)**2
         Crob = dmft.grid_stat(np.mean,res_dict['Crb'][2:],Tsim,dt)
         Crop = dmft.grid_stat(np.mean,res_dict['Crp'][2:],Tsim,dt)
+        sCro = dmft.grid_stat(np.mean,res_dict['sCr'][2:],Tsim,dt)
         sCro2 = dmft.grid_stat(np.mean,res_dict['sCr'][2:],Tsim,dt)**2
         Cdrb = dmft.grid_stat(np.mean,res_dict['Cdrb'],Tsim,dt)
         Cdrp = dmft.grid_stat(np.mean,res_dict['Cdrp'],Tsim,dt)
+        sCdr = dmft.grid_stat(np.mean,res_dict['sCdr'],Tsim,dt)
         sCdr2 = dmft.grid_stat(np.mean,res_dict['sCdr'],Tsim,dt)**2
         normC[:,0] = gauss(oris[None,:],res_dict['Crb'][:2,-1,None],res_dict['Crp'][:2,-1,None],
                            res_dict['sCr'][:2,-1,None]) /\
@@ -199,27 +204,37 @@ def predict_networks(prms,rX,cA,CVh):
         dmft_res = res_dict.copy()
         
     sWrv2 = sW2+srv2
+    sWrv = np.sqrt(sWrv2)
     sWCrv2 = sW2+sCrv2
+    sWCrv = np.sqrt(sWCrv2)
     sWro2 = sW2+sro2
+    sWro = np.sqrt(sWro2)
     sWCro2 = sW2+sCro2
+    sWCro = np.sqrt(sWCro2)
     sWCdr2 = sW2+sCdr2
+    sWCdr = np.sqrt(sWCdr2)
     
-    muvb = (muW+np.sqrt(srv2/(2*np.pi))*muWb)*rvb
-    muvp = muvb + np.sqrt(srv2/sWrv2)*muW*(rvp-rvb)
-    smuv2 = sWrv2
-    muob = (muW+np.sqrt(sro2/(2*np.pi))*muWb)*rob
-    muop = muob + np.sqrt(sro2/sWro2)*muW*(rop-rob)
-    smuo2 = sWro2
+    muvb = (muW+dmft.unstruct_fact(srv)*muWb)*rvb
+    muvp = muvb + dmft.struct_fact(0,sWrv,srv)*muW*(rvp-rvb)
+    muvb = muvb + dmft.struct_fact(90,sWrv,srv)*muW*(rvp-rvb)
+    smuv2 = sWrv**2
+    muob = (muW+dmft.unstruct_fact(sro)*muWb)*rob
+    muop = muob + dmft.struct_fact(0,sWro,sro)*muW*(rop-rob)
+    muob = muob + dmft.struct_fact(90,sWro,sro)*muW*(rop-rob)
+    smuo2 = sWro**2
     
-    Sigvb = (SigW+np.sqrt(sCrv2/(2*np.pi))*SigWb)*Crvb
-    Sigvp = Sigvb + np.sqrt(sCrv2/sWCrv2)*SigW*(Crvp-Crvb)
-    sSigv2 = sWCrv2
-    Sigob = (SigW+np.sqrt(sCro2/(2*np.pi))*SigWb)*Crob
-    Sigop = Sigob + np.sqrt(sCro2/sWCro2)*SigW*(Crop-Crob)
-    sSigo2 = sWCro2
-    Sigdb = (SigW+np.sqrt(sCdr2/(2*np.pi))*SigWb)*Cdrb
-    Sigdp = Sigdb + np.sqrt(sCdr2/sWCdr2)*SigW*(Cdrp-Cdrb)
-    sSigd2 = sWCdr2
+    Sigvb = (SigW+dmft.unstruct_fact(sCrv)*SigWb)*Crvb
+    Sigvp = Sigvb + dmft.struct_fact(0,sWCrv,sCrv)*SigW*(Crvp-Crvb)
+    Sigvb = Sigvb + dmft.struct_fact(90,sWCrv,sCrv)*SigW*(Crvp-Crvb)
+    sSigv2 = sWCrv**2
+    Sigob = (SigW+dmft.unstruct_fact(sCro)*SigWb)*Crob
+    Sigop = Sigob + dmft.struct_fact(0,sWCro,sCro)*SigW*(Crop-Crob)
+    Sigob = Sigob + dmft.struct_fact(90,sWCro,sCro)*SigW*(Crop-Crob)
+    sSigo2 = sWCro**2
+    Sigdb = (SigW+dmft.unstruct_fact(sCdr)*SigWb)*Cdrb
+    Sigdp = Sigdb + dmft.struct_fact(0,sWCdr,sCdr)*SigW*(Cdrp-Cdrb)
+    Sigdb = Sigdb + dmft.struct_fact(90,sWCdr,sCdr)*SigW*(Cdrp-Cdrb)
+    sSigd2 = sWCdr**2
     
     for i in range(2):
         μrs[i,0] = gauss(oris,rvb[i],rvp[i],srv2[i])
@@ -252,7 +267,7 @@ def predict_networks(prms,rX,cA,CVh):
 def calc_bal(μmuE,μmuI,ΣmuE,ΣmuI,N=10000):
     muEs = np.fmax(μmuE + np.sqrt(ΣmuE)*np.random.randn(N),1e-12)
     muIs = np.fmin(μmuI + np.sqrt(ΣmuI)*np.random.randn(N),-1e-12)
-    return np.mean(np.abs(muEs+muIs)/muEs)
+    return np.mean(np.fmax(0,muEs+muIs)/muEs)
 
 # Simulate zero and full contrast networks with ring connectivity
 print('simulating baseline fraction network')

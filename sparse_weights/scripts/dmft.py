@@ -149,7 +149,7 @@ def R_int(M1,M2,mu1,mu2,Sig1,Sig2,k,x):
 
 def R_simp(M1,M2,mu1,mu2,Sig1,Sig2,k):
     xs = np.linspace(-8,8,1001)
-    return simpson(R_int(M1,M2,mu1,mu2,Sig1,Sig2,k,xs),xs)
+    return simpson(R_int(M1,M2,mu1,mu2,Sig1,Sig2,k,xs),x=xs)
 
 def doub_vec(A):
     if A.ndim==1:
@@ -317,6 +317,25 @@ def gauss_dmft(tau,muW,SigW,muH,SigH,M_fn,C_fn,Twrm,Tsav,dt,r0=None,Cr0=None):
         (np.max(Cr_diag[:,-Nsav:],axis=1)-np.min(Cr_diag[:,-Nsav:],axis=1))/\
             np.mean(Cr_diag[:,-Nsav:],axis=1) < 1e-3
 
+def doub_gauss_dmft(tau,muW,SigW,muH,SigH,M_fns,C_fns,Twrm,Tsav,dt,rb0=None,Crb0=None):
+    Ntyp = len(muH)
+    
+    doub_tau = doub_vec(tau)
+    doub_muW = doub_mat(muW)
+    doub_SigW = doub_mat(SigW)
+    doub_muH = doub_vec(muH)
+    doub_SigH = np.concatenate([SigH,SigH],axis=0)
+    
+    def doub_M(mui,Sigii,out):
+        M_fns[0](mui[:Ntyp],Sigii[:Ntyp],out[:Ntyp])
+        M_fns[1](mui[Ntyp:],Sigii[Ntyp:],out[Ntyp:])
+        
+    def doub_C(mui,Sigii,Sigij,out):
+        C_fns[0](mui[:Ntyp],Sigii[:Ntyp],Sigij[:Ntyp],out[:Ntyp])
+        C_fns[1](mui[Ntyp:],Sigii[Ntyp:],Sigij[Ntyp:],out[Ntyp:])
+        
+    return gauss_dmft(doub_tau,doub_muW,doub_SigW,doub_muH,doub_SigH,doub_M,doub_C,Twrm,Tsav,dt,rb0,Crb0)
+
 def gauss_struct_dmft(tau,muWs,SigWs,muHs,SigHs,M_fn,C_fn,mu_fn,Sig_fn,Twrm,Tsav,dt,rs0,Crs0):
     Nsit = muHs.shape[0]
     Ntyp = muHs.shape[1]
@@ -406,7 +425,7 @@ def gauss_struct_dmft(tau,muWs,SigWs,muHs,SigHs,M_fn,C_fn,mu_fn,Sig_fn,Twrm,Tsav
         (np.max(Crs_diag[:,:,-Nsav:],axis=-1)-np.min(Crs_diag[:,:,-Nsav:],axis=-1))/\
             np.mean(Crs_diag[:,:,-Nsav:],axis=-1) < 1e-3
 
-def diff_gauss_dmft(tau,muW,SigW,muH,SigH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
+def diff_gauss_dmft(tau,muW,SigW,muH,SigH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None,SigdW=None):
     Ntyp = len(muH)
     Nint = round((Twrm+Tsav)/dt)+1
     Nclc = round(1.5*Tsav/dt)+1
@@ -426,7 +445,10 @@ def diff_gauss_dmft(tau,muW,SigW,muH,SigH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
     doub_SigW = doub_mat(SigW)
     
     mu = doub_muW@r + doub_vec(muH)
-    Sig = doub_SigW@Cr + doub_vec(SigH)[:,None]
+    if SigH.ndim==1:
+        Sig = doub_SigW@Cr + doub_vec(SigH)[:,None]
+    else:
+        Sig = doub_SigW@Cr + np.concatenate([SigH,SigH],axis=0)
     
     NCdr0 = Cdr0.shape[1]
     if Nclc > NCdr0:
@@ -441,6 +463,9 @@ def diff_gauss_dmft(tau,muW,SigW,muH,SigH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
     Rphi = np.empty((Ntyp,),dtype=np.float32)
     Cphi = Cr - (doub_vec(tau)**2 - dt*doub_vec(tau))[:,None] * np.einsum('ij,kj->ki',d2_stencil(Tsav,dt),Cr)
     
+    if SigdW is None:
+        SigdW = SigW
+    
     for i in range(Nint-1):
         if i > Nclc-1:
             Cdr[:,i+1,i-Nclc] = Cdr[:,i,i-Nclc]
@@ -449,7 +474,7 @@ def diff_gauss_dmft(tau,muW,SigW,muH,SigH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
             ij_idx = np.fmin(i-j,Nsav-1)
             
             Cdrij = Cdr[:,i,j]
-            Sigdij = SigW@Cdrij
+            Sigdij = SigdW@Cdrij
             
             kij = 0.5*(Sig[:Ntyp,ij_idx]+Sig[Ntyp:,ij_idx]-Sigdij)
             
@@ -1690,12 +1715,12 @@ def run_decoupled_two_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,
         temp = SigHb.copy()
         SigHb = np.zeros((2,Nsav))
         SigHb[:,:Norig] = temp
-        SigHb[:,Norig:] = temp[:,-1]
+        SigHb[:,Norig:] = temp[:,-1:]
         
         temp = SigHp.copy()
         SigHp = np.zeros((2,Nsav))
         SigHp[:,:Norig] = temp
-        SigHp[:,Norig:] = temp[:,-1]
+        SigHp[:,Norig:] = temp[:,-1:]
     
     FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
     FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
@@ -1724,22 +1749,60 @@ def run_decoupled_two_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,
     elif which=='opto':
         full_rb,full_Crb,convb = gauss_dmft(tau,muWbb,SigWbb,muHb,SigHb,opto_M,opto_C,Twrm,Tsav,dt)
         full_rp,full_Crp,convp = gauss_dmft(tau,muWpp,SigWpp,muHp,SigHp,opto_M,opto_C,Twrm,Tsav,dt)
+    elif which=='both':
+        full_rb,full_Crb,convb = doub_gauss_dmft(tau,muWbb,SigWbb,muHb,SigHb,[base_M,opto_M],[base_C,opto_C],
+                                                 Twrm,Tsav,dt)
+        full_rp,full_Crp,convp = doub_gauss_dmft(tau,muWpp,SigWpp,muHp,SigHp,[base_M,opto_M],[base_C,opto_C],
+                                                 Twrm,Tsav,dt)
+
+        def diff_R(mu1i,mu2i,Sig1ii,Sig2ii,kij,out):
+            out[0] = R_simp(ME,ML,mu1i[0],mu2i[0],Sig1ii[0],Sig2ii[0],kij[0])
+            out[1] = R_simp(MI,MI,mu1i[1],mu2i[1],Sig1ii[1],Sig2ii[1],kij[1])
+            
+        rb = full_rb[:,-1]
+        rp = full_rp[:,-1]
+        Crb = full_Crb[:,-1,-1:-Nsav-1:-1]
+        Crp = full_Crp[:,-1,-1:-Nsav-1:-1]
+        
+        doub_muWbb = doub_mat(muWbb)
+        doub_muWpp = doub_mat(muWpp)
+        doub_SigWbb = doub_mat(SigWbb)
+        doub_SigWpp = doub_mat(SigWpp)
+        
+        mub = doub_muWbb@rb + doub_vec(muHb)
+        mup = doub_muWpp@rp + doub_vec(muHp)
+        Sigb = doub_SigWbb@Crb + np.concatenate([SigHb,SigHb],axis=0)
+        Sigp = doub_SigWpp@Crp + np.concatenate([SigHp,SigHp],axis=0)
+
+        full_Cdrb,convdb = diff_gauss_dmft(tau,muWbb,SigWbb,muHb,SigHb,diff_R,Twrm,Tsav,dt,rb,Crb)
+        full_Cdrp,convdp = diff_gauss_dmft(tau,muWpp,SigWpp,muHp,SigHp,diff_R,Twrm,Tsav,dt,rp,Crp)
     else:
-        raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\' and \'opto\'')
+        raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
         
     print('integrating first stage took',time.process_time() - start,'s')
-
-    # extract predicted moments after long time evolution
-    rb = full_rb[:,-1]
-    rp = full_rp[:,-1]
-    Crb = full_Crb[:,-1,-1:-Nsav-1:-1]
-    Crp = full_Crp[:,-1,-1:-Nsav-1:-1]
     
     if which in ('base','opto'):
+        # extract predicted moments after long time evolution
+        rb = full_rb[:,-1]
+        rp = full_rp[:,-1]
+        Crb = full_Crb[:,-1,-1:-Nsav-1:-1]
+        Crp = full_Crp[:,-1,-1:-Nsav-1:-1]
+        
         mub = muWbb@rb + muHb
         Sigb = SigWbb@Crb + SigHb
         mup = muWpp@rp + muHp
         Sigp = SigWpp@Crp + SigHp
+    elif which=='both':
+        drb = rb[:2] - rb[2:]
+        drp = rp[:2] - rp[2:]
+        Cdrb = full_Cdrb[:,-1,-1:-Nsav-1:-1]
+        Cdrp = full_Cdrp[:,-1,-1:-Nsav-1:-1]
+
+        dmub = mub[:2] - mub[2:]
+        dmup = mup[:2] - mup[2:]
+
+        Sigdb = SigWbb@Cdrb
+        Sigdp = SigWpp@Cdrp
     else:
         raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
     
@@ -1760,16 +1823,210 @@ def run_decoupled_two_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,
     res_dict['convb'] = convb
     res_dict['convp'] = convp
     
+    if which=='both':
+        res_dict['drb'] = drb
+        res_dict['drp'] = drp
+        res_dict['Cdrb'] = Cdrb
+        res_dict['Cdrp'] = Cdrp
+        
+        res_dict['dmub'] = dmub
+        res_dict['dmup'] = dmup
+        res_dict['Sigdb'] = Sigdb
+        res_dict['Sigdp'] = Sigdp
+        
+        res_dict['convdb'] = convdb
+        res_dict['convdp'] = convdp
+    
     if return_full:
         res_dict['full_rb'] = full_rb
         res_dict['full_rp'] = full_rp
         res_dict['full_Crb'] = full_Crb
         res_dict['full_Crp'] = full_Crp
+        if which=='both':
+            res_dict['full_Cdrb'] = full_Cdrb
+            res_dict['full_Cdrp'] = full_Cdrp
+    
+    return res_dict
+
+def run_coupled_two_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,
+                                struct_dict=None,which='both',return_full=False):
+    Nsav = round(Tsav/dt)+1
+    
+    K = prms['K']
+    SoriE = prms['SoriE']
+    SoriI = prms['SoriI']
+    SoriF = prms['SoriF']
+    J = prms['J']
+    beta = prms['beta']
+    gE = prms['gE']
+    gI = prms['gI']
+    hE = prms['hE']
+    hI = prms['hI']
+    basefrac = prms.get('basefrac',0)
+    baseinp = prms.get('baseinp',0)
+    baseprob = prms.get('baseprob',0)
+    
+    tau = np.array([rc.tE,rc.tI],dtype=np.float32)
+    W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
+    Ks =    (1-basefrac)*(1-baseprob) *np.array([K,K/4],dtype=np.float32)
+    Kbs =(1-(1-basefrac)*(1-baseprob))*np.array([K,K/4],dtype=np.float32)
+    Hb = rX*(1+(1-(1-basefrac)*(1-baseinp))*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hp = rX*(1+                             cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    eH = CVh
+    sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
+    
+    sW2 = sW**2
+    
+    muW = tau[:,None]*W*Ks
+    SigW = tau[:,None]**2*W**2*Ks
+    muWb = tau[:,None]*W*Kbs
+    SigWb = tau[:,None]**2*W**2*Kbs
+    
+    sr = struct_dict['sr']
+    sCr = struct_dict['sCr'][:,-1]
+    
+    sWr = np.sqrt(sW2+sr**2)
+    sWCr = np.sqrt(sW2+sCr**2)
+    
+    muWbb = (1 - struct_fact(180/2,sWr,sr,180)) * muW + (1 - unstruct_fact(sr,L)) * muWb
+    muWbp = struct_fact(180/2,sWr,sr,180) * muW + unstruct_fact(sr,L) * muWb
+    muWpb = (1 - struct_fact(0,sWr,sr,180)) * muW + (1 - unstruct_fact(sr,L)) * muWb
+    muWpp = struct_fact(0,sWr,sr,180) * muW + unstruct_fact(sr,L) * muWb
+
+    SigWbb = (1 - struct_fact(180/2,sWCr,sCr,180)) * SigW + (1 - unstruct_fact(sCr,L)) * SigWb
+    SigWbp = struct_fact(180/2,sWCr,sCr,180) * SigW + unstruct_fact(sCr,L) * SigWb
+    SigWpb = (1 - struct_fact(0,sWCr,sCr,180)) * SigW + (1 - unstruct_fact(sCr,L)) * SigWb
+    SigWpp = struct_fact(0,sWCr,sCr,180) * SigW + unstruct_fact(sCr,L) * SigWb
+    
+    muHb = tau*Hb
+    SigHb = ((tau*Hb*eH)**2)[:,None]
+    muHp = tau*Hp
+    SigHp = ((tau*Hp*eH)**2)[:,None]
+    
+    Norig = SigHb.shape[1]
+    if Norig!=Nsav:
+        temp = SigHb.copy()
+        SigHb = np.zeros((2,Nsav))
+        SigHb[:,:Norig] = temp
+        SigHb[:,Norig:] = temp[:,-1:]
+        
+        temp = SigHp.copy()
+        SigHp = np.zeros((2,Nsav))
+        SigHp[:,:Norig] = temp
+        SigHp[:,Norig:] = temp[:,-1:]
+    
+    muWs = np.block([[muWbb,muWbp],[muWpb,muWpp]])
+    SigWs = np.block([[SigWbb,SigWbp],[SigWpb,SigWpp]])
+    muHs = np.concatenate([muHb,muHp])
+    SigHs = np.concatenate([SigHb,SigHp],axis=0)
+    taus = np.concatenate([tau,tau])
+    
+    FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
+    FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
+    
+    def base_M(mui,Sigii,out):
+        out[0] = ME(mui[0],Sigii[0])[0]
+        out[1] = MI(mui[1],Sigii[1])[0]
+        out[2] = ME(mui[2],Sigii[2])[0]
+        out[3] = MI(mui[3],Sigii[3])[0]
+        
+    def base_C(mui,Sigii,Sigij,out):
+        out[0] = CE(mui[0],Sigii[0],Sigij[0])[0]
+        out[1] = CI(mui[1],Sigii[1],Sigij[1])[0]
+        out[2] = CE(mui[2],Sigii[2],Sigij[2])[0]
+        out[3] = CI(mui[3],Sigii[3],Sigij[3])[0]
+    
+    def opto_M(mui,Sigii,out):
+        out[0] = ML(mui[0],Sigii[0])[0]
+        out[1] = MI(mui[1],Sigii[1])[0]
+        out[2] = ML(mui[2],Sigii[2])[0]
+        out[3] = MI(mui[3],Sigii[3])[0]
+        
+    def opto_C(mui,Sigii,Sigij,out):
+        out[0] = CL(mui[0],Sigii[0],Sigij[0])[0]
+        out[1] = CI(mui[1],Sigii[1],Sigij[1])[0]
+        out[2] = CL(mui[2],Sigii[2],Sigij[2])[0]
+        out[3] = CI(mui[3],Sigii[3],Sigij[3])[0]
+    
+    start = time.process_time()
+    
+    if which=='base':
+        full_r,full_Cr,conv = gauss_dmft(taus,muWs,SigWs,muHs,SigHs,base_M,base_C,Twrm,Tsav,dt)
+    elif which=='opto':
+        full_r,full_Cr,conv = gauss_dmft(taus,muWs,SigWs,muHs,SigHs,opto_M,opto_C,Twrm,Tsav,dt)
+    elif which=='both':
+        full_r,full_Cr,conv = doub_gauss_dmft(taus,muWs,SigWs,muHs,SigHs,[base_M,opto_M],[base_C,opto_C],
+                                              Twrm,Tsav,dt)
+
+        def diff_R(mu1i,mu2i,Sig1ii,Sig2ii,kij,out):
+            out[0] = R_simp(ME,ML,mu1i[0],mu2i[0],Sig1ii[0],Sig2ii[0],kij[0])
+            out[1] = R_simp(MI,MI,mu1i[1],mu2i[1],Sig1ii[1],Sig2ii[1],kij[1])
+            out[2] = R_simp(ME,ML,mu1i[2],mu2i[2],Sig1ii[2],Sig2ii[2],kij[2])
+            out[3] = R_simp(MI,MI,mu1i[3],mu2i[3],Sig1ii[3],Sig2ii[3],kij[3])
+            
+        r = full_r[:,-1]
+        Cr = full_Cr[:,-1,-1:-Nsav-1:-1]
+        
+        doub_muWs = doub_mat(muWs)
+        doub_SigWs = doub_mat(SigWs)
+        
+        mu = doub_muWs@r + doub_vec(muHs)
+        Sig = doub_SigWs@Cr + np.concatenate([SigHs,SigHs],axis=0)
+
+        full_Cdr,convd = diff_gauss_dmft(taus,muWs,SigWs,muHs,SigHs,diff_R,Twrm,Tsav,dt,r,Cr)
+    else:
+        raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
+        
+    print('integrating first stage took',time.process_time() - start,'s')
+    
+    if which in ('base','opto'):
+        # extract predicted moments after long time evolution
+        r = full_r[:,-1]
+        Cr = full_Cr[:,-1,-1:-Nsav-1:-1]
+        
+        mu = muWs@r + muHs
+        Sig = SigWs@Cr + SigHs
+    elif which=='both':
+        dr = r[:4] - r[4:]
+        Cdr = full_Cdr[:,-1,-1:-Nsav-1:-1]
+
+        dmu = mu[:4] - mu[4:]
+
+        Sigd = SigWs@Cdr
+    else:
+        raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
+    
+    res_dict = {}
+    
+    res_dict['r'] = r
+    res_dict['sr'] = sr
+    res_dict['Cr'] = Cr
+    res_dict['sCr'] = sCr
+    
+    res_dict['mu'] = mu
+    res_dict['Sig'] = Sig
+    
+    res_dict['conv'] = conv
+    
+    if which=='both':
+        res_dict['dr'] = dr
+        res_dict['Cdr'] = Cdr
+        
+        res_dict['dmu'] = dmu
+        res_dict['Sigd'] = Sigd
+        
+        res_dict['convd'] = convd
+    
+    if return_full:
+        res_dict['full_r'] = full_r
+        res_dict['full_Cr'] = full_Cr
+        if which=='both':
+            res_dict['full_Cdr'] = full_Cdr
     
     return res_dict
 
 def run_decoupled_three_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,dori=45,L=180,
-                                  struct_dict=None,which='both',return_full=False):
+                                  struct_dict=None,which='both',couple_peaks=False,return_full=False):
     Nsav = round(Tsav/dt)+1
     
     K = prms['K']
@@ -1833,23 +2090,32 @@ def run_decoupled_three_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,dori=45
     SigWpc = (struct_fact(dori,sWCr,sCr,180)*CrOinv[None,:,0] + struct_fact(0,sWCr,sCr,180)*CrOinv[None,:,1]) * SigW +\
         unstruct_fact(sCr,L)*np.sum(CrOinv,-1) * SigWb
     
+    muWpp = muWps.copy()
+    SigWpp = SigWps.copy()
+    if couple_peaks:
+        muWpp += muWpc
+        SigWpp += SigWpc
+    
     muHb = tau*Hb + 2*muWbp@struct_dict.get('rp',0)
     SigHb = ((tau*Hb*eH)**2)[:,None] + 2*SigWbp@struct_dict.get('Crp',0)
-    muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L)) + muWpb@struct_dict.get('rb',0) + muWpc@struct_dict.get('rp',0)
+    muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L)) + muWpb@struct_dict.get('rb',0)
     SigHp = ((tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))*eH)**2)[:,None] +\
-        SigWpb@struct_dict.get('Crb',0) + SigWpc@struct_dict.get('Crp',0)
+        SigWpb@struct_dict.get('Crb',0)
+    if not couple_peaks:
+        muHp += muWpc@struct_dict.get('rp',0)
+        SigHp += SigWpc@struct_dict.get('Crp',0)
     
     Norig = SigHb.shape[1]
     if Norig!=Nsav:
         temp = SigHb.copy()
         SigHb = np.zeros((2,Nsav))
         SigHb[:,:Norig] = temp
-        SigHb[:,Norig:] = temp[:,-1]
+        SigHb[:,Norig:] = temp[:,-1:]
         
         temp = SigHp.copy()
         SigHp = np.zeros((2,Nsav))
         SigHp[:,:Norig] = temp
-        SigHp[:,Norig:] = temp[:,-1]
+        SigHp[:,Norig:] = temp[:,-1:]
     
     FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
     FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
@@ -1874,10 +2140,10 @@ def run_decoupled_three_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,dori=45
     
     if which=='base':
         full_rb,full_Crb,convb = gauss_dmft(tau,muWbb,SigWbb,muHb,SigHb,base_M,base_C,Twrm,Tsav,dt)
-        full_rp,full_Crp,convp = gauss_dmft(tau,muWps,SigWps,muHp,SigHp,base_M,base_C,Twrm,Tsav,dt)
+        full_rp,full_Crp,convp = gauss_dmft(tau,muWpp,SigWpp,muHp,SigHp,base_M,base_C,Twrm,Tsav,dt)
     elif which=='opto':
         full_rb,full_Crb,convb = gauss_dmft(tau,muWbb,SigWbb,muHb,SigHb,opto_M,opto_C,Twrm,Tsav,dt)
-        full_rp,full_Crp,convp = gauss_dmft(tau,muWps,SigWps,muHp,SigHp,opto_M,opto_C,Twrm,Tsav,dt)
+        full_rp,full_Crp,convp = gauss_dmft(tau,muWpp,SigWpp,muHp,SigHp,opto_M,opto_C,Twrm,Tsav,dt)
     else:
         raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\' and \'opto\'')
         
@@ -1892,8 +2158,8 @@ def run_decoupled_three_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,dori=45
     if which in ('base','opto'):
         mub = muWbb@rb + muHb
         Sigb = SigWbb@Crb + SigHb
-        mup = muWps@rp + muHp
-        Sigp = SigWps@Crp + SigHp
+        mup = muWpp@rp + muHp
+        Sigp = SigWpp@Crp + SigHp
     else:
         raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
     

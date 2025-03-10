@@ -82,7 +82,7 @@ K = prms['K']
 # L = prms['L']
 # CVL = prms['CVL']
 
-prms['rho'] = np.array([[0.2,0.0],[0.0,0.0]])
+prms['rho'] = 0.2
 
 CVh = CVh*CVh_mult
 prms['SoriE'] = prms['SoriE']*SoriE_mult
@@ -215,7 +215,7 @@ print('simulating baseline fraction network')
 print('')
 
 Nbigori = 20
-        
+
 μrEs = np.zeros((len(seeds),3,Nbigori))
 μrIs = np.zeros((len(seeds),3,Nbigori))
 ΣrEs = np.zeros((len(seeds),4,Nbigori))
@@ -266,9 +266,9 @@ for nloc in range(Nori):
     nbigori = nloc//(Nori//Nbigori)
     for i in range(2):
         if C_big_idxs[i][nbigori] is None:
-            C_big_idxs[i][nbigori] = Nrange[net.C_idxs[i][nloc]]
+            C_big_idxs[i][nbigori] = (Nrange[net.C_idxs[i][nloc]] - (N//Nbigori//2)) % N
         else:
-            C_big_idxs[i][nbigori] = np.append(C_big_idxs[i][nbigori],Nrange[net.C_idxs[i][nloc]])
+            C_big_idxs[i][nbigori] = np.append(C_big_idxs[i][nbigori],(Nrange[net.C_idxs[i][nloc]] - (N//Nbigori//2)) % N)
 
 for nloc in range(Nbigori):
     μrEs[:,:2,nloc] = np.mean(rs[:,:,C_big_idxs[0][nloc]],axis=-1)
