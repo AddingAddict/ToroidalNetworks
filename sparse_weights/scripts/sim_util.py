@@ -52,9 +52,12 @@ def gen_ring_disorder(seed,prm_dict,eX,vis_ori=None,opto_per_pop=None):
             LAS_P = np.random.default_rng(seed).lognormal(mu_l, sigma_l, net.NC[nc]*net.Nloc).astype(np.float32)
             LAS[net.C_all[nc]] = opto_per_pop[nc]*LAS_P
 
-    shape = 1/eX**2
-    scale = 1/shape
-    eps = np.random.default_rng(seed).gamma(shape,scale=scale,size=net.N).astype(np.float32)
+    if eX == 0:
+        eps = np.ones(net.N,dtype=np.float32)
+    else:
+        shape = 1/eX**2
+        scale = 1/shape
+        eps = np.random.default_rng(seed).gamma(shape,scale=scale,size=net.N).astype(np.float32)
 
     return net,net.M,net.H,B,LAS,eps
 
@@ -111,11 +114,15 @@ def gen_ring_disorder_tensor(seed,prm_dict,eX,vis_ori=None,opto_per_pop=None):
     B = B.to(device)
     LAS = LAS.to(device)
 
-    shape = 1/eX**2
-    scale = 1/shape
-    this_eps = np.random.default_rng(seed).gamma(shape,scale=scale,size=net.N).astype(np.float32)
-    eps = torch.from_numpy(this_eps)
-    eps = eps.to(device)
+    if eX == 0:
+        eps = torch.ones(net.N,dtype=torch.float32)
+        eps = eps.to(device)
+    else:
+        shape = 1/eX**2
+        scale = 1/shape
+        this_eps = np.random.default_rng(seed).gamma(shape,scale=scale,size=net.N).astype(np.float32)
+        eps = torch.from_numpy(this_eps)
+        eps = eps.to(device)
 
     return net,net.M_torch,net.H_torch,B,LAS,eps
 

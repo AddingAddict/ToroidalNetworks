@@ -4,7 +4,7 @@ from scipy.integrate import solve_ivp
 import torch
 from torchdiffeq import odeint, odeint_event
 
-def sim_dyn(rc,T,L,M,H,LAM,E_all,I_all,mult_tau=False,max_min=7.5,stat_stop=True):
+def sim_dyn(rc,T,L,M,H,LAM,E_all,I_all,mult_tau=False,max_min=7.5,stat_stop=True,method='RK45'):
     LAS = LAM*L
 
     if callable(H):

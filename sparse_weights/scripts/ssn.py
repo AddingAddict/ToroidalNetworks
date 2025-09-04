@@ -121,6 +121,44 @@ def Cx(n,x1,x2,c):
     a7 = (Λp-Λm)/2 - a1 - a3 - a5
 
     return a0 + a1*c + a2*c**2 + a3*c**3 + a4*c**4 + a5*c**5 + a6*c**6 + a7*c**7
+
+class SSN_refract(object):
+    def __init__(self,tE=0.02,tI=0.01,trp=0.002,k=0.04,n=2.0,tht=0):
+        # Parameters defined by ale
+        self.tE = tE
+        self.tI = tI
+        self.trp = trp
+        self.k = k
+        self.n = n
+        self.tht = tht
+        
+    def calc_phi(self,u,t):
+        r = np.zeros_like(u);
+        umtht = u - self.tht
+
+        if np.isscalar(u):
+            if(umtht>self.tht): r=self.k*umtht**self.n
+        else:
+            for idx in range(len(umtht)):
+                if(umtht[idx]>self.tht): r[idx]=self.k*umtht[idx]**self.n
+        return 1/(self.trp + 1/r)
+
+    def calc_phi_tensor(self,u,t,out=None):
+        umtht = u - self.tht
+        if not out:
+            out = torch.zeros_like(u)
+        torch.where(umtht>0,self.k*umtht**self.n,out,out=out)
+        return 1/(self.trp + 1/out)
+
+    def phiE(self,u):
+        return self.calc_phi(u,self.tE)
+    def phiI(self,u):
+        return self.calc_phi(u,self.tI)
+
+    def phiE_tensor(self,u):
+        return self.calc_phi_tensor(u,self.tE)
+    def phiI_tensor(self,u):
+        return self.calc_phi_tensor(u,self.tI)
     
 class SSN(object):
     def __init__(self,tE=0.02,tI=0.01,k=0.04,n=2.0,tht=0):
@@ -131,7 +169,7 @@ class SSN(object):
         self.n = n
         self.tht = tht
         
-    def calc_phi(self,u):
+    def calc_phi(self,u,t):
         r = np.zeros_like(u);
         umtht = u - self.tht
 
@@ -142,7 +180,7 @@ class SSN(object):
                 if(umtht[idx]>self.tht): r[idx]=self.k*umtht[idx]**self.n
         return r
 
-    def calc_phi_tensor(self,u,out=None):
+    def calc_phi_tensor(self,u,t,out=None):
         umtht = u - self.tht
         if not out:
             out = torch.zeros_like(u)
