@@ -33,7 +33,7 @@ elif torch.backends.mps.is_available():
 else:
     device = torch.device('cpu')
 
-K = 250#500
+K = 200#500
 NE = 200
 NI = 50
 Nori = 24
@@ -72,12 +72,12 @@ T = torch.linspace(0,5*Nt,round(5*Nt/dt)+1)
 mask_time = T>(4*Nt)
 T_mask = T.cpu().numpy()[mask_time]
 
-seeds = np.arange(200)
+seeds = np.arange(25)#200)
 
 print('simulating contrast # '+str(c_idx+1))
 print('')
 g1 = np.array([10,30,50])[b_idx]
-con = 70*np.array([0,20,50,100])[c_idx]
+con = 0.7*np.array([0,20,50,100])[c_idx]
 
 cA = con/g1
 rX = g1 / 100
@@ -110,7 +110,7 @@ def simulate_networks(prms,rX,cA,CVh):
         start = time.process_time()
 
         g1_sol,g1_timeout = integ.sim_dyn_tensor(ri,T,0.0,this_M,rX*(this_B+cA*this_H),
-                                                     this_LAS,net.C_conds[0],mult_tau=False,max_min=30)
+                                                     this_LAS,net.C_conds[0],mult_tau=False,max_min=15)
         Ls[seed_idx,0] = np.max(integ.calc_lyapunov_exp_tensor(ri,T[T>=4*Nt],0.0,this_M,
                                                                rX*(this_B+cA*this_H),this_LAS,
                                                                net.C_conds[0],g1_sol[:,T>=4*Nt].to(device),
@@ -130,15 +130,15 @@ def simulate_networks(prms,rX,cA,CVh):
 
         start = time.process_time()
 
-        g1_sol,g1_timeout = integ.sim_dyn_tensor(ri,T,0.0,this_M,rX*(this_B+cA*(this_H+this_H2)),
-                                                     this_LAS,net.C_conds[0],mult_tau=False,max_min=30)
+        g2_sol,g2_timeout = integ.sim_dyn_tensor(ri,T,0.0,this_M,rX*(this_B+cA*(this_H+this_H2)),
+                                                     this_LAS,net.C_conds[0],mult_tau=False,max_min=15)
         Ls[seed_idx,1] = np.max(integ.calc_lyapunov_exp_tensor(ri,T[T>=4*Nt],0.0,this_M,
                                                                rX*(this_B+cA*(this_H+this_H2)),this_LAS,
-                                                               net.C_conds[0],g1_sol[:,T>=4*Nt].to(device),
+                                                               net.C_conds[0],g2_sol[:,T>=4*Nt].to(device),
                                                                10,2*Nt,2*ri.tE,
                                                                mult_tau=False).cpu().numpy())
-        rs[seed_idx,1] = np.mean(g1_sol[:,mask_time].cpu().numpy(),-1)
-        TOs[seed_idx,1] = g1_timeout
+        rs[seed_idx,1] = np.mean(g2_sol[:,mask_time].cpu().numpy(),-1)
+        TOs[seed_idx,1] = g2_timeout
 
         muXs[seed_idx,1] = H
         muEs[seed_idx,1] = M[:,net.C_all[0]]@rs[seed_idx,1,net.C_all[0]] + H
