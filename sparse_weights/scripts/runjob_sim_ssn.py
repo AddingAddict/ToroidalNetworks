@@ -123,7 +123,7 @@ def runjobs():
                 else:
                     os.system("sbatch " +jobnameDir);
             else:
-                                    print (c1)
+                print (c1)
 
 
 
