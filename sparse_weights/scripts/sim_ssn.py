@@ -21,6 +21,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--c_idx', '-c',  help='which contrast', type=int, default=0)
 parser.add_argument('--b_idx', '-b',  help='which g1line', type=int, default=0)
+parser.add_argument('--K', '-K',  help='number of connections', type=int, default=250)
 args = vars(parser.parse_args())
 print(parser.parse_args())
 c_idx= args['c_idx']
@@ -252,7 +253,7 @@ res_dict['osm_g2_bals'] = osm_g2_bals
 res_dict['timeouts'] = timeouts
 
 res_file = './../results/sim_ssn'.format(str(id))
-res_file = res_file + '_c_{:d}_b_{:d}'.format(c_idx,b_idx)
+res_file = res_file + '_c_{:d}_b_{:d}_K_{:d}'.format(c_idx,b_idx,K)
 
 with open(res_file+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)
