@@ -75,7 +75,7 @@ T_mask = T.cpu().numpy()[mask_time]
 
 seeds = np.arange(200)
 
-print('simulating baseline # '+str(b_idx+1)+'contrast # '+str(c_idx+1))
+print('simulating baseline # '+str(b_idx+1)+' contrast # '+str(c_idx+1))
 print('')
 base = np.array([10,30,50])[b_idx]
 con = 0.7*np.array([0,20,50,100])[c_idx]

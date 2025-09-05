@@ -1265,8 +1265,14 @@ def run_first_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,which='both',return
     muH = tau*H
     SigH = (muH*eH)**2
     
-    FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
-    FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
+    if res_dir is None:
+        FE,FI,ME,MI,CE,CI = rc.FE,rc.FI,rc.ME,rc.MI,rc.CE,rc.CI
+        if which in ('opto','both'):
+            FL,ML,CL = rc.get_opto_moments(prms['L'],prms['CVL'])
+    else:
+        FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
+        if which in ('opto','both'):
+            FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
     
     def base_M(mui,Sigii,out):
         out[0] = ME(mui[0],Sigii[0])[0]
@@ -1536,8 +1542,14 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180
     muHp = tau*Hp
     SigHp = (muHp*eH)**2
     
-    FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
-    FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
+    if res_dir is None:
+        FE,FI,ME,MI,CE,CI = rc.FE,rc.FI,rc.ME,rc.MI,rc.CE,rc.CI
+        if which in ('opto','both'):
+            FL,ML,CL = rc.get_opto_moments(prms['L'],prms['CVL'])
+    else:
+        FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
+        if which in ('opto','both'):
+            FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
     
     def base_M(mui,Sigii,out):
         out[0] = ME(mui[0],Sigii[0])[0]
@@ -2683,8 +2695,14 @@ def run_first_stage_2feat_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15
     muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
     SigHp = (muHp*eH)**2
     
-    FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
-    FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
+    if res_dir is None:
+        FE,FI,ME,MI,CE,CI = rc.FE,rc.FI,rc.ME,rc.MI,rc.CE,rc.CI
+        if which in ('opto','both'):
+            FL,ML,CL = rc.get_opto_moments(prms['L'],prms['CVL'])
+    else:
+        FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
+        if which in ('opto','both'):
+            FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
     
     def base_M(mui,Sigii,out):
         out[0] = ME(mui[0],Sigii[0])[0]
@@ -3180,8 +3198,14 @@ def run_first_stage_full_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,
     muHs = tau*(Hb[None,:]+(Hp-Hb)[None,:]*basesubwrapnorm(oris[:,None],sH[None,:],L))
     SigHs = (muHs*eH)**2
     
-    FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
-    FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
+    if res_dir is None:
+        FE,FI,ME,MI,CE,CI = rc.FE,rc.FI,rc.ME,rc.MI,rc.CE,rc.CI
+        if which in ('opto','both'):
+            FL,ML,CL = rc.get_opto_moments(prms['L'],prms['CVL'])
+    else:
+        FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
+        if which in ('opto','both'):
+            FL,ML,CL = opto_itp_moments(res_dir,prms['L'],prms['CVL'])
     
     def base_M(mui,Sigii,out):
         out[0] = ME(mui[0],Sigii[0])[0]

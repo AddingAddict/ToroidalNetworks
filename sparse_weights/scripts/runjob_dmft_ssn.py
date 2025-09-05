@@ -98,11 +98,11 @@ def runjobs():
                     
                     #--------------------------------------------------------------------------
                     # Make SBTACH
-                    inpath = currwd + "/sim_ssn.py"
+                    inpath = currwd + "/dmft_ssn.py"
                     c1 = "{:s} -c {:d} -b {:d} -K {:d}".format(
                         inpath,c,b,K)
                     
-                    jobname="sim_ssn"+"-c-{:d}-b-{:d}-K-{:d}".format(c,b,K)
+                    jobname="dmft_ssn"+"-c-{:d}-b-{:d}-K-{:d}".format(c,b,K)
                     
                     if not args2.test:
                         jobnameDir=os.path.join(temp_dir, jobname)
@@ -112,9 +112,8 @@ def runjobs():
                         if cluster=='haba' or cluster=='moto' or cluster=='burg':
                             text_file.write("#SBATCH --account=theory \n")
                         text_file.write("#SBATCH --job-name="+jobname+ "\n")
-                        text_file.write("#SBATCH -t 0-11:59  \n")
+                        text_file.write("#SBATCH -t 0-1:59  \n")
                         text_file.write("#SBATCH --mem-per-cpu=10gb \n")
-                        text_file.write("#SBATCH --gres=gpu\n")
                         text_file.write("#SBATCH -c 1 \n")
                         text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
                         text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")

@@ -96,7 +96,7 @@ def Cx(n,x1,x2,c):
             B = (x1**2*x2**2+x1**2+x2**2-4*x1*x2+3)*(cdf1+cdf2-1) +\
                 (x1*(1+x2**2)-4*x2)*pdf1 + (x2*(1+x1**2)-4*x1)*pdf2
         elif n == 3:
-            B = (x1**3*x2**3+3(x1**3*x2+x1*x2**3)-9(x1**2*x2**2+x1**2+x2**2)+\
+            B = (x1**3*x2**3+3*(x1**3*x2+x1*x2**3)-9*(x1**2*x2**2+x1**2+x2**2)+\
                     27*x1*x2-15)*(cdf1+cdf2-1) +\
                 (x1**2*x2*(3+x2**2)-9*x1*(1+x2**2)+2*x2*(12+x2**2))*pdf1 +\
                 (x2**2*x1*(3+x1**2)-9*x2*(1+x1**2)+2*x1*(12+x1**2))*pdf2
@@ -188,7 +188,7 @@ class SSN(object):
         return out
     
     def calc_M(self,u,var):
-        if np.isclose(var,0): return self.calc_phi(u)
+        if np.isclose(var,0): return self.calc_phi(u,self.tE)
         
         if np.isclose(self.n,np.round(self.n)):
             return self.k*var**(self.n/2)*Mx(int(np.round(self.n)),(u-self.tht)/np.sqrt(var))
@@ -360,4 +360,37 @@ class SSN(object):
     def d2phiL2E(self,u):
         return d2(self.phiL2E,u)
     
+    def FE(self,mu):
+        if np.isscaler(mu):
+            return self.phiE([mu],self.tE)
+        return self.phiE(mu)
+    def FI(self,mu):
+        if np.isscaler(mu):
+            return self.phiI([mu],self.tI)
+        return self.phiI(mu)
     
+    def ME(self,mu,Sig):
+        args = np.row_stack(list(np.broadcast(mu,Sig)))
+        out = np.zeros(args.shape[0])
+        for i,(mu_i,Sig_i) in enumerate(args):
+            out[i] = self.calc_M(mu_i,Sig_i)
+        return out
+    def MI(self,mu,Sig):
+        args = np.row_stack(list(np.broadcast(mu,Sig)))
+        out = np.zeros(args.shape[0])
+        for i,(mu_i,Sig_i) in enumerate(args):
+            out[i] = self.calc_M(mu_i,Sig_i)
+        return out
+    
+    def CE(self,mu,Sig,k):
+        args = np.row_stack(list(np.broadcast(mu,Sig,k)))
+        out = np.zeros(args.shape[0])
+        for i,(mu_i,Sig_i,k_i) in enumerate(args):
+            out[i] = self.calc_C(mu_i,mu_i,Sig_i,Sig_i,k_i)
+        return out
+    def CI(self,mu,Sig,k):
+        args = np.row_stack(list(np.broadcast(mu,Sig,k)))
+        out = np.zeros(args.shape[0])
+        for i,(mu_i,Sig_i,k_i) in enumerate(args):
+            out[i] = self.calc_C(mu_i,mu_i,Sig_i,Sig_i,k_i)
+        return out
