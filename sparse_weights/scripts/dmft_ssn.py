@@ -336,5 +336,5 @@ res_dict['dmft_res2'] = dmft_res2
 res_file = './../results/dmft_ssn'
 res_file = res_file + '_c_{:d}_b_{:d}_K_{:d}'.format(c_idx,b_idx,K)
 
-# with open(res_file+'.pkl', 'wb') as handle:
-#     pickle.dump(res_dict,handle)
+with open(res_file+'.pkl', 'wb') as handle:
+    pickle.dump(res_dict,handle)
