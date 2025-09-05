@@ -73,7 +73,7 @@ T = torch.linspace(0,5*Nt,round(5*Nt/dt)+1)
 mask_time = T>(4*Nt)
 T_mask = T.cpu().numpy()[mask_time]
 
-seeds = np.arange(25)#200)
+seeds = np.arange(200)
 
 print('simulating baseline # '+str(b_idx+1)+'contrast # '+str(c_idx+1))
 print('')
@@ -111,7 +111,7 @@ def simulate_networks(prms,rX,cA):
         start = time.process_time()
 
         g1_sol,g1_timeout = integ.sim_dyn_tensor(ri,T,0.0,this_M,rX*(this_B+cA*this_H),
-                                                     this_LAS,net.C_conds[0],mult_tau=False,max_min=15)
+                                                     this_LAS,net.C_conds[0],mult_tau=False,max_min=30)
         Ls[seed_idx,0] = np.max(integ.calc_lyapunov_exp_tensor(ri,T[T>=4*Nt],0.0,this_M,
                                                                rX*(this_B+cA*this_H),this_LAS,
                                                                net.C_conds[0],g1_sol[:,T>=4*Nt].to(device),
@@ -132,7 +132,7 @@ def simulate_networks(prms,rX,cA):
         start = time.process_time()
 
         g2_sol,g2_timeout = integ.sim_dyn_tensor(ri,T,0.0,this_M,rX*(this_B+cA*(this_H+this_H2)),
-                                                     this_LAS,net.C_conds[0],mult_tau=False,max_min=15)
+                                                     this_LAS,net.C_conds[0],mult_tau=False,max_min=30)
         Ls[seed_idx,1] = np.max(integ.calc_lyapunov_exp_tensor(ri,T[T>=4*Nt],0.0,this_M,
                                                                rX*(this_B+cA*(this_H+this_H2)),this_LAS,
                                                                net.C_conds[0],g2_sol[:,T>=4*Nt].to(device),
