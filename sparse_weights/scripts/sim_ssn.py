@@ -26,6 +26,7 @@ args = vars(parser.parse_args())
 print(parser.parse_args())
 c_idx= args['c_idx']
 b_idx= args['b_idx']
+K= args['K']
 
 if torch.cuda.is_available():
     device = torch.device('cuda')
@@ -34,7 +35,6 @@ elif torch.backends.mps.is_available():
 else:
     device = torch.device('cpu')
 
-K = 200#500
 NE = 200
 NI = 50
 Nori = 24
