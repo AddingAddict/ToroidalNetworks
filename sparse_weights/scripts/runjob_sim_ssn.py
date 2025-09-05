@@ -7,6 +7,7 @@ import time
 from sys import platform
 import uuid
 import random
+from tempfile import TemporaryDirectory
 
 
 def runjobs():
@@ -84,48 +85,50 @@ def runjobs():
     #--------------------------------------------------------------------------
     # The array of hashes
     c_Vec=np.arange(4)
-    b_Vec=np.arange(3)
+    b_Vec=np.arange(3,4)
     K_Vec = [150,200,250]
+
+    with TemporaryDirectory() as temp_dir:
+        
+        for c in c_Vec:
+            for b in b_Vec:
+                for K in K_Vec:
     
-    for c in c_Vec:
-        for b in b_Vec:
-            for K in K_Vec:
-
-                time.sleep(0.5)
-                
-                #--------------------------------------------------------------------------
-                # Make SBTACH
-                inpath = currwd + "/sim_ssn.py"
-                c1 = "{:s} -c {:d} -b {:d} -K {:d}".format(
-                    inpath,c,b,K)
-                
-                jobname="sim_ssn"+"-c-{:d}-b-{:d}-K-{:d}".format(c,b,K)
-                
-                if not args2.test:
-                    jobnameDir=os.path.join(ofilesdir, jobname)
-                    text_file=open(jobnameDir, "w");
-                    os.system("chmod u+x "+ jobnameDir)
-                    text_file.write("#!/bin/sh \n")
-                    if cluster=='haba' or cluster=='moto' or cluster=='burg':
-                        text_file.write("#SBATCH --account=theory \n")
-                    text_file.write("#SBATCH --job-name="+jobname+ "\n")
-                    text_file.write("#SBATCH -t 0-11:59  \n")
-                    text_file.write("#SBATCH --mem-per-cpu=10gb \n")
-                    text_file.write("#SBATCH --gres=gpu\n")
-                    text_file.write("#SBATCH -c 1 \n")
-                    text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
-                    text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
-                    text_file.write("python  -W ignore " + c1+" \n")
-                    text_file.write("echo $PATH  \n")
-                    text_file.write("exit 0  \n")
-                    text_file.close()
-
-                    if cluster=='axon':
-                        os.system("sbatch -p burst " +jobnameDir);
+                    time.sleep(0.5)
+                    
+                    #--------------------------------------------------------------------------
+                    # Make SBTACH
+                    inpath = currwd + "/sim_ssn.py"
+                    c1 = "{:s} -c {:d} -b {:d} -K {:d}".format(
+                        inpath,c,b,K)
+                    
+                    jobname="sim_ssn"+"-c-{:d}-b-{:d}-K-{:d}".format(c,b,K)
+                    
+                    if not args2.test:
+                        jobnameDir=os.path.join(temp_dir, jobname)
+                        text_file=open(jobnameDir, "w");
+                        os.system("chmod u+x "+ jobnameDir)
+                        text_file.write("#!/bin/sh \n")
+                        if cluster=='haba' or cluster=='moto' or cluster=='burg':
+                            text_file.write("#SBATCH --account=theory \n")
+                        text_file.write("#SBATCH --job-name="+jobname+ "\n")
+                        text_file.write("#SBATCH -t 0-11:59  \n")
+                        text_file.write("#SBATCH --mem-per-cpu=10gb \n")
+                        text_file.write("#SBATCH --gres=gpu\n")
+                        text_file.write("#SBATCH -c 1 \n")
+                        text_file.write("#SBATCH -o "+ ofilesdir + "/%x.%j.o # STDOUT \n")
+                        text_file.write("#SBATCH -e "+ ofilesdir +"/%x.%j.e # STDERR \n")
+                        text_file.write("python  -W ignore " + c1+" \n")
+                        text_file.write("echo $PATH  \n")
+                        text_file.write("exit 0  \n")
+                        text_file.close()
+    
+                        if cluster=='axon':
+                            os.system("sbatch -p burst " +jobnameDir);
+                        else:
+                            os.system("sbatch " +jobnameDir);
                     else:
-                        os.system("sbatch " +jobnameDir);
-                else:
-                    print (c1)
+                        print (c1)
 
 
 
