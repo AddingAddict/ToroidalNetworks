@@ -75,15 +75,15 @@ T_mask = T.cpu().numpy()[mask_time]
 
 seeds = np.arange(25)#200)
 
-print('simulating contrast # '+str(c_idx+1))
+print('simulating baseline # '+str(b_idx+1)+'contrast # '+str(c_idx+1))
 print('')
-g1 = np.array([10,30,50])[b_idx]
+base = np.array([10,30,50])[b_idx]
 con = 0.7*np.array([0,20,50,100])[c_idx]
 
-cA = con/g1
-rX = g1 / 100
+cA = con / base
+rX = base / 100
 
-def simulate_networks(prms,rX,cA,CVh):
+def simulate_networks(prms,rX,cA):
     N = prms.get('Nori',180) * (prms.get('NE',4) + prms.get('NI',1))
     rs = np.zeros((len(seeds),2,N))
     mus = np.zeros((len(seeds),2,N))
@@ -169,7 +169,7 @@ balIs = np.zeros((len(seeds),2,Nori))
 Lexps = np.zeros((len(seeds),2))
 timeouts = np.zeros((len(seeds),2)).astype(bool)
 
-net,rs,mus,muXs,muEs,muIs,Ls,TOs = simulate_networks(prms,rX,cA,0)
+net,rs,mus,muXs,muEs,muIs,Ls,TOs = simulate_networks(prms,rX,cA)
 
 start = time.process_time()
 
