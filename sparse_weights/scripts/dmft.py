@@ -579,16 +579,21 @@ def diff_gauss_struct_dmft(tau,muWs,SigWs,muHs,SigHs,R_fn,mu_fn,Sig_fn,Sigd_fn,T
         (np.max(Cdrs_diag[:,:,-Nsav:],axis=-1)-np.min(Cdrs_diag[:,:,-Nsav:],axis=-1))/\
             np.mean(Cdrs_diag[:,:,-Nsav:],axis=-1) < 1e-3
 
-def sparse_dmft(tau,W,K,H,eH,M_fn,C_fn,Twrm,Tsav,dt,r0=None,Cr0=None):
-    muW = tau[:,None]*W*K
-    SigW = tau[:,None]**2*W**2*K
+def sparse_dmft(tau,W,K,H,eH,M_fn,C_fn,Twrm,Tsav,dt,r0=None,Cr0=None,mult_tau=True):
+    if mult_tau:
+        muW = tau[:,None]*W*K
+        SigW = tau[:,None]**2*W**2*K
+        muH = tau*H
+    else:
+        muW = W*K
+        SigW = W**2*K
+        muH = H
     
-    muH = tau*H
     SigH = (muH*eH)**2
     
     return gauss_dmft(tau,muW,SigW,muH,SigH,M_fn,C_fn,Twrm,Tsav,dt,r0=r0,Cr0=Cr0)
 
-def doub_sparse_dmft(tau,W,K,H,eH,M_fns,C_fns,Twrm,Tsav,dt,rb0=None,Crb0=None):
+def doub_sparse_dmft(tau,W,K,H,eH,M_fns,C_fns,Twrm,Tsav,dt,rb0=None,Crb0=None,mult_tau=True):
     Ntyp = len(H)
     
     doub_tau = doub_vec(tau)
@@ -604,13 +609,18 @@ def doub_sparse_dmft(tau,W,K,H,eH,M_fns,C_fns,Twrm,Tsav,dt,rb0=None,Crb0=None):
         C_fns[0](mui[:Ntyp],Sigii[:Ntyp],Sigij[:Ntyp],out[:Ntyp])
         C_fns[1](mui[Ntyp:],Sigii[Ntyp:],Sigij[Ntyp:],out[Ntyp:])
         
-    return sparse_dmft(doub_tau,doub_W,doub_K,doub_H,eH,doub_M,doub_C,Twrm,Tsav,dt,rb0,Crb0)
+    return sparse_dmft(doub_tau,doub_W,doub_K,doub_H,eH,doub_M,doub_C,Twrm,Tsav,dt,rb0,Crb0,mult_tau)
 
-def diff_sparse_dmft(tau,W,K,H,eH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None):
-    muW = tau[:,None]*W*K
-    SigW = tau[:,None]**2*W**2*K
-    
-    muH = tau*H
+def diff_sparse_dmft(tau,W,K,H,eH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None,mult_tau=True):
+    if mult_tau:
+        muW = tau[:,None]*W*K
+        SigW = tau[:,None]**2*W**2*K
+        muH = tau*H
+    else:
+        muW = W*K
+        SigW = W**2*K
+        muH = H
+        
     SigH = (muH*eH)**2
     
     return diff_gauss_dmft(tau,muW,SigW,muH,SigH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=Cdr0)
@@ -648,7 +658,7 @@ def inv_overlap(xs,ss,L=180):
     return np.linalg.inv(overlap_mat)
 
 def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
-                rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None,L=180):
+                rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None,L=180,mult_tau=True):
     if Kb is None:
         Kb = np.zeros_like(K)
         
@@ -671,16 +681,24 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
     
     sW2 = sW**2
     
-    muWb = tau[:,None]*W*Kb
-    SigWb = tau[:,None]**2*W**2*Kb
-    muW = tau[:,None]*W*K
-    SigW = tau[:,None]**2*W**2*K
-    
-    muHb = tau*Hb
+    if mult_tau:
+        muWb = tau[:,None]*W*Kb
+        SigWb = tau[:,None]**2*W**2*Kb
+        muW = tau[:,None]*W*K
+        SigW = tau[:,None]**2*W**2*K
+        muHb = tau*Hb
+        muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
+        muHp = tau*Hp
+    else:
+        muWb = W*Kb
+        SigWb = W**2*Kb
+        muW = W*K
+        SigW = W**2*K
+        muHb = Hb
+        muHa = Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L)
+        muHp = Hp
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
     SigHa = (muHa*eH)**2
-    muHp = tau*Hp
     SigHp = (muHp*eH)**2
     
     muWs = np.concatenate([muWb[None,:,:],muW[None,:,:]],0)
@@ -745,7 +763,7 @@ def sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
     return rs[0],rs[1],rs[2],Crs[0],Crs[1],Crs[2],convs[0],convs[1],convs[2]
 
 def sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
-                rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None,dori=45,L=180):
+                rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None,dori=45,L=180,mult_tau=True):
     if Kb is None:
         Kb = np.zeros_like(K)
         
@@ -769,16 +787,24 @@ def sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
     
     sW2 = sW**2
         
-    muWb = tau[:,None]*W*Kb
-    SigWb = tau[:,None]**2*W**2*Kb
-    muW = tau[:,None]*W*K
-    SigW = tau[:,None]**2*W**2*K
-    
-    muHb = tau*Hb
+    if mult_tau:
+        muWb = tau[:,None]*W*Kb
+        SigWb = tau[:,None]**2*W**2*Kb
+        muW = tau[:,None]*W*K
+        SigW = tau[:,None]**2*W**2*K
+        muHb = tau*Hb
+        muHa = tau*(Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L)))
+        muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
+    else:
+        muWb = W*Kb
+        SigWb = W**2*Kb
+        muW = W*K
+        SigW = W**2*K
+        muHb = Hb
+        muHa = Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L))
+        muHp = Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L)
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L)))
     SigHa = (muHa*eH)**2
-    muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
     SigHp = (muHp*eH)**2
     
     muWs = np.concatenate([muWb[None,:,:],muW[None,:,:]],0)
@@ -848,7 +874,7 @@ def sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fn,C_fn,Twrm,Tsav,dt,
     return rs[0],rs[1],rs[2],Crs[0],Crs[1],Crs[2],convs[0],convs[1],convs[2]
 
 def doub_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fns,C_fns,Twrm,Tsav,dt,
-                     rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None,L=180):
+                     rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None,L=180,mult_tau=True):
     if Kb is None:
         doub_Kb = None
     else:
@@ -873,10 +899,10 @@ def doub_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fns,C_fns,Twrm,Tsav,dt,
         C_fns[1](mui[Ntyp:],Sigii[Ntyp:],Sigij[Ntyp:],out[Ntyp:])
         
     return sparse_ring_dmft(doub_tau,doub_W,doub_K,doub_Hb,doub_Hp,eH,doub_sW,doub_sH,sa,doub_M,doub_C,Twrm,Tsav,dt,
-                      rb0,ra0,rp0,Crb0,Cra0,Crp0,Kb=doub_Kb,L=L)
+                      rb0,ra0,rp0,Crb0,Cra0,Crp0,Kb=doub_Kb,L=L,mult_tau=mult_tau)
 
 def doub_sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fns,C_fns,Twrm,Tsav,dt,
-                     rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None,dori=45,L=180):
+                     rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None,Kb=None,dori=45,L=180,mult_tau=True):
     if Kb is None:
         doub_Kb = None
     else:
@@ -901,10 +927,10 @@ def doub_sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,M_fns,C_fns,Twrm,Tsav,
         C_fns[1](mui[Ntyp:],Sigii[Ntyp:],Sigij[Ntyp:],out[Ntyp:])
         
     return sparse_2feat_ring_dmft(doub_tau,doub_W,doub_K,doub_Hb,doub_Hp,eH,doub_sW,doub_sH,sa,doub_M,doub_C,
-                                  Twrm,Tsav,dt,rb0,ra0,rp0,Crb0,Cra0,Crp0,Kb=doub_Kb,dori=dori,L=L)
+                                  Twrm,Tsav,dt,rb0,ra0,rp0,Crb0,Cra0,Crp0,Kb=doub_Kb,dori=dori,L=L,mult_tau=mult_tau)
 
 def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,Crb,Cra,Crp,
-                     Cdrb0=None,Cdra0=None,Cdrp0=None,Kb=None,L=180):
+                     Cdrb0=None,Cdra0=None,Cdrp0=None,Kb=None,L=180,mult_tau=True):
     if Kb is None:
         Kb = np.zeros_like(K)
         
@@ -921,16 +947,24 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
     
     sW2 = sW**2
     
-    muW = tau[:,None]*W*K
-    SigW = tau[:,None]**2*W**2*K
-    muWb = tau[:,None]*W*Kb
-    SigWb = tau[:,None]**2*W**2*Kb
-    
-    muHb = tau*Hb
+    if mult_tau:
+        muWb = tau[:,None]*W*Kb
+        SigWb = tau[:,None]**2*W**2*Kb
+        muW = tau[:,None]*W*K
+        SigW = tau[:,None]**2*W**2*K
+        muHb = tau*Hb
+        muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
+        muHp = tau*Hp
+    else:
+        muWb = W*Kb
+        SigWb = W**2*Kb
+        muW = W*K
+        SigW = W**2*K
+        muHb = Hb
+        muHa = Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L)
+        muHp = Hp
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
     SigHa = (muHa*eH)**2
-    muHp = tau*Hp
     SigHp = (muHp*eH)**2
     
     muWs = np.concatenate([muWb[None,:,:],muW[None,:,:]],0)
@@ -1020,7 +1054,7 @@ def diff_sparse_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,C
     return Cdrs[0],Cdrs[1],Cdrs[2],convs[0],convs[1],convs[2]
 
 def diff_sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,ra,rp,Crb,Cra,Crp,
-                                Cdrb0=None,Cdra0=None,Cdrp0=None,Kb=None,dori=45,L=180):
+                                Cdrb0=None,Cdra0=None,Cdrp0=None,Kb=None,dori=45,L=180,mult_tau=True):
     if Kb is None:
         Kb = np.zeros_like(K)
         
@@ -1038,17 +1072,25 @@ def diff_sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,r
     solve_width = get_2feat_solve_width(sa,dori,L)
     
     sW2 = sW**2
-    
-    muW = tau[:,None]*W*K
-    SigW = tau[:,None]**2*W**2*K
-    muWb = tau[:,None]*W*Kb
-    SigWb = tau[:,None]**2*W**2*Kb
-    
-    muHb = tau*Hb
+        
+    if mult_tau:
+        muWb = tau[:,None]*W*Kb
+        SigWb = tau[:,None]**2*W**2*Kb
+        muW = tau[:,None]*W*K
+        SigW = tau[:,None]**2*W**2*K
+        muHb = tau*Hb
+        muHa = tau*(Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L)))
+        muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
+    else:
+        muWb = W*Kb
+        SigWb = W**2*Kb
+        muW = W*K
+        SigW = W**2*K
+        muHb = Hb
+        muHa = Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L))
+        muHp = Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L)
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L)))
     SigHa = (muHa*eH)**2
-    muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
     SigHp = (muHp*eH)**2
     
     muWs = np.concatenate([muWb[None,:,:],muW[None,:,:]],0)
@@ -1144,7 +1186,7 @@ def diff_sparse_2feat_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,sa,R_fn,Twrm,Tsav,dt,rb,r
     return Cdrs[0],Cdrs[1],Cdrs[2],convs[0],convs[1],convs[2]
 
 def sparse_full_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,M_fn,C_fn,Twrm,Tsav,dt,
-                          rs0=None,Crs0=None,Kb=None,L=180,Nori=20):
+                          rs0=None,Crs0=None,Kb=None,L=180,Nori=20,mult_tau=True):
     if Kb is None:
         Kb = np.zeros_like(K)
         
@@ -1157,10 +1199,16 @@ def sparse_full_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,M_fn,C_fn,Twrm,Tsav,dt,
     if Crs0 is None:
         Crs0 = (1e2+24e2*basesubwrapnorm(oris,15))[:,None,None]*np.ones((Ntyp,1),dtype=np.float32)[None,:,:]
     
-    muWb = tau[:,None]*W*Kb
-    SigWb = tau[:,None]**2*W**2*Kb
-    muW = tau[:,None]*W*K
-    SigW = tau[:,None]**2*W**2*K
+    if mult_tau:
+        muWb = tau[:,None]*W*Kb
+        SigWb = tau[:,None]**2*W**2*Kb
+        muW = tau[:,None]*W*K
+        SigW = tau[:,None]**2*W**2*K
+    else:
+        muWb = W*Kb
+        SigWb = W**2*Kb
+        muW = W*K
+        SigW = W**2*K
     
     doris = oris[:,None] - oris[None,:]
     kerns = wrapnormdens(doris[:,None,:,None],sW[None,:,None,:],L)
@@ -1168,7 +1216,10 @@ def sparse_full_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,M_fn,C_fn,Twrm,Tsav,dt,
     muWs = (muWb[None,:,None,:] + muW[None,:,None,:]*2*np.pi*kerns) / Nori
     SigWs = (SigWb[None,:,None,:] + SigW[None,:,None,:]*2*np.pi*kerns) / Nori
     
-    muHs = tau*(Hb[None,:]+(Hp-Hb)[None,:]*basesubwrapnorm(oris[:,None],sH[None,:],L))
+    if mult_tau:
+        muHs = tau*(Hb[None,:]+(Hp-Hb)[None,:]*basesubwrapnorm(oris[:,None],sH[None,:],L))
+    else:
+        muHs = (Hb[None,:]+(Hp-Hb)[None,:]*basesubwrapnorm(oris[:,None],sH[None,:],L))
     SigHs = (muHs*eH)**2
     
     def mu_fn(rsi,muWs,muHs,musi):
@@ -1180,7 +1231,7 @@ def sparse_full_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,M_fn,C_fn,Twrm,Tsav,dt,
     return gauss_struct_dmft(tau,muWs,SigWs,muHs,SigHs,M_fn,C_fn,mu_fn,Sig_fn,Twrm,Tsav,dt,rs0,Crs0)
 
 def doub_sparse_full_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,M_fns,C_fns,Twrm,Tsav,dt,
-                               rs0=None,Crs0=None,Kb=None,L=180,Nori=20):
+                               rs0=None,Crs0=None,Kb=None,L=180,Nori=20,mult_tau=True):
     if Kb is None:
         doub_Kb = None
     else:
@@ -1205,10 +1256,10 @@ def doub_sparse_full_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,M_fns,C_fns,Twrm,Tsav,dt,
         C_fns[1](mui[Ntyp:],Sigii[Ntyp:],Sigij[Ntyp:],out[Ntyp:])
         
     return sparse_full_ring_dmft(doub_tau,doub_W,doub_K,doub_Hb,doub_Hp,eH,doub_sW,doub_sH,doub_M,doub_C,Twrm,Tsav,dt,
-                                 rs0,Crs0,Kb=doub_Kb,L=L,Nori=Nori)
+                                 rs0,Crs0,Kb=doub_Kb,L=L,Nori=Nori,mult_tau=mult_tau)
 
 def diff_sparse_full_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,R_fn,Twrm,Tsav,dt,rs,Crs,
-                               Cdrs0=None,Kb=None,L=180,Nori=20):
+                               Cdrs0=None,Kb=None,L=180,Nori=20,mult_tau=True):
     if Kb is None:
         Kb = np.zeros_like(K)
         
@@ -1220,10 +1271,16 @@ def diff_sparse_full_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,R_fn,Twrm,Tsav,dt,rs,Crs,
         Cdrs0 = (rs[:,Ntyp:] - rs[:,:Ntyp]).astype(np.float32)[:,:,None]**2 +\
             (1e3+4e3*basesubwrapnorm(oris,15))[:,None,None]
     
-    muWb = tau[:,None]*W*Kb
-    SigWb = tau[:,None]**2*W**2*Kb
-    muW = tau[:,None]*W*K
-    SigW = tau[:,None]**2*W**2*K
+    if mult_tau:
+        muWb = tau[:,None]*W*Kb
+        SigWb = tau[:,None]**2*W**2*Kb
+        muW = tau[:,None]*W*K
+        SigW = tau[:,None]**2*W**2*K
+    else:
+        muWb = W*Kb
+        SigWb = W**2*Kb
+        muW = W*K
+        SigW = W**2*K
     
     doris = oris[:,None] - oris[None,:]
     kerns = wrapnormdens(doris[:,None,:,None],sW[None,:,None,:],L)
@@ -1231,7 +1288,10 @@ def diff_sparse_full_ring_dmft(tau,W,K,Hb,Hp,eH,sW,sH,R_fn,Twrm,Tsav,dt,rs,Crs,
     muWs = (muWb[None,:,None,:] + muW[None,:,None,:]*2*np.pi*kerns) / Nori
     SigWs = (SigWb[None,:,None,:] + SigW[None,:,None,:]*2*np.pi*kerns) / Nori
     
-    muHs = tau*(Hb[None,:]+(Hp-Hb)[None,:]*basesubwrapnorm(oris[:,None],sH[None,:],L))
+    if mult_tau:
+        muHs = tau*(Hb[None,:]+(Hp-Hb)[None,:]*basesubwrapnorm(oris[:,None],sH[None,:],L))
+    else:
+        muHs = (Hb[None,:]+(Hp-Hb)[None,:]*basesubwrapnorm(oris[:,None],sH[None,:],L))
     SigHs = (muHs*eH)**2
     
     def mu_fn(rsi,muWs,muHs,musi):
@@ -1262,7 +1322,10 @@ def run_first_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,which='both',return
     H = rX*K*J*np.array([hE,hI/beta],dtype=np.float32)
     eH = CVh
     
-    muH = tau*H
+    if prms.get('mult_tau',True):
+        muH = tau*H
+    else:
+        muH = H
     SigH = (muH*eH)**2
     
     if res_dir is None:
@@ -1293,11 +1356,11 @@ def run_first_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,which='both',return
     start = time.process_time()
     
     if which=='base':
-        full_r,full_Cr,conv = sparse_dmft(tau,W,Ks,H,eH,base_M,base_C,Twrm,Tsav,dt)
+        full_r,full_Cr,conv = sparse_dmft(tau,W,Ks,H,eH,base_M,base_C,Twrm,Tsav,dt,mult_tau=prms.get('mult_tau',True))
     elif which=='opto':
-        full_r,full_Cr,conv = sparse_dmft(tau,W,Ks,H,eH,opto_M,opto_C,Twrm,Tsav,dt)
+        full_r,full_Cr,conv = sparse_dmft(tau,W,Ks,H,eH,opto_M,opto_C,Twrm,Tsav,dt,mult_tau=prms.get('mult_tau',True))
     elif which=='both':
-        full_r,full_Cr,conv = doub_sparse_dmft(tau,W,Ks,H,eH,[base_M,opto_M],[base_C,opto_C],Twrm,Tsav,dt)
+        full_r,full_Cr,conv = doub_sparse_dmft(tau,W,Ks,H,eH,[base_M,opto_M],[base_C,opto_C],Twrm,Tsav,dt,mult_tau=prms.get('mult_tau',True))
     else:
         raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
         
@@ -1307,8 +1370,12 @@ def run_first_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,which='both',return
     r = full_r[:,-1]
     Cr = full_Cr[:,-1,-1:-Nsav-1:-1]
     
-    muW = tau[:,None]*W*Ks
-    SigW = tau[:,None]**2*W**2*Ks
+    if prms.get('mult_tau',True):
+        muW = tau[:,None]*W*Ks
+        SigW = tau[:,None]**2*W**2*Ks
+    else:
+        muW = W*Ks
+        SigW = W**2*Ks
     
     if which in ('base','opto'):
         mu = muW@r + muH
@@ -1355,7 +1422,10 @@ def run_second_stage_dmft(first_res_dict,prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,ret
     H = rX*K*J*np.array([hE,hI/beta],dtype=np.float32)
     eH = CVh
     
-    muH = tau*H
+    if prms.get('mult_tau',True):
+        muH = tau*H
+    else:
+        muH = H
     SigH = (muH*eH)**2
     
     FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
@@ -1368,8 +1438,12 @@ def run_second_stage_dmft(first_res_dict,prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,ret
     r = first_res_dict['r']
     Cr = first_res_dict['Cr']
     
-    muW = tau[:,None]*W*Ks
-    SigW = tau[:,None]**2*W**2*Ks
+    if prms.get('mult_tau',True):
+        muW = tau[:,None]*W*Ks
+        SigW = tau[:,None]**2*W**2*Ks
+    else:
+        muW = W*Ks
+        SigW = W**2*Ks
     
     doub_muW = doub_mat(muW)
     doub_SigW = doub_mat(SigW)
@@ -1379,7 +1453,7 @@ def run_second_stage_dmft(first_res_dict,prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,ret
 
     start = time.process_time()
 
-    full_Cdr,convd = diff_sparse_dmft(tau,W,Ks,H,eH,diff_R,Twrm,Tsav,dt,r,Cr)
+    full_Cdr,convd = diff_sparse_dmft(tau,W,Ks,H,eH,diff_R,Twrm,Tsav,dt,r,Cr,mult_tau=prms.get('mult_tau',True))
 
     print('integrating second stage took',time.process_time() - start,'s')
 
@@ -1423,7 +1497,10 @@ def run_two_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,return_full=False):
     H = rX*K*J*np.array([hE,hI/beta],dtype=np.float32)
     eH = CVh
     
-    muH = tau*H
+    if prms.get('mult_tau',True):
+        muH = tau*H
+    else:
+        muH = H
     SigH = (muH*eH)**2
     
     FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
@@ -1451,7 +1528,7 @@ def run_two_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,return_full=False):
     
     start = time.process_time()
     
-    full_r,full_Cr,conv = doub_sparse_dmft(tau,W,Ks,H,eH,[base_M,opto_M],[base_C,opto_C],Twrm,Tsav,dt)
+    full_r,full_Cr,conv = doub_sparse_dmft(tau,W,Ks,H,eH,[base_M,opto_M],[base_C,opto_C],Twrm,Tsav,dt,mult_tau=prms.get('mult_tau',True))
 
     print('integrating first stage took',time.process_time() - start,'s')
 
@@ -1459,8 +1536,12 @@ def run_two_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,return_full=False):
     r = full_r[:,-1]
     Cr = full_Cr[:,-1,-1:-Nsav-1:-1]
     
-    muW = tau[:,None]*W*Ks
-    SigW = tau[:,None]**2*W**2*Ks
+    if prms.get('mult_tau',True):
+        muW = tau[:,None]*W*Ks
+        SigW = tau[:,None]**2*W**2*Ks
+    else:
+        muW = W*Ks
+        SigW = W**2*Ks
     
     doub_muW = doub_mat(muW)
     doub_SigW = doub_mat(SigW)
@@ -1470,7 +1551,7 @@ def run_two_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,return_full=False):
 
     start = time.process_time()
 
-    full_Cdr,convd = diff_sparse_dmft(tau,W,Ks,H,eH,diff_R,Twrm,Tsav,dt,r,Cr)
+    full_Cdr,convd = diff_sparse_dmft(tau,W,Ks,H,eH,diff_R,Twrm,Tsav,dt,r,Cr,mult_tau=prms.get('mult_tau',True))
 
     print('integrating second stage took',time.process_time() - start,'s')
 
@@ -1535,11 +1616,16 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180
     
     solve_width = get_solve_width(sa,L)
     
-    muHb = tau*Hb
+    if prms.get('mult_tau',True):
+        muHb = tau*Hb
+        muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
+        muHp = tau*Hp
+    else:
+        muHb = Hb
+        muHa = Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L)
+        muHp = Hp
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
     SigHa = (muHa*eH)**2
-    muHp = tau*Hp
     SigHp = (muHp*eH)**2
     
     if res_dir is None:
@@ -1571,14 +1657,14 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180
     
     if which=='base':
         full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
-            convb,conva,convp = sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,base_M,base_C,Twrm,Tsav,dt,Kb=Kbs,L=L)
+            convb,conva,convp = sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,base_M,base_C,Twrm,Tsav,dt,Kb=Kbs,L=L,mult_tau=prms.get('mult_tau',True))
     elif which=='opto':
         full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
-            convb,conva,convp = sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,opto_M,opto_C,Twrm,Tsav,dt,Kb=Kbs,L=L)
+            convb,conva,convp = sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,opto_M,opto_C,Twrm,Tsav,dt,Kb=Kbs,L=L,mult_tau=prms.get('mult_tau',True))
     elif which=='both':
         full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
             convb,conva,convp = doub_sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,[base_M,opto_M],[base_C,opto_C],
-                                                      Twrm,Tsav,dt,Kb=Kbs,L=L)
+                                                      Twrm,Tsav,dt,Kb=Kbs,L=L,mult_tau=prms.get('mult_tau',True))
     else:
         raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
         
@@ -1592,10 +1678,16 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180
     Cra = full_Cra[:,-1,-1:-Nsav-1:-1]
     Crp = full_Crp[:,-1,-1:-Nsav-1:-1]
     
-    muW = tau[:,None]*W*Ks
-    SigW = tau[:,None]**2*W**2*Ks
-    muWb = tau[:,None]*W*Kbs
-    SigWb = tau[:,None]**2*W**2*Kbs
+    if prms.get('mult_tau',True):
+        muW = tau[:,None]*W*Ks
+        SigW = tau[:,None]**2*W**2*Ks
+        muWb = tau[:,None]*W*Kbs
+        SigWb = tau[:,None]**2*W**2*Kbs
+    else:
+        muW = W*Ks
+        SigW = W**2*Ks
+        muWb = W*Kbs
+        SigWb = W**2*Kbs
     
     sr = solve_width((ra-rb)/(rp-rb))
     sCr = solve_width((Cra-Crb)/(Crp-Crb))
@@ -1696,10 +1788,16 @@ def run_decoupled_two_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,
     
     sW2 = sW**2
     
-    muW = tau[:,None]*W*Ks
-    SigW = tau[:,None]**2*W**2*Ks
-    muWb = tau[:,None]*W*Kbs
-    SigWb = tau[:,None]**2*W**2*Kbs
+    if prms.get('mult_tau',True):
+        muW = tau[:,None]*W*Ks
+        SigW = tau[:,None]**2*W**2*Ks
+        muWb = tau[:,None]*W*Kbs
+        SigWb = tau[:,None]**2*W**2*Kbs
+    else:
+        muW = W*Ks
+        SigW = W**2*Ks
+        muWb = W*Kbs
+        SigWb = W**2*Kbs
     
     sr = struct_dict['sr']
     sCr = struct_dict['sCr'][:,-1]
@@ -1717,10 +1815,16 @@ def run_decoupled_two_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,
     SigWpb = (1 - struct_fact(0,sWCr,sCr,180)) * SigW + (1 - unstruct_fact(sCr,L)) * SigWb
     SigWpp = struct_fact(0,sWCr,sCr,180) * SigW + unstruct_fact(sCr,L) * SigWb
     
-    muHb = tau*Hb + muWbp@struct_dict.get('rp',0)
-    SigHb = ((tau*Hb*eH)**2)[:,None] + SigWbp@struct_dict.get('Crp',0)
-    muHp = tau*Hp + muWpb@struct_dict.get('rb',0)
-    SigHp = ((tau*Hp*eH)**2)[:,None] + SigWpb@struct_dict.get('Crb',0)
+    if prms.get('mult_tau',True):
+        muHb = tau*Hb + muWbp@struct_dict.get('rp',0)
+        SigHb = ((tau*Hb*eH)**2)[:,None] + SigWbp@struct_dict.get('Crp',0)
+        muHp = tau*Hp + muWpb@struct_dict.get('rb',0)
+        SigHp = ((tau*Hp*eH)**2)[:,None] + SigWpb@struct_dict.get('Crb',0)
+    else:
+        muHb = Hb + muWbp@struct_dict.get('rp',0)
+        SigHb = ((Hb*eH)**2)[:,None] + SigWbp@struct_dict.get('Crp',0)
+        muHp = Hp + muWpb@struct_dict.get('rb',0)
+        SigHp = ((Hp*eH)**2)[:,None] + SigWpb@struct_dict.get('Crb',0)
     
     Norig = SigHb.shape[1]
     if Norig!=Nsav:
@@ -1889,10 +1993,16 @@ def run_coupled_two_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,
     
     sW2 = sW**2
     
-    muW = tau[:,None]*W*Ks
-    SigW = tau[:,None]**2*W**2*Ks
-    muWb = tau[:,None]*W*Kbs
-    SigWb = tau[:,None]**2*W**2*Kbs
+    if prms.get('mult_tau',True):
+        muW = tau[:,None]*W*Ks
+        SigW = tau[:,None]**2*W**2*Ks
+        muWb = tau[:,None]*W*Kbs
+        SigWb = tau[:,None]**2*W**2*Kbs
+    else:
+        muW = W*Ks
+        SigW = W**2*Ks
+        muWb = W*Kbs
+        SigWb = W**2*Kbs
     
     sr = struct_dict['sr']
     sCr = struct_dict['sCr'][:,-1]
@@ -1910,10 +2020,16 @@ def run_coupled_two_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,
     SigWpb = (1 - struct_fact(0,sWCr,sCr,180)) * SigW + (1 - unstruct_fact(sCr,L)) * SigWb
     SigWpp = struct_fact(0,sWCr,sCr,180) * SigW + unstruct_fact(sCr,L) * SigWb
     
-    muHb = tau*Hb
-    SigHb = ((tau*Hb*eH)**2)[:,None]
-    muHp = tau*Hp
-    SigHp = ((tau*Hp*eH)**2)[:,None]
+    if prms.get('mult_tau',True):
+        muHb = tau*Hb
+        muHp = tau*Hp
+        SigHb = ((tau*Hb*eH)**2)[:,None]
+        SigHp = ((tau*Hp*eH)**2)[:,None]
+    else:
+        muHb = Hb
+        muHp = Hp
+        SigHb = ((Hb*eH)**2)[:,None]
+        SigHp = ((Hp*eH)**2)[:,None]
     
     Norig = SigHb.shape[1]
     if Norig!=Nsav:
@@ -2068,10 +2184,16 @@ def run_decoupled_three_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,dori=45
     xpeaks = np.array([0,-dori])
     sW2 = sW**2
     
-    muW = tau[:,None]*W*Ks
-    SigW = tau[:,None]**2*W**2*Ks
-    muWb = tau[:,None]*W*Kbs
-    SigWb = tau[:,None]**2*W**2*Kbs
+    if prms.get('mult_tau',True):
+        muW = tau[:,None]*W*Ks
+        SigW = tau[:,None]**2*W**2*Ks
+        muWb = tau[:,None]*W*Kbs
+        SigWb = tau[:,None]**2*W**2*Kbs
+    else:
+        muW = W*Ks
+        SigW = W**2*Ks
+        muWb = W*Kbs
+        SigWb = W**2*Kbs
     
     sr = struct_dict['sr']
     sCr = struct_dict['sCr'][:,-1]
@@ -2108,11 +2230,19 @@ def run_decoupled_three_site_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,dori=45
         muWpp += muWpc
         SigWpp += SigWpc
     
-    muHb = tau*Hb + 2*muWbp@struct_dict.get('rp',0)
-    SigHb = ((tau*Hb*eH)**2)[:,None] + 2*SigWbp@struct_dict.get('Crp',0)
-    muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L)) + muWpb@struct_dict.get('rb',0)
-    SigHp = ((tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))*eH)**2)[:,None] +\
-        SigWpb@struct_dict.get('Crb',0)
+    if prms.get('mult_tau',True):
+        muHb = tau*Hb + 2*muWbp@struct_dict.get('rp',0)
+        SigHb = ((tau*Hb*eH)**2)[:,None] + 2*SigWbp@struct_dict.get('Crp',0)
+        muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L)) + muWpb@struct_dict.get('rb',0)
+        SigHp = ((tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))*eH)**2)[:,None] +\
+            SigWpb@struct_dict.get('Crb',0)
+    else:
+        muHb = Hb + 2*muWbp@struct_dict.get('rp',0)
+        SigHb = ((Hb*eH)**2)[:,None] + 2*SigWbp@struct_dict.get('Crp',0)
+        muHp = (Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L)) + muWpb@struct_dict.get('rb',0)
+        SigHp = (((Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))*eH)**2)[:,None] +\
+            SigWpb@struct_dict.get('Crb',0)
+        
     if not couple_peaks:
         muHp += muWpc@struct_dict.get('rp',0)
         SigHp += SigWpc@struct_dict.get('Crp',0)
@@ -2230,10 +2360,16 @@ def run_decoupled_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,Nori=20
     
     sW2 = sW**2
     
-    muW = tau[:,None]*W*Ks
-    SigW = tau[:,None]**2*W**2*Ks
-    muWb = tau[:,None]*W*Kbs
-    SigWb = tau[:,None]**2*W**2*Kbs
+    if prms.get('mult_tau',True):
+        muW = tau[:,None]*W*Ks
+        SigW = tau[:,None]**2*W**2*Ks
+        muWb = tau[:,None]*W*Kbs
+        SigWb = tau[:,None]**2*W**2*Kbs
+    else:
+        muW = W*Ks
+        SigW = W**2*Ks
+        muWb = W*Kbs
+        SigWb = W**2*Kbs
     
     sr = struct_dict['sr']
     sCr = struct_dict['sCr'][:,-1]
@@ -2368,11 +2504,16 @@ def run_second_stage_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twrm,Tsa
     
     solve_width = get_solve_width(sa,L)
     
-    muHb = tau*Hb
+    if prms.get('mult_tau',True):
+        muHb = tau*Hb
+        muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
+        muHp = tau*Hp
+    else:
+        muHb = Hb
+        muHa = Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L)
+        muHp = Hp
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
     SigHa = (muHa*eH)**2
-    muHp = tau*Hp
     SigHp = (muHp*eH)**2
     
     FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
@@ -2389,10 +2530,16 @@ def run_second_stage_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twrm,Tsa
     Cra = first_res_dict['Cra']
     Crp = first_res_dict['Crp']
     
-    muW = tau[:,None]*W*Ks
-    SigW = tau[:,None]**2*W**2*Ks
-    muWb = tau[:,None]*W*Kbs
-    SigWb = tau[:,None]**2*W**2*Kbs
+    if prms.get('mult_tau',True):
+        muW = tau[:,None]*W*Ks
+        SigW = tau[:,None]**2*W**2*Ks
+        muWb = tau[:,None]*W*Kbs
+        SigWb = tau[:,None]**2*W**2*Kbs
+    else:
+        muW = W*Ks
+        SigW = W**2*Ks
+        muWb = W*Kbs
+        SigWb = W**2*Kbs
     
     doub_muW = doub_mat(muW)
     doub_SigW = doub_mat(SigW)
@@ -2420,7 +2567,7 @@ def run_second_stage_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twrm,Tsa
 
     full_Cdrb,full_Cdra,full_Cdrp,\
         convdb,convda,convdp = diff_sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,diff_R,Twrm,Tsav,dt,
-                                                rb,ra,rp,Crb,Cra,Crp,Kb=Kbs,L=L)
+                                                rb,ra,rp,Crb,Cra,Crp,Kb=Kbs,L=L,mult_tau=prms.get('mult_tau',True))
 
     print('integrating second stage took',time.process_time() - start,'s')
 
@@ -2503,11 +2650,16 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,r
     
     solve_width = get_solve_width(sa,L)
     
-    muHb = tau*Hb
+    if prms.get('mult_tau',True):
+        muHb = tau*Hb
+        muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
+        muHp = tau*Hp
+    else:
+        muHb = Hb
+        muHa = Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L)
+        muHp = Hp
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*basesubwrapnorm(sa,sH,L))
     SigHa = (muHa*eH)**2
-    muHp = tau*Hp
     SigHp = (muHp*eH)**2
     
     FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
@@ -2537,7 +2689,7 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,r
     
     full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
         convb,conva,convp = doub_sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,[base_M,opto_M],[base_C,opto_C],
-                                                  Twrm,Tsav,dt,Kb=Kbs,L=L)
+                                                  Twrm,Tsav,dt,Kb=Kbs,L=L,mult_tau=prms.get('mult_tau',True))
 
     print('integrating first stage took',time.process_time() - start,'s')
 
@@ -2549,10 +2701,16 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,r
     Cra = full_Cra[:,-1,-1:-Nsav-1:-1]
     Crp = full_Crp[:,-1,-1:-Nsav-1:-1]
     
-    muW = tau[:,None]*W*Ks
-    SigW = tau[:,None]**2*W**2*Ks
-    muWb = tau[:,None]*W*Kbs
-    SigWb = tau[:,None]**2*W**2*Kbs
+    if prms.get('mult_tau',True):
+        muW = tau[:,None]*W*Ks
+        SigW = tau[:,None]**2*W**2*Ks
+        muWb = tau[:,None]*W*Kbs
+        SigWb = tau[:,None]**2*W**2*Kbs
+    else:
+        muW = W*Ks
+        SigW = W**2*Ks
+        muWb = W*Kbs
+        SigWb = W**2*Kbs
     
     doub_muW = doub_mat(muW)
     doub_SigW = doub_mat(SigW)
@@ -2580,7 +2738,7 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,r
 
     full_Cdrb,full_Cdra,full_Cdrp,\
         convdb,convda,convdp = diff_sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,diff_R,Twrm,Tsav,dt,
-                                                rb,ra,rp,Crb,Cra,Crp,Kb=Kbs,L=L)
+                                                rb,ra,rp,Crb,Cra,Crp,Kb=Kbs,L=L,mult_tau=prms.get('mult_tau',True))
 
     print('integrating second stage took',time.process_time() - start,'s')
 
@@ -2688,11 +2846,16 @@ def run_first_stage_2feat_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15
     xpeaks = np.array([0,-dori])
     solve_width = get_2feat_solve_width(sa,dori,L)
     
-    muHb = tau*Hb
+    if prms.get('mult_tau',True):
+        muHb = tau*Hb
+        muHa = tau*(Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L)))
+        muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
+    else:
+        muHb = Hb
+        muHa = (Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L)))
+        muHp = (Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L)))
     SigHa = (muHa*eH)**2
-    muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
     SigHp = (muHp*eH)**2
     
     if res_dir is None:
@@ -2725,15 +2888,15 @@ def run_first_stage_2feat_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15
     if which=='base':
         full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
             convb,conva,convp = sparse_2feat_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,base_M,base_C,Twrm,Tsav,dt,
-            Kb=Kbs,dori=dori,L=L)
+            Kb=Kbs,dori=dori,L=L,mult_tau=prms.get('mult_tau',True))
     elif which=='opto':
         full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
             convb,conva,convp = sparse_2feat_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,opto_M,opto_C,Twrm,Tsav,dt,
-            Kb=Kbs,dori=dori,L=L)
+            Kb=Kbs,dori=dori,L=L,mult_tau=prms.get('mult_tau',True))
     elif which=='both':
         full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
             convb,conva,convp = doub_sparse_2feat_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,[base_M,opto_M],[base_C,opto_C],
-                                                            Twrm,Tsav,dt,Kb=Kbs,dori=dori,L=L)
+                                                            Twrm,Tsav,dt,Kb=Kbs,dori=dori,L=L,mult_tau=prms.get('mult_tau',True))
     else:
         raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
         
@@ -2747,10 +2910,16 @@ def run_first_stage_2feat_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15
     Cra = full_Cra[:,-1,-1:-Nsav-1:-1]
     Crp = full_Crp[:,-1,-1:-Nsav-1:-1]
     
-    muW = tau[:,None]*W*Ks
-    SigW = tau[:,None]**2*W**2*Ks
-    muWb = tau[:,None]*W*Kbs
-    SigWb = tau[:,None]**2*W**2*Kbs
+    if prms.get('mult_tau',True):
+        muW = tau[:,None]*W*Ks
+        SigW = tau[:,None]**2*W**2*Ks
+        muWb = tau[:,None]*W*Kbs
+        SigWb = tau[:,None]**2*W**2*Kbs
+    else:
+        muW = W*Ks
+        SigW = W**2*Ks
+        muWb = W*Kbs
+        SigWb = W**2*Kbs
     
     sr = solve_width((ra-rb)/(rp-rb))
     sCr = solve_width((Cra-Crb)/(Crp-Crb))
@@ -2865,11 +3034,16 @@ def run_second_stage_2feat_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Tw
     xpeaks = np.array([0,-dori])
     solve_width = get_2feat_solve_width(sa,dori,L)
     
-    muHb = tau*Hb
+    if prms.get('mult_tau',True):
+        muHb = tau*Hb
+        muHa = tau*(Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L)))
+        muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
+    else:
+        muHb = Hb
+        muHa = (Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L)))
+        muHp = (Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L)))
     SigHa = (muHa*eH)**2
-    muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
     SigHp = (muHp*eH)**2
     
     FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
@@ -2886,10 +3060,16 @@ def run_second_stage_2feat_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Tw
     Cra = first_res_dict['Cra']
     Crp = first_res_dict['Crp']
     
-    muW = tau[:,None]*W*Ks
-    SigW = tau[:,None]**2*W**2*Ks
-    muWb = tau[:,None]*W*Kbs
-    SigWb = tau[:,None]**2*W**2*Kbs
+    if prms.get('mult_tau',True):
+        muW = tau[:,None]*W*Ks
+        SigW = tau[:,None]**2*W**2*Ks
+        muWb = tau[:,None]*W*Kbs
+        SigWb = tau[:,None]**2*W**2*Kbs
+    else:
+        muW = W*Ks
+        SigW = W**2*Ks
+        muWb = W*Kbs
+        SigWb = W**2*Kbs
     
     doub_muW = doub_mat(muW)
     doub_SigW = doub_mat(SigW)
@@ -2921,7 +3101,7 @@ def run_second_stage_2feat_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Tw
 
     full_Cdrb,full_Cdra,full_Cdrp,\
         convdb,convda,convdp = diff_sparse_2feat_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,diff_R,Twrm,Tsav,dt,
-                                                           rb,ra,rp,Crb,Cra,Crp,Kb=Kbs,dori=dori,L=L)
+                                                           rb,ra,rp,Crb,Cra,Crp,Kb=Kbs,dori=dori,L=L,mult_tau=prms.get('mult_tau',True))
 
     print('integrating second stage took',time.process_time() - start,'s')
 
@@ -3006,11 +3186,16 @@ def run_two_stage_2feat_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,d
     xpeaks = np.array([0,-dori])
     solve_width = get_2feat_solve_width(sa,dori,L)
     
-    muHb = tau*Hb
+    if prms.get('mult_tau',True):
+        muHb = tau*Hb
+        muHa = tau*(Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L)))
+        muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
+    else:
+        muHb = Hb
+        muHa = (Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L)))
+        muHp = (Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
     SigHb = (muHb*eH)**2
-    muHa = tau*(Hb+(Hp-Hb)*(basesubwrapnorm(sa,sH,L)+basesubwrapnorm(dori+sa,sH,L)))
     SigHa = (muHa*eH)**2
-    muHp = tau*(Hp+(Hp-Hb)*basesubwrapnorm(dori,sH,L))
     SigHp = (muHp*eH)**2
     
     FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
@@ -3040,7 +3225,7 @@ def run_two_stage_2feat_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,d
     
     full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
         convb,conva,convp = doub_sparse_2feat_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,[base_M,opto_M],[base_C,opto_C],
-                                                        Twrm,Tsav,dt,Kb=Kbs,dori=dori,L=L)
+                                                        Twrm,Tsav,dt,Kb=Kbs,dori=dori,L=L,mult_tau=prms.get('mult_tau',True))
 
     print('integrating first stage took',time.process_time() - start,'s')
 
@@ -3052,10 +3237,16 @@ def run_two_stage_2feat_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,d
     Cra = full_Cra[:,-1,-1:-Nsav-1:-1]
     Crp = full_Crp[:,-1,-1:-Nsav-1:-1]
     
-    muW = tau[:,None]*W*Ks
-    SigW = tau[:,None]**2*W**2*Ks
-    muWb = tau[:,None]*W*Kbs
-    SigWb = tau[:,None]**2*W**2*Kbs
+    if prms.get('mult_tau',True):
+        muW = tau[:,None]*W*Ks
+        SigW = tau[:,None]**2*W**2*Ks
+        muWb = tau[:,None]*W*Kbs
+        SigWb = tau[:,None]**2*W**2*Kbs
+    else:
+        muW = W*Ks
+        SigW = W**2*Ks
+        muWb = W*Kbs
+        SigWb = W**2*Kbs
     
     doub_muW = doub_mat(muW)
     doub_SigW = doub_mat(SigW)
@@ -3087,7 +3278,7 @@ def run_two_stage_2feat_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,d
 
     full_Cdrb,full_Cdra,full_Cdrp,\
         convdb,convda,convdp = diff_sparse_2feat_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,diff_R,Twrm,Tsav,dt,
-                                                           rb,ra,rp,Crb,Cra,Crp,Kb=Kbs,dori=dori,L=L)
+                                                           rb,ra,rp,Crb,Cra,Crp,Kb=Kbs,dori=dori,L=L,mualt_tau=prms.get('mult_tau',True))
 
     print('integrating second stage took',time.process_time() - start,'s')
 
@@ -3195,7 +3386,10 @@ def run_first_stage_full_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,
     doris = oris[:,None] - oris[None,:]
     kerns = wrapnormdens(doris[:,None,:,None],sW[None,:,None,:],L)
     
-    muHs = tau*(Hb[None,:]+(Hp-Hb)[None,:]*basesubwrapnorm(oris[:,None],sH[None,:],L))
+    if prms.get('mult_tau',True):
+        muHs = tau*(Hb[None,:]+(Hp-Hb)[None,:]*basesubwrapnorm(oris[:,None],sH[None,:],L))
+    else:
+        muHs = Hb[None,:]+(Hp-Hb)[None,:]*basesubwrapnorm(oris[:,None],sH[None,:],L)
     SigHs = (muHs*eH)**2
     
     if res_dir is None:
@@ -3227,13 +3421,13 @@ def run_first_stage_full_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,
     
     if which=='base':
         full_rs,full_Crs,convs = sparse_full_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,base_M,base_C,
-                                                       Twrm,Tsav,dt,Kb=Kbs,L=L,Nori=Nori)
+                                                       Twrm,Tsav,dt,Kb=Kbs,L=L,Nori=Nori,mult_tau=prms.get('mult_tau',True))
     elif which=='opto':
         full_rs,full_Crs,convs = sparse_full_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,opto_M,opto_C,
-                                                       Twrm,Tsav,dt,Kb=Kbs,L=L,Nori=Nori)
+                                                       Twrm,Tsav,dt,Kb=Kbs,L=L,Nori=Nori,mult_tau=prms.get('mult_tau',True))
     elif which=='both':
         full_rs,full_Crs,convs = doub_sparse_full_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,[base_M,opto_M],[base_C,opto_C],
-                                                            Twrm,Tsav,dt,Kb=Kbs,L=L,Nori=Nori)
+                                                            Twrm,Tsav,dt,Kb=Kbs,L=L,Nori=Nori,mult_tau=prms.get('mult_tau',True))
     else:
         raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
         
@@ -3243,10 +3437,16 @@ def run_first_stage_full_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,
     rs = full_rs[:,:,-1]
     Crs = full_Crs[:,:,-1,-1:-Nsav-1:-1]
     
-    muW = tau[:,None]*W*Ks
-    SigW = tau[:,None]**2*W**2*Ks
-    muWb = tau[:,None]*W*Kbs
-    SigWb = tau[:,None]**2*W**2*Kbs
+    if prms.get('mult_tau',True):
+        muW = tau[:,None]*W*Ks
+        SigW = tau[:,None]**2*W**2*Ks
+        muWb = tau[:,None]*W*Kbs
+        SigWb = tau[:,None]**2*W**2*Kbs
+    else:
+        muW = W*Ks
+        SigW = W**2*Ks
+        muWb = W*Kbs
+        SigWb = W**2*Kbs
     
     muWs = (muWb[None,:,None,:] + muW[None,:,None,:]*2*np.pi*kerns) / Nori
     SigWs = (SigWb[None,:,None,:] + SigW[None,:,None,:]*2*np.pi*kerns) / Nori
@@ -3270,7 +3470,10 @@ def run_first_stage_full_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,
         doub_muWs = (doub_muWb[None,:,None,:] + doub_muW[None,:,None,:]*2*np.pi*doub_kerns) / Nori
         doub_SigWs = (doub_SigWb[None,:,None,:] + doub_SigW[None,:,None,:]*2*np.pi*doub_kerns) / Nori
 
-        doub_muHs = doub_tau*(doub_Hb[None,:]+(doub_Hp-doub_Hb)[None,:]*basesubwrapnorm(oris[:,None],doub_sH[None,:],L))
+        if prms.get('mult_tau',True):
+            doub_muHs = doub_tau*(doub_Hb[None,:]+(doub_Hp-doub_Hb)[None,:]*basesubwrapnorm(oris[:,None],doub_sH[None,:],L))
+        else:
+            doub_muHs = (doub_Hb[None,:]+(doub_Hp-doub_Hb)[None,:]*basesubwrapnorm(oris[:,None],doub_sH[None,:],L))
         doub_SigHs = (doub_muHs*eH)**2
         
         mus = np.einsum('ijkl,kl->ij',doub_muWs,rs) + doub_muHs
@@ -3336,10 +3539,16 @@ def run_second_stage_full_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twr
     rs = first_res_dict['rs']
     Crs = first_res_dict['Crs']
     
-    muW = tau[:,None]*W*Ks
-    SigW = tau[:,None]**2*W**2*Ks
-    muWb = tau[:,None]*W*Kbs
-    SigWb = tau[:,None]**2*W**2*Kbs
+    if prms.get('mult_tau',True):
+        muW = tau[:,None]*W*Ks
+        SigW = tau[:,None]**2*W**2*Ks
+        muWb = tau[:,None]*W*Kbs
+        SigWb = tau[:,None]**2*W**2*Kbs
+    else:
+        muW = W*Ks
+        SigW = W**2*Ks
+        muWb = W*Kbs
+        SigWb = W**2*Kbs
     
     SigWs = (SigWb[None,:,None,:] + SigW[None,:,None,:]*2*np.pi*kerns) / Nori
     
@@ -3358,7 +3567,10 @@ def run_second_stage_full_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twr
     doub_muWs = (doub_muWb[None,:,None,:] + doub_muW[None,:,None,:]*2*np.pi*doub_kerns) / Nori
     doub_SigWs = (doub_SigWb[None,:,None,:] + doub_SigW[None,:,None,:]*2*np.pi*doub_kerns) / Nori
 
-    doub_muHs = doub_tau*(doub_Hb[None,:]+(doub_Hp-doub_Hb)[None,:]*basesubwrapnorm(oris[:,None],doub_sH[None,:],L))
+    if prms.get('mult_tau',True):
+        doub_muHs = doub_tau*(doub_Hb[None,:]+(doub_Hp-doub_Hb)[None,:]*basesubwrapnorm(oris[:,None],doub_sH[None,:],L))
+    else:
+        doub_muHs = (doub_Hb[None,:]+(doub_Hp-doub_Hb)[None,:]*basesubwrapnorm(oris[:,None],doub_sH[None,:],L))
     doub_SigHs = (doub_muHs*eH)**2
     
     mus = np.einsum('ijkl,kl->ij',doub_muWs,rs) + doub_muHs
@@ -3367,7 +3579,7 @@ def run_second_stage_full_ring_dmft(first_res_dict,prms,rX,cA,CVh,res_dir,rc,Twr
     start = time.process_time()
 
     full_Cdrs,convds = diff_sparse_full_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,diff_R,Twrm,Tsav,dt,
-                                                  rs,Crs,Kb=Kbs,L=L,Nori=Nori)
+                                                  rs,Crs,Kb=Kbs,L=L,Nori=Nori,mult_tau=prms.get('mult_tau',True))
 
     print('integrating second stage took',time.process_time() - start,'s')
 
@@ -3426,7 +3638,10 @@ def run_two_stage_full_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,No
     doris = oris[:,None] - oris[None,:]
     kerns = wrapnormdens(doris[:,None,:,None],sW[None,:,None,:],L)
     
-    muHs = tau*(Hb[None,:]+(Hp-Hb)[None,:]*basesubwrapnorm(oris[:,None],sH[None,:],L))
+    if prms.get('mult_tau',True):
+        muHs = tau*(Hb[None,:]+(Hp-Hb)[None,:]*basesubwrapnorm(oris[:,None],sH[None,:],L))
+    else:
+        muHs = Hb[None,:]+(Hp-Hb)[None,:]*basesubwrapnorm(oris[:,None],sH[None,:],L)
     SigHs = (muHs*eH)**2
     
     FE,FI,ME,MI,CE,CI = base_itp_moments(res_dir)
@@ -3455,7 +3670,7 @@ def run_two_stage_full_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,No
     start = time.process_time()
     
     full_rs,full_Crs,convs = doub_sparse_full_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,[base_M,opto_M],[base_C,opto_C],
-                                                        Twrm,Tsav,dt,Kb=Kbs,L=L,Nori=Nori)
+                                                        Twrm,Tsav,dt,Kb=Kbs,L=L,Nori=Nori,mult_tau=prms.get('mult_tau',True))
         
     print('integrating first stage took',time.process_time() - start,'s')
 
@@ -3463,10 +3678,16 @@ def run_two_stage_full_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,No
     rs = full_rs[:,:,-1]
     Crs = full_Crs[:,:,-1,-1:-Nsav-1:-1]
     
-    muW = tau[:,None]*W*Ks
-    SigW = tau[:,None]**2*W**2*Ks
-    muWb = tau[:,None]*W*Kbs
-    SigWb = tau[:,None]**2*W**2*Kbs
+    if prms.get('mult_tau',True):
+        muW = tau[:,None]*W*Ks
+        SigW = tau[:,None]**2*W**2*Ks
+        muWb = tau[:,None]*W*Kbs
+        SigWb = tau[:,None]**2*W**2*Kbs
+    else:
+        muW = W*Ks
+        SigW = W**2*Ks
+        muWb = W*Kbs
+        SigWb = W**2*Kbs
     
     SigWs = (SigWb[None,:,None,:] + SigW[None,:,None,:]*2*np.pi*kerns) / Nori
     
@@ -3485,7 +3706,10 @@ def run_two_stage_full_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,No
     doub_muWs = (doub_muWb[None,:,None,:] + doub_muW[None,:,None,:]*2*np.pi*doub_kerns) / Nori
     doub_SigWs = (doub_SigWb[None,:,None,:] + doub_SigW[None,:,None,:]*2*np.pi*doub_kerns) / Nori
 
-    doub_muHs = doub_tau*(doub_Hb[None,:]+(doub_Hp-doub_Hb)[None,:]*basesubwrapnorm(oris[:,None],doub_sH[None,:],L))
+    if prms.get('mult_tau',True):
+        doub_muHs = doub_tau*(doub_Hb[None,:]+(doub_Hp-doub_Hb)[None,:]*basesubwrapnorm(oris[:,None],doub_sH[None,:],L))
+    else:
+        doub_muHs = (doub_Hb[None,:]+(doub_Hp-doub_Hb)[None,:]*basesubwrapnorm(oris[:,None],doub_sH[None,:],L))
     doub_SigHs = (doub_muHs*eH)**2
     
     mus = np.einsum('ijkl,kl->ij',doub_muWs,rs) + doub_muHs
@@ -3494,7 +3718,7 @@ def run_two_stage_full_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,L=180,No
     start = time.process_time()
 
     full_Cdrs,convds = diff_sparse_full_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,diff_R,Twrm,Tsav,dt,
-                                                  rs,Crs,Kb=Kbs,L=L,Nori=Nori)
+                                                  rs,Crs,Kb=Kbs,L=L,Nori=Nori,mult_tau=prms.get('mult_tau',True))
 
     print('integrating second stage took',time.process_time() - start,'s')
 

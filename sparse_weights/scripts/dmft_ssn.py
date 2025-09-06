@@ -48,6 +48,7 @@ prms = {
     'Nori': Nori,
     'NE': NE,
     'NI': NI,
+    'mult_tau': False,
 }
 
 ri = SSN()
@@ -83,7 +84,7 @@ normCEs = np.zeros((2,Nori))
 normCIs = np.zeros((2,Nori))
 convs = np.zeros((2,2)).astype(bool)
 
-def predict_networks(prms,rX,cA,mult_tau=False):
+def predict_networks(prms,rX,cA):
     tau = np.array([ri.tE,ri.tI],dtype=np.float32)
     W = prms['J']*np.array([[1,-prms['gE']],[1./prms['beta'],-prms['gI']/prms['beta']]],dtype=np.float32)
     Ks = (1-prms.get('basefrac',0))*np.array([prms['K'],prms['K']/4],dtype=np.float32)
@@ -96,22 +97,24 @@ def predict_networks(prms,rX,cA,mult_tau=False):
     sW = np.array([[prms['SoriE'],prms['SoriI']],[prms['SoriE'],prms['SoriI']]],dtype=np.float32)
     sH = np.array([prms['SoriF'],prms['SoriF']],dtype=np.float32)
     
-    if mult_tau:
+    if prms.get('mult_tau',True):
         muW = tau[:,None]*W*Ks
         SigW = tau[:,None]**2*W**2*Ks
         muWb = tau[:,None]*W*Kbs
         SigWb = tau[:,None]**2*W**2*Kbs
+        muHb = tau*Hb
+        muHp = tau*Hp
     else:
         muW = W*Ks
         SigW = W**2*Ks
         muWb = W*Kbs
         SigWb = W**2*Kbs
+        muHb = Hb
+        muHp = Hp
     
     sW2 = sW**2
     sH2 = sH**2
     
-    muHb = tau*Hb
-    muHp = tau*Hp
     smuH = sH
     SigHb = (muHb*eH)**2
     SigHp = (muHp*eH)**2
