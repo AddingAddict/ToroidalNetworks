@@ -201,7 +201,7 @@ class SSN(object):
         if np.isclose(var1,0) or np.isclose(var2,0):
             c = 0
         else:
-            c = np.sign(cov)*min(abs(cov)/(var1*var2),1)
+            c = np.sign(cov)*min(abs(cov)/np.sqrt(var1*var2),1)
             
         x1 = u1/np.sqrt(var1)
         x2 = u2/np.sqrt(var2)
