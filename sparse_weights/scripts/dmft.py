@@ -391,7 +391,7 @@ def gauss_struct_dmft(tau,muWs,SigWs,muHs,SigHs,M_fn,C_fn,mu_fn,Sig_fn,Twrm,Tsav
             print(musi)
             print(Sigsii)
             print("system diverged when integrating rb")
-            return rs,Crs,False
+            return rs,Crs,np.zeros((Nsit,Ntyp)).astype(np.bool_)
 
         if i > Nclc-1:
             Crs[:,:,i+1,i-Nclc] = Crs[:,:,i,i-Nclc]
@@ -411,7 +411,7 @@ def gauss_struct_dmft(tau,muWs,SigWs,muHs,SigHs,M_fn,C_fn,mu_fn,Sig_fn,Twrm,Tsav
                 print(Sigsii)
                 print(Sigsij)
                 print("system diverged when integrating Crb")
-                return rs,Crs,False
+                return rs,Crs,np.zeros((Nsit,Ntyp)).astype(np.bool_)
                 
             Crs[:,:,j+1,i+1] = Crs[:,:,i+1,j+1]
             
@@ -488,7 +488,7 @@ def diff_gauss_dmft(tau,muW,SigW,muH,SigH,R_fn,Twrm,Tsav,dt,r,Cr,Cdr0=None,SigdW
             
             if np.any(np.abs(Cdr[:,i+1,j+1]) > 1e10) or np.any(np.isnan(Cdr[:,i+1,j+1])):
                 print("system diverged when integrating Cdr")
-                return Cdr,False
+                return Cdr,np.zeros(Ntyp).astype(np.bool_)
                 
             Cdr[:,j+1,i+1] = Cdr[:,i+1,j+1]
             
@@ -565,7 +565,7 @@ def diff_gauss_struct_dmft(tau,muWs,SigWs,muHs,SigHs,R_fn,mu_fn,Sig_fn,Sigd_fn,T
             if np.any(np.abs(Cdrs[:,:,i+1,j+1]) > 1e10) or np.any(np.isnan(Cdrs[:,:,i+1,j+1])):
                 print(Sigdsij)
                 print("system diverged when integrating Cdrb")
-                return Cdrs,False
+                return Cdrs,np.zeros((Nsit,Ntyp)).astype(np.bool_)
                 
             Cdrs[:,:,j+1,i+1] = Cdrs[:,:,i+1,j+1]
             
@@ -1585,7 +1585,8 @@ def run_two_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,return_full=False):
     
     return res_dict
 
-def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,which='both',return_full=False):    
+def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,which='both',return_full=False,
+                              rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None):    
     Nsav = round(Tsav/dt)+1
     
     K = prms['K']
@@ -1657,14 +1658,20 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180
     
     if which=='base':
         full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
-            convb,conva,convp = sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,base_M,base_C,Twrm,Tsav,dt,Kb=Kbs,L=L,mult_tau=prms.get('mult_tau',True))
+            convb,conva,convp = sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,base_M,base_C,Twrm,Tsav,dt,
+                                                 rb0=rb0,ra0=ra0,rp0=rp0,Crb0=Crb0,Cra0=Cra0,Crp0=Crp0,
+                                                 Kb=Kbs,L=L,mult_tau=prms.get('mult_tau',True))
     elif which=='opto':
         full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
-            convb,conva,convp = sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,opto_M,opto_C,Twrm,Tsav,dt,Kb=Kbs,L=L,mult_tau=prms.get('mult_tau',True))
+            convb,conva,convp = sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,opto_M,opto_C,Twrm,Tsav,dt,
+                                                 rb0=rb0,ra0=ra0,rp0=rp0,Crb0=Crb0,Cra0=Cra0,Crp0=Crp0,
+                                                 Kb=Kbs,L=L,mult_tau=prms.get('mult_tau',True))
     elif which=='both':
         full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
             convb,conva,convp = doub_sparse_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,[base_M,opto_M],[base_C,opto_C],
-                                                      Twrm,Tsav,dt,Kb=Kbs,L=L,mult_tau=prms.get('mult_tau',True))
+                                                      Twrm,Tsav,dt,
+                                                      rb0=rb0,ra0=ra0,rp0=rp0,Crb0=Crb0,Cra0=Cra0,Crp0=Crp0,
+                                                      Kb=Kbs,L=L,mult_tau=prms.get('mult_tau',True))
     else:
         raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
         
@@ -2814,7 +2821,8 @@ def run_two_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180,r
     return res_dict
 
 def run_first_stage_2feat_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,dori=45,L=180,
-                                    which='both',return_full=False):    
+                                    which='both',return_full=False,
+                                    rb0=None,ra0=None,rp0=None,Crb0=None,Cra0=None,Crp0=None):    
     Nsav = round(Tsav/dt)+1
     
     K = prms['K']
@@ -2888,15 +2896,19 @@ def run_first_stage_2feat_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15
     if which=='base':
         full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
             convb,conva,convp = sparse_2feat_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,base_M,base_C,Twrm,Tsav,dt,
-            Kb=Kbs,dori=dori,L=L,mult_tau=prms.get('mult_tau',True))
+                                                       rb0=rb0,ra0=ra0,rp0=rp0,Crb0=Crb0,Cra0=Cra0,Crp0=Crp0,
+                                                       Kb=Kbs,dori=dori,L=L,mult_tau=prms.get('mult_tau',True))
     elif which=='opto':
         full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
             convb,conva,convp = sparse_2feat_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,opto_M,opto_C,Twrm,Tsav,dt,
-            Kb=Kbs,dori=dori,L=L,mult_tau=prms.get('mult_tau',True))
+                                                       rb0=rb0,ra0=ra0,rp0=rp0,Crb0=Crb0,Cra0=Cra0,Crp0=Crp0,
+                                                       Kb=Kbs,dori=dori,L=L,mult_tau=prms.get('mult_tau',True))
     elif which=='both':
         full_rb,full_ra,full_rp,full_Crb,full_Cra,full_Crp,\
             convb,conva,convp = doub_sparse_2feat_ring_dmft(tau,W,Ks,Hb,Hp,eH,sW,sH,sa,[base_M,opto_M],[base_C,opto_C],
-                                                            Twrm,Tsav,dt,Kb=Kbs,dori=dori,L=L,mult_tau=prms.get('mult_tau',True))
+                                                            Twrm,Tsav,dt,
+                                                            rb0=rb0,ra0=ra0,rp0=rp0,Crb0=Crb0,Cra0=Cra0,Crp0=Crp0,
+                                                            Kb=Kbs,dori=dori,L=L,mult_tau=prms.get('mult_tau',True))
     else:
         raise NotImplementedError('Only implemented options for \'which\' keyword are: \'base\', \'opto\', and \'both\'')
         
