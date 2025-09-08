@@ -51,6 +51,51 @@ prms = {
     'mult_tau': False,
 }
 
+sim_file = f'./../results/sim_ssn_c_{c_idx:d}_b_{b_idx:d}_K_{K:d}.pkl'
+try:
+    fs = np.zeros((2,2,24))
+    Cs = np.zeros((2,2,24))
+    with open(sim_file, 'rb') as handle:
+        res_dict = pickle.load(handle)
+        
+    timeouts = res_dict['timeouts']
+    seed_mask = np.logical_not(np.any(timeouts,axis=-1))
+    fs[:,0,:] = np.mean(res_dict['μrEs'][seed_mask],axis=0)
+    fs[:,1,:] = np.mean(res_dict['μrIs'][seed_mask],axis=0)
+    Cs[:,0,:] = np.mean(res_dict['ΣrEs'][seed_mask],axis=0) + fs[:,0,:]**2
+    Cs[:,1,:] = np.mean(res_dict['ΣrIs'][seed_mask],axis=0) + fs[:,1,:]**2
+    
+    b_ori = Nori//2
+    a_ori = int(np.round(Nori*30/180))
+    p_ori = 0
+    rb10 = 0.9*np.array([fs[0,0,b_ori],fs[0,1,b_ori]])
+    ra10 = 0.9*np.array([fs[0,0,a_ori],fs[0,1,a_ori]])
+    rp10 = 0.9*np.array([fs[0,0,p_ori],fs[0,1,p_ori]])
+    Crb10 = 0.8*np.array([Cs[0,0,b_ori],Cs[0,1,b_ori]])[:,None]# * np.exp(-np.arange(10))[:,None]
+    Cra10 = 0.8*np.array([Cs[0,0,a_ori],Cs[0,1,a_ori]])[:,None]# * np.exp(-np.arange(10))[:,None]
+    Crp10 = 0.8*np.array([Cs[0,0,p_ori],Cs[0,1,p_ori]])[:,None]# * np.exp(-np.arange(10))[:,None]
+    
+    rb20 = rb10
+    ra20 = 0.9*np.array([fs[1,0,a_ori],fs[1,1,a_ori]])
+    rp20 = 0.9*np.array([fs[1,0,p_ori],fs[1,1,p_ori]])
+    Crb20 = Crb10
+    Cra20 = 0.8*np.array([Cs[1,0,a_ori],Cs[1,1,a_ori]])[:,None]# * np.exp(-np.arange(10))[:,None]
+    Crp20 = 0.8*np.array([Cs[1,0,p_ori],Cs[1,1,p_ori]])[:,None]# * np.exp(-np.arange(10))[:,None]
+    print('loaded sim results for DMFT initialization')
+except:
+    rb10 = None
+    ra10 = None
+    rp10 = None
+    Crb10 = None
+    Cra10 = None
+    Crp10 = None
+    rb20 = None
+    ra20 = None
+    rp20 = None
+    Crb20 = None
+    Cra20 = None
+    Crp20 = None
+
 ri = SSN()
 
 # Twrm = 0.4
@@ -64,7 +109,7 @@ dt = 0.01/5
 
 print('simulating baseline # '+str(b_idx+1)+' contrast # '+str(c_idx+1))
 print('')
-base = np.array([10,30,50,70])[b_idx]
+base = np.array([10,30,50])[b_idx]
 con = 0.7*np.array([0,20,50,100])[c_idx]
 
 cA = con / base
@@ -164,7 +209,8 @@ def predict_networks(prms,rX,cA):
         conv[:,0],conv[:,1] = res_dict['conv'],res_dict['conv']
         dmft_res1,dmft_res2 = res_dict.copy(),res_dict.copy()
     else:
-        res_dict = dmft.run_first_stage_ring_dmft(prms,rX,cA,0,None,ri,Twrm,Tsav,dt,which='base',sa=30)
+        res_dict = dmft.run_first_stage_ring_dmft(prms,rX,cA,0,None,ri,Twrm,Tsav,dt,which='base',sa=30,
+                                                        rb0=rb10,ra0=ra10,rp0=rp10,Crb0=Crb10,Cra0=Cra10,Crp0=Crp10)
         r1b = res_dict['rb']
         r1p = res_dict['rp']
         sr1 = res_dict['sr']
@@ -178,7 +224,8 @@ def predict_networks(prms,rX,cA):
         conv[:,0] = res_dict['convp']
         dmft_res1 = res_dict.copy()
         
-        res_dict = dmft.run_first_stage_2feat_ring_dmft(prms,rX,cA,0,None,ri,Twrm,Tsav,dt,which='base',sa=30,dori=90)
+        res_dict = dmft.run_first_stage_2feat_ring_dmft(prms,rX,cA,0,None,ri,Twrm,Tsav,dt,which='base',sa=30,dori=90,
+                                                        rb0=rb20,ra0=ra20,rp0=rp20,Crb0=Crb20,Cra0=Cra20,Crp0=Crp20)
         r2b = res_dict['rb']
         r2p = res_dict['rp']
         sr2 = res_dict['sr']
