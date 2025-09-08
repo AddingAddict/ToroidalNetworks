@@ -164,7 +164,7 @@ def predict_networks(prms,rX,cA):
         conv[:,0],conv[:,1] = res_dict['conv'],res_dict['conv']
         dmft_res1,dmft_res2 = res_dict.copy(),res_dict.copy()
     else:
-        res_dict = dmft.run_first_stage_ring_dmft(prms,rX,cA,0,None,ri,Twrm,Tsav,dt,which='base',sa=30)
+        res_dict = dmft.run_first_stage_ring_dmft(prms,rX,cA,0,None,ri,Twrm,Tsav,dt,which='base',sa=15)
         r1b = res_dict['rb']
         r1p = res_dict['rp']
         sr1 = res_dict['sr']
@@ -178,7 +178,7 @@ def predict_networks(prms,rX,cA):
         conv[:,0] = res_dict['convp']
         dmft_res1 = res_dict.copy()
         
-        res_dict = dmft.run_first_stage_2feat_ring_dmft(prms,rX,cA,0,None,ri,Twrm,Tsav,dt,which='base',sa=30,dori=90)
+        res_dict = dmft.run_first_stage_2feat_ring_dmft(prms,rX,cA,0,None,ri,Twrm,Tsav,dt,which='base',sa=15,dori=90)
         r2b = res_dict['rb']
         r2p = res_dict['rp']
         sr2 = res_dict['sr']
