@@ -24,18 +24,18 @@ K= args['K']
 NE = 200
 NI = 50
 Nori = 24
-Sori = 32
-p0 = K / NE * 2*np.pi / Nori / (np.sqrt(2*np.pi)*(Sori*2*np.pi/180))
+Sori = np.array([32,31])
+p0 = K / NE * 2*np.pi / Nori / (np.sqrt(2*np.pi)*(Sori[None,:]*2*np.pi/180))
 J = np.array([
     [2.5, -1.3],
     [2.4, -1.0],
 ]) * np.pi / 24 / p0 / np.array([[NE,NI]])
-Sstim = 30
+Sstim = 38
 
 prms = {
     'K': K,
-    'SoriE': Sori,
-    'SoriI': Sori,
+    'SoriE': Sori[0],
+    'SoriI': Sori[1],
     'SoriF': Sstim,
     'J': J[0,0],
     'beta': J[0,0]/J[1,0],
@@ -64,7 +64,7 @@ dt = 0.01/5
 
 print('simulating baseline # '+str(b_idx+1)+' contrast # '+str(c_idx+1))
 print('')
-base = np.array([10,30,50,70])[b_idx]
+base = np.array([30,50,70])[b_idx]
 con = 0.7*np.array([0,20,50,100])[c_idx]
 
 cA = con / base
