@@ -38,13 +38,13 @@ else:
 NE = 200
 NI = 50
 Nori = 24
-Sori = np.array([32,31])
+Sori = np.array([30,28])
 p0 = K / NE * 2*np.pi / Nori / (np.sqrt(2*np.pi)*(Sori[None,:]*2*np.pi/180))
 J = np.array([
     [2.5, -1.3],
     [2.4, -1.0],
 ]) * np.pi / 24 / p0 / np.array([[NE,NI]])
-Sstim = 38
+Sstim = 36
 
 prms = {
     'K': K,
