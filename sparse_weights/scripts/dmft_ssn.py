@@ -24,13 +24,13 @@ K= args['K']
 NE = 200
 NI = 50
 Nori = 24
-Sori = np.array([30,28])
+Sori = np.array([32,30])
 p0 = K / NE * 2*np.pi / Nori / (np.sqrt(2*np.pi)*(Sori[None,:]*2*np.pi/180))
 J = np.array([
     [2.5, -1.3],
     [2.4, -1.0],
 ]) * np.pi / 24 / p0 / np.array([[NE,NI]])
-Sstim = 36
+Sstim = 38
 
 prms = {
     'K': K,
@@ -109,11 +109,14 @@ dt = 0.01/5
 
 print('simulating baseline # '+str(b_idx+1)+' contrast # '+str(c_idx+1))
 print('')
-base = np.array([30,50,70])[b_idx]
+base_E = np.array([50,70,50])[b_idx]
+base_I = np.array([50,50,70])[b_idx]
 con = 0.7*np.array([0,20,50,100])[c_idx]
 
-cA = con / base
-rX = base / 100
+cA = con / 50
+rX = 50 / 100
+
+prms['pert'] = np.array([base_E,base_I]) - np.array([50,50])
 
 μrEs = np.zeros((2,Nori))
 μrIs = np.zeros((2,Nori))
@@ -135,9 +138,9 @@ def predict_networks(prms,rX,cA):
     Ks = (1-prms.get('basefrac',0))*np.array([prms['K'],prms['K']/4],dtype=np.float32)
     Kbs =   prms.get('basefrac',0) *np.array([prms['K'],prms['K']/4],dtype=np.float32)
     Hb = rX*(1+prms.get('basefrac',0)*cA)*prms['K']*prms['J']*\
-        np.array([prms['hE'],prms['hI']/prms['beta']],dtype=np.float32)
+        np.array([prms['hE'],prms['hI']/prms['beta']],dtype=np.float32) + prms['pert']
     Hp = rX*(1+                       cA)*prms['K']*prms['J']*\
-        np.array([prms['hE'],prms['hI']/prms['beta']],dtype=np.float32)
+        np.array([prms['hE'],prms['hI']/prms['beta']],dtype=np.float32) + prms['pert']
     eH = 0
     sW = np.array([[prms['SoriE'],prms['SoriI']],[prms['SoriE'],prms['SoriI']]],dtype=np.float32)
     sH = np.array([prms['SoriF'],prms['SoriF']],dtype=np.float32)

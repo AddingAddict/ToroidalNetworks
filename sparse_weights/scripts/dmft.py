@@ -1319,7 +1319,7 @@ def run_first_stage_dmft(prms,rX,CVh,res_dir,rc,Twrm,Tsav,dt,which='both',return
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
     Ks = np.array([K,K/4],dtype=np.float32)
-    H = rX*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    H = rX*K*J*np.array([hE,hI/beta],dtype=np.float32) + prms.get('pert',np.zeros(2,dtype=np.float32))
     eH = CVh
     
     if prms.get('mult_tau',True):
@@ -1602,13 +1602,14 @@ def run_first_stage_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15,L=180
     basefrac = prms.get('basefrac',0)
     baseinp = prms.get('baseinp',0)
     baseprob = prms.get('baseprob',0)
+    Hpert = prms.get('pert',np.zeros(2,dtype=np.float32))
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
     Ks =    (1-basefrac)*(1-baseprob) *np.array([K,K/4],dtype=np.float32)
     Kbs =(1-(1-basefrac)*(1-baseprob))*np.array([K,K/4],dtype=np.float32)
-    Hb = rX*(1+(1-(1-basefrac)*(1-baseinp))*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
-    Hp = rX*(1+                             cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hb = rX*(1+(1-(1-basefrac)*(1-baseinp))*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32) + Hpert
+    Hp = rX*(1+                             cA)*K*J*np.array([hE,hI/beta],dtype=np.float32) + Hpert
     eH = CVh
     sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
     sH = np.array([SoriF,SoriF],dtype=np.float32)
@@ -2838,13 +2839,14 @@ def run_first_stage_2feat_ring_dmft(prms,rX,cA,CVh,res_dir,rc,Twrm,Tsav,dt,sa=15
     basefrac = prms.get('basefrac',0)
     baseinp = prms.get('baseinp',0)
     baseprob = prms.get('baseprob',0)
+    Hpert = prms.get('pert',np.zeros(2,dtype=np.float32))
     
     tau = np.array([rc.tE,rc.tI],dtype=np.float32)
     W = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
     Ks =    (1-basefrac)*(1-baseprob) *np.array([K,K/4],dtype=np.float32)
     Kbs =(1-(1-basefrac)*(1-baseprob))*np.array([K,K/4],dtype=np.float32)
-    Hb = rX*(1+(1-(1-basefrac)*(1-baseinp))*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
-    Hp = rX*(1+                             cA)*K*J*np.array([hE,hI/beta],dtype=np.float32)
+    Hb = rX*(1+(1-(1-basefrac)*(1-baseinp))*cA)*K*J*np.array([hE,hI/beta],dtype=np.float32) + Hpert
+    Hp = rX*(1+                             cA)*K*J*np.array([hE,hI/beta],dtype=np.float32) + Hpert
     eH = CVh
     sW = np.array([[SoriE,SoriI],[SoriE,SoriI]],dtype=np.float32)
     sH = np.array([SoriF,SoriF],dtype=np.float32)
