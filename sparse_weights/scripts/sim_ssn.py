@@ -35,16 +35,16 @@ elif torch.backends.mps.is_available():
 else:
     device = torch.device('cpu')
 
-NE = 200
-NI = 50
+NE = 320
+NI = 80
 Nori = 24
-Sori = np.array([30,28])
+Sori = np.array([32,30])
 p0 = K / NE * 2*np.pi / Nori / (np.sqrt(2*np.pi)*(Sori[None,:]*2*np.pi/180))
 J = np.array([
     [2.5, -1.3],
     [2.4, -1.0],
 ]) * np.pi / 24 / p0 / np.array([[NE,NI]])
-Sstim = 36
+Sstim = 38
 
 prms = {
     'K': K,
@@ -77,11 +77,12 @@ seeds = np.arange(25)#200)
 
 print('simulating baseline # '+str(b_idx+1)+' contrast # '+str(c_idx+1))
 print('')
-base = np.array([30,50,70])[b_idx]
+base_E = np.array([50,70,50])[b_idx]
+base_I = np.array([50,50,70])[b_idx]
 con = 0.7*np.array([0,20,50,100])[c_idx]
 
-cA = con / base
-rX = base / 100
+cA = con / base_E
+rX = base_E / 100
 
 def simulate_networks(prms,rX,cA):
     N = prms.get('Nori',180) * (prms.get('NE',4) + prms.get('NI',1))
@@ -100,6 +101,7 @@ def simulate_networks(prms,rX,cA):
         start = time.process_time()
 
         net,this_M,this_H,this_B,this_LAS,_ = su.gen_ring_disorder_tensor(seed,prms,0)
+        this_B[net.C_all[1]] *= base_I / base_E
         this_H2 = torch.roll(this_H,N//2).to(device)
         M = this_M.cpu().numpy()
         H = (rX*(this_B+cA*this_H)).cpu().numpy()
