@@ -77,8 +77,8 @@ seeds = np.arange(25)#200)
 
 print('simulating baseline # '+str(b_idx+1)+' contrast # '+str(c_idx+1))
 print('')
-base_E = np.array([50,70,50])[b_idx]
-base_I = np.array([50,50,70])[b_idx]
+base_E = np.array([50,60,50])[b_idx]
+base_I = np.array([50,50,60])[b_idx]
 con = 0.7*np.array([0,20,50,100])[c_idx]
 
 cA = con / base_E
