@@ -40,9 +40,13 @@ NI = 80
 Nori = 24
 Sori = np.array([32,30])
 p0 = K / NE * 2*np.pi / Nori / (np.sqrt(2*np.pi)*(Sori[None,:]*2*np.pi/180))
+# J = np.array([
+#     [2.5, -1.3],
+#     [2.4, -1.0],
+# ]) * np.pi / 24 / p0 / np.array([[NE,NI]])
 J = np.array([
     [2.5, -1.3],
-    [2.4, -1.0],
+    [4.7, -2.2],
 ]) * np.pi / 24 / p0 / np.array([[NE,NI]])
 Sstim = 38
 
@@ -73,13 +77,13 @@ T = torch.linspace(0,5*Nt,round(5*Nt/dt)+1)
 mask_time = T>(4*Nt)
 T_mask = T.cpu().numpy()[mask_time]
 
-seeds = np.arange(25)#200)
+seeds = np.arange(10)#200)
 
 print('simulating baseline # '+str(b_idx+1)+' contrast # '+str(c_idx+1))
 print('')
 base_E = np.array([50,60,50])[b_idx]
 base_I = np.array([50,50,60])[b_idx]
-con = 0.7*np.array([0,20,50,100])[c_idx]
+con = np.array([0,20,50,100])[c_idx]
 
 cA = con / base_E
 rX = base_E / 100
