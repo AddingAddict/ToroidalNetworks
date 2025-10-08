@@ -98,11 +98,11 @@ def runjobs():
                     
                     #--------------------------------------------------------------------------
                     # Make SBTACH
-                    inpath = currwd + "/sim_ssn.py"
+                    inpath = currwd + "/sim_relu.py"
                     c1 = "{:s} -c {:d} -b {:d} -K {:d}".format(
                         inpath,c,b,K)
                     
-                    jobname="sim_ssn"+"-c-{:d}-b-{:d}-K-{:d}".format(c,b,K)
+                    jobname="sim_relu"+"-c-{:d}-b-{:d}-K-{:d}".format(c,b,K)
                     
                     if not args2.test:
                         jobnameDir=os.path.join(temp_dir, jobname)

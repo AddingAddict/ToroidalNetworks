@@ -41,7 +41,7 @@ Nori = 24
 Sori = np.array([30,30])
 Sstim = 30
 
-with open('./../results/relu_params.pkl','wb') as handle:
+with open('./../results/relu_params.pkl','rb') as handle:
     relu_prms = pickle.load(handle)
 
 prms = {
