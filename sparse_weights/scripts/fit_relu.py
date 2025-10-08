@@ -209,11 +209,11 @@ res_dict['vsm_g1_bals'] = vsm_g1_bals
 res_dict['osm_g1_means'] = osm_g1_means
 res_dict['osm_g1_stds'] = osm_g1_stds
 res_dict['osm_g1_bals'] = osm_g1_bals
-res_dict['Lexps'] = Lexps
-res_dict['timeouts'] = timeouts
+res_dict['Lexps'] = g1_Lexps
+res_dict['timeouts'] = g1_timeouts
 
 res_file = './../results/fit_relu'
-res_file = res_file + '_K_{:d}'.format(K)
+res_file = res_file + '_K_{:d}_j_{:d}'.format(K,job_id)
 
 with open(res_file+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)

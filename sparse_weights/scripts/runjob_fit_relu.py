@@ -85,10 +85,10 @@ def runjobs():
     #--------------------------------------------------------------------------
     # The array of hashes
     K_Vec = [300]
-    num_samp = 100
+    num_samp = 1#00
     
-    outer_jobs = 10
-    inner_jobs = 10
+    outer_jobs = 1#0
+    inner_jobs = 1#0
 
     with TemporaryDirectory() as temp_dir:
         
@@ -100,7 +100,7 @@ def runjobs():
                 c1 = "{:s} -i $SLURM_ARRAY_TASK_ID -ns {:d} -K {:d}".format(
                     inpath,num_samp,K)
                 jobname="{:s}-job_id={:d}-K-{:d}".format(
-                    'fit_relu',outer_idx)
+                    'fit_relu',outer_idx,K)
 
                 time.sleep(0.5)
                 
