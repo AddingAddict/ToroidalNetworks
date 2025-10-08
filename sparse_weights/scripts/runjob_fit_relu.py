@@ -22,9 +22,13 @@ def runjobs():
     parser = argparse.ArgumentParser()
     parser.add_argument("--test", "-t", type=int, default=0)
     parser.add_argument("--cluster_", help=" String", default='burg')
+    parser.add_argument("--bayes_iter", "-bi", type=int, default=0)
+    parser.add_argument("--num_samp", "-ns", type=int, default=100)
     
     args2 = parser.parse_args()
     args = vars(args2)
+    bayes_iter = int(args['bayes_iter'])
+    num_samp = int(args['num_samp'])
     
     hostname = socket.gethostname()
     if 'ax' in hostname:
@@ -85,10 +89,9 @@ def runjobs():
     #--------------------------------------------------------------------------
     # The array of hashes
     K_Vec = [300]
-    num_samp = 1#00
     
-    outer_jobs = 1#0
-    inner_jobs = 1#0
+    outer_jobs = 10
+    inner_jobs = 10
 
     with TemporaryDirectory() as temp_dir:
         
@@ -97,10 +100,10 @@ def runjobs():
                 #--------------------------------------------------------------------------
                 # Make SBTACH
                 inpath = currwd + "/fit_relu.py"
-                c1 = "{:s} -i $SLURM_ARRAY_TASK_ID -ns {:d} -K {:d}".format(
-                    inpath,num_samp,K)
-                jobname="{:s}-job_id={:d}-K-{:d}".format(
-                    'fit_relu',outer_idx,K)
+                c1 = "{:s} -i $SLURM_ARRAY_TASK_ID -ns {:d} -bi {:d} -K {:d}".format(
+                    inpath,num_samp,bayes_iter,K)
+                jobname="{:s}-j={:d}-bi={:d}-K-{:d}".format(
+                    'fit_relu',outer_idx,bayes_iter,K)
 
                 time.sleep(0.5)
                 

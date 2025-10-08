@@ -20,11 +20,13 @@ import integrate as integ
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--job_id', '-i', help='completely arbitrary job id label',type=int, default=0)
+parser.add_argument('--bayes_iter', '-bi', help='bayessian inference interation (0 = use prior, 1 = use first posterior)',type=int, default=0)
 parser.add_argument('--num_samp', '-ns', help='number of samples',type=int, default=50)
 parser.add_argument('--K', '-K',  help='number of connections', type=int, default=300)
 args = vars(parser.parse_args())
 print(parser.parse_args())
 job_id = int(args['job_id'])
+bayes_iter = int(args['bayes_iter'])
 num_samp = int(args['num_samp'])
 K= args['K']
 
@@ -47,8 +49,8 @@ ri = SSN(n=1,k=1)
 NtE = 50
 Nt = NtE*ri.tE
 dt = ri.tI/5
-T = torch.linspace(0,3*Nt,round(3*Nt/dt)+1)
-mask_time = T>(2*Nt)
+T = torch.linspace(0,5*Nt,round(5*Nt/dt)+1)
+mask_time = T>(4*Nt)
 T_mask = T.cpu().numpy()[mask_time]
 
 seeds = np.arange(5)
@@ -101,10 +103,19 @@ def simulate_networks(prms,rX,cA):
 
 rng = np.random.default_rng(job_id)
 
-Js = 10**rng.uniform(-4,-3,size=num_samp)
-betas = 10**rng.uniform(-1,0.7,size=num_samp)
-gEs = rng.uniform(3,7,size=num_samp)
-gIs = rng.uniform(2,gEs-0.5,size=num_samp)
+if bayes_iter==0:
+    Js = 10**rng.uniform(-4,-3,size=num_samp)
+    betas = 10**rng.uniform(-1,0.7,size=num_samp)
+    gEs = rng.uniform(3,7,size=num_samp)
+    gIs = rng.uniform(2,gEs-0.5,size=num_samp)
+else:
+    with open(f'./../results/relu_posterior_{bayes_iter:d}.pkl','rb') as handle:
+        posterior = pickle.load(handle)
+    samples = posterior.sample((num_samp,)).cpu().numpy()
+    Js = 10**samples[:,0]
+    betas = 10**samples[:,1]
+    gEs = samples[:,2]
+    gIs = 2 + (gEs-2.5)*samples[:,3]
 
 vsm_g1_means = np.zeros((num_samp,3))
 vsm_g1_stds = np.zeros((num_samp,3))
@@ -213,7 +224,7 @@ res_dict['Lexps'] = g1_Lexps
 res_dict['timeouts'] = g1_timeouts
 
 res_file = './../results/fit_relu'
-res_file = res_file + '_K_{:d}_j_{:d}'.format(K,job_id)
+res_file = res_file + '_K_{:d}_j_{:d}_b_{:d}'.format(K,job_id,bayes_iter)
 
 with open(res_file+'.pkl', 'wb') as handle:
     pickle.dump(res_dict,handle)
