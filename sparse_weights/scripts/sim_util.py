@@ -61,13 +61,14 @@ def gen_ring_disorder(seed,prm_dict,eX,vis_ori=None,opto_per_pop=None):
 
     return net,net.M,net.H,B,LAS,eps
 
-def gen_ring_disorder_tensor(seed,prm_dict,eX,vis_ori=None,opto_per_pop=None):
-    if torch.cuda.is_available():
-        device = torch.device('cuda')
-    elif torch.backends.mps.is_available():
-        device = torch.device('mps')
-    else:
-        device = torch.device('cpu')
+def gen_ring_disorder_tensor(seed,prm_dict,eX,vis_ori=None,opto_per_pop=None,device=None):
+    if device is None:
+        if torch.cuda.is_available():
+            device = torch.device('cuda')
+        elif torch.backends.mps.is_available():
+            device = torch.device('mps')
+        else:
+            device = torch.device('cpu')
     
     net = ring_network.RingNetwork(seed=0,NC=[prm_dict.get('NE',4),prm_dict.get('NI',1)],
         Nori=prm_dict.get('Nori',180))
@@ -93,7 +94,7 @@ def gen_ring_disorder_tensor(seed,prm_dict,eX,vis_ori=None,opto_per_pop=None):
                           baseinp=1-(1-prm_dict.get('baseinp',0))*(1-prm_dict.get('basefrac',0)),
                           baseprob=1-(1-prm_dict.get('baseprob',0))*(1-prm_dict.get('basefrac',0)),
                           rho=prm_dict.get('rho',0),vis_ori=vis_ori)
-    net.generate_tensors()
+    net.generate_tensors(device=device)
 
     B = torch.where(net.C_conds[0],HVec[0],HVec[1])
 

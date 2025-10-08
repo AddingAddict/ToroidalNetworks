@@ -186,7 +186,7 @@ class RingNetwork(network.BaseNetwork):
         self.M = self.generate_M(W,SWori,K,baseprob,rho)
         self.MX = self.generate_MX(WX,SWoriX,KX,baseprob,rho)
 
-    def generate_tensors(self):
+    def generate_tensors(self,device=None):
         self.C_conds = []
         for cidx in range(self.n):
             this_C_cond = torch.zeros(self.N,dtype=torch.bool)
@@ -198,12 +198,13 @@ class RingNetwork(network.BaseNetwork):
         # self.MX_torch = torch.from_numpy(self.MX.astype(dtype=np.float32))
         self.H_torch = torch.from_numpy(self.H.astype(dtype=np.float32))
         
-        if torch.cuda.is_available():
-            device = torch.device('cuda')
-        elif torch.backends.mps.is_available():
-            device = torch.device('mps')
-        else:
-            device = torch.device('cpu')
+        if device is None:
+            if torch.cuda.is_available():
+                device = torch.device('cuda')
+            elif torch.backends.mps.is_available():
+                device = torch.device('mps')
+            else:
+                device = torch.device('cpu')
         print("Using",device)
 
         for cidx in range(self.n):
