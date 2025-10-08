@@ -252,7 +252,7 @@ res_dict['osm_g2_stds'] = osm_g2_stds
 res_dict['osm_g2_bals'] = osm_g2_bals
 res_dict['timeouts'] = timeouts
 
-res_file = './../results/sim_ssn'.format(str(id))
+res_file = './../results/sim_relu'.format(str(id))
 res_file = res_file + '_c_{:d}_b_{:d}_K_{:d}'.format(c_idx,b_idx,K)
 
 with open(res_file+'.pkl', 'wb') as handle:
