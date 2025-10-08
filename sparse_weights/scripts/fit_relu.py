@@ -36,8 +36,8 @@ elif torch.backends.mps.is_available():
 else:
     device = torch.device('cpu')
 
-NE = 320
-NI = 80
+NE = 160
+NI = 40
 Nori = 24
 Sori = np.array([30,30])
 Sstim = 30
@@ -47,11 +47,11 @@ ri = SSN(n=1,k=1)
 NtE = 50
 Nt = NtE*ri.tE
 dt = ri.tI/5
-T = torch.linspace(0,5*Nt,round(5*Nt/dt)+1)
-mask_time = T>(4*Nt)
+T = torch.linspace(0,3*Nt,round(3*Nt/dt)+1)
+mask_time = T>(2*Nt)
 T_mask = T.cpu().numpy()[mask_time]
 
-seeds = np.arange(10)
+seeds = np.arange(5)
 
 def simulate_networks(prms,rX,cA):
     N = prms.get('Nori',180) * (prms.get('NE',4) + prms.get('NI',1))
