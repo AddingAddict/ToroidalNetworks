@@ -60,7 +60,7 @@ class RingNetwork(network.BaseNetwork):
         full_kernel /= np.sum(full_kernel,1)[:,None]
         return full_kernel
 
-    def generate_full_rec_conn(self,WMat,VarMat,SoriMat,K,baseprob=0,rho=0,return_mean_var=False):
+    def generate_full_rec_conn(self,WMat,VarMat,SoriMat,K,baseprob=0,rho=0,return_mean_var=False,disordless=False):
         WKern = [[None]*self.n]*self.n
         W_mean_full = np.zeros((self.N,self.N),np.float32)
         W_var_full = np.zeros((self.N,self.N),np.float32)
@@ -93,10 +93,30 @@ class RingNetwork(network.BaseNetwork):
                     W_mean_full[pst_idxs,preC_all] = WMat[pstC,preC]
                     W_var_full[pst_idxs,preC_all] = VarMat[pstC,preC]
 
-        if (np.isscalar(rho) and np.isclose(rho,0)) or np.all(np.isclose(rho,0)):
-            C_full = self.generate_sparse_rec_conn(WKern=WKern,K=K)
+        if disordless:
+            C_full = np.zeros((self.N,self.N))
+            for pstC in range(self.n):
+                pstC_idxs = self.C_idxs[pstC]
+                pstC_all = self.C_all[pstC]
+                NpstC = self.NC[pstC]
+                for preC in range(self.n):
+                    preC_idxs = self.C_idxs[preC]
+                    preC_all = self.C_all[preC]
+                    NpreC = self.NC[preC]
+
+                    W = WKern[pstC][preC]
+                    if W is None: continue
+
+                    for pst_loc in range(self.Nloc):
+                        pst_idxs = pstC_idxs[pst_loc]
+                        for pre_loc in range(self.Nloc):
+                            pre_idxs = preC_idxs[pre_loc]
+                            C_full[pst_idxs,pre_idxs] = W[pst_loc,pre_loc]
         else:
-            C_full = self.generate_corr_sparse_rec_conn(WKern=WKern,K=K,rho=rho)
+            if (np.isscalar(rho) and np.isclose(rho,0)) or np.all(np.isclose(rho,0)):
+                C_full = self.generate_sparse_rec_conn(WKern=WKern,K=K)
+            else:
+                C_full = self.generate_corr_sparse_rec_conn(WKern=WKern,K=K,rho=rho)
 
         if return_mean_var:
             return C_full, W_mean_full,W_var_full
@@ -163,9 +183,9 @@ class RingNetwork(network.BaseNetwork):
 
         return H_mean_full,H_var_full
 
-    def generate_M(self,W,SWori,K,baseprob=0,rho=0):
+    def generate_M(self,W,SWori,K,baseprob=0,rho=0,disordless=False):
         C_full, W_mean_full,W_var_full = self.generate_full_rec_conn(W,np.zeros((self.n,self.n)),
-            SWori,K,baseprob,rho,True)
+            SWori,K,baseprob,rho,True,disordless=disordless)
         return C_full*(W_mean_full+np.random.normal(size=(self.N,self.N))*np.sqrt(W_var_full))
 
     def generate_MX(self,WX,SWoriX,K,baseprob=0,rho=0):
@@ -177,8 +197,8 @@ class RingNetwork(network.BaseNetwork):
         H_mean_full,H_var_full = self.generate_full_input(H,np.zeros((self.n)),SHori,baseinp,vis_ori)
         return H_mean_full+np.random.normal(size=(self.N))*np.sqrt(H_var_full)
 
-    def generate_disorder(self,W,SWori,H,SHori,K,baseinp=0,baseprob=0,rho=0,vis_ori=None):
-        self.M = self.generate_M(W,SWori,K,baseprob,rho)
+    def generate_disorder(self,W,SWori,H,SHori,K,baseinp=0,baseprob=0,rho=0,vis_ori=None,disordless=False):
+        self.M = self.generate_M(W,SWori,K,baseprob,rho,disordless=disordless)
         # self.MX = self.generate_MX(W,SWori,K,baseprob,rho)
         self.H = self.generate_H(H,SHori,baseinp,vis_ori=vis_ori)
         
