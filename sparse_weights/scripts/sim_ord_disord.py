@@ -68,7 +68,7 @@ prms['Nori'] = Nori
 prms['NE'] = NE
 prms['NI'] = NI
 
-seeds = np.arange(50)
+seeds = np.arange(10)
 
 print('simulating baseline # '+str(b_idx+1)+' and contrast # '+str(c_idx+1))
 print('')
@@ -81,11 +81,11 @@ cA = aX/bX
 rX = bX
 
 def simulate_ord_networks(prms,rX,cA):
-    rs = np.zeros((2,N))
-    mus = np.zeros((2,N))
-    muXs = np.zeros((2,N))
-    muEs = np.zeros((2,N))
-    muIs = np.zeros((2,N))
+    rs = np.zeros((2,2*Nori))
+    mus = np.zeros((2,2*Nori))
+    muXs = np.zeros((2,2*Nori))
+    muEs = np.zeros((2,2*Nori))
+    muIs = np.zeros((2,2*Nori))
     
     start = time.process_time()
 
@@ -393,10 +393,10 @@ res_dict['osm_bals'] = osm_bals
 res_dict['osm_oves'] = osm_oves
 res_dict['osm_ovxs'] = osm_ovxs
 res_dict['timeouts'] = timeouts
-res_dict['ordrEs'] = ordrEs
-res_dict['ordrIs'] = ordrIs
-res_dict['ordhEs'] = ordhEs
-res_dict['ordhIs'] = ordhIs
+res_dict['rEs'] = ordrEs
+res_dict['rIs'] = ordrIs
+res_dict['hEs'] = ordhEs
+res_dict['hIs'] = ordhIs
 res_dict['ordbalEs'] = ordbalEs
 res_dict['ordbalIs'] = ordbalIs
 res_file = './../results/ord_disord_{:s}'.format(str(id))
