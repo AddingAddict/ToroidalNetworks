@@ -8,6 +8,94 @@ import ring_network as ring_network
 import spat_ori_network as spat_network
 import integrate as integ
 
+def gen_ring_order(prm_dict,vis_ori=None,opto_per_pop=None):
+    net = ring_network.RingNetwork(seed=0,NC=[1,1],
+        Nori=prm_dict.get('Nori',20))
+    
+    K = prm_dict.get('K',500)
+    SoriE = prm_dict.get('SoriE',30)
+    SoriI = prm_dict.get('SoriI',30)
+    SoriF = prm_dict.get('SoriF',30)
+    J = prm_dict.get('J',1e-4)
+    beta = prm_dict.get('beta',1)
+    gE = prm_dict.get('gE',5)
+    gI = prm_dict.get('gI',4)
+    hE = prm_dict.get('hE',1)
+    hI = prm_dict.get('hI',1)
+    L = prm_dict.get('L',1)
+    
+    Ks = np.array([K,K/4],dtype=np.float32)
+    WMat = J*Ks[None,:]*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
+    HVec = K*J*np.array([hE,hI/beta],dtype=np.float32)
+    
+    net.generate_disorder(WMat,np.array([[SoriE,SoriI],[SoriE,SoriI]]),HVec,SoriF*np.ones(2),K,
+                          baseinp=1-(1-prm_dict.get('baseinp',0))*(1-prm_dict.get('basefrac',0)),
+                          baseprob=1-(1-prm_dict.get('baseprob',0))*(1-prm_dict.get('basefrac',0)),
+                          rho=prm_dict.get('rho',0),vis_ori=vis_ori,disordless=True)
+
+    B = np.zeros(net.N,dtype=np.float32)
+    B[net.C_all[0]] = HVec[0]
+    B[net.C_all[1]] = HVec[1]
+
+    if opto_per_pop is None:
+        LAS = torch.zeros(net.N,dtype=np.float32)
+        LAS[net.C_all[0]] = L
+    else:
+        LAS = torch.zeros(net.N,dtype=np.float32)
+        for nc in range(net.n):
+            LAS[net.C_all[nc]] = opto_per_pop[nc]*L
+
+    return net,net.M,net.H,B,LAS
+
+def gen_ring_order_tensor(prm_dict,vis_ori=None,opto_per_pop=None,device=None):
+    if device is None:
+        if torch.cuda.is_available():
+            device = torch.device('cuda')
+        elif torch.backends.mps.is_available():
+            device = torch.device('mps')
+        else:
+            device = torch.device('cpu')
+    
+    net = ring_network.RingNetwork(seed=0,NC=[prm_dict.get('NE',4),prm_dict.get('NI',1)],
+        Nori=prm_dict.get('Nori',180))
+    
+    K = prm_dict.get('K',500)
+    SoriE = prm_dict.get('SoriE',30)
+    SoriI = prm_dict.get('SoriI',30)
+    SoriF = prm_dict.get('SoriF',30)
+    J = prm_dict.get('J',1e-4)
+    beta = prm_dict.get('beta',1)
+    gE = prm_dict.get('gE',5)
+    gI = prm_dict.get('gI',4)
+    hE = prm_dict.get('hE',1)
+    hI = prm_dict.get('hI',1)
+    L = prm_dict.get('L',1)
+    
+    Ks = np.array([K,K/4],dtype=np.float32)
+    WMat = J*Ks[None,:]*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
+    HVec = K*J*np.array([hE,hI/beta],dtype=np.float32)
+    
+    net.generate_disorder(WMat,np.array([[SoriE,SoriI],[SoriE,SoriI]]),HVec,SoriF*np.ones(2),K,
+                          baseinp=1-(1-prm_dict.get('baseinp',0))*(1-prm_dict.get('basefrac',0)),
+                          baseprob=1-(1-prm_dict.get('baseprob',0))*(1-prm_dict.get('basefrac',0)),
+                          rho=prm_dict.get('rho',0),vis_ori=vis_ori,disordless=True)
+    net.generate_tensors(device=device)
+
+    B = torch.where(net.C_conds[0],HVec[0],HVec[1])
+
+    if opto_per_pop is None:
+        LAS = torch.zeros(net.N,dtype=torch.float32)
+        LAS[net.C_all[0]] = L
+    else:
+        LAS = torch.zeros(net.N,dtype=torch.float32)
+        for nc in range(net.n):
+            LAS[net.C_all[nc]] = opto_per_pop[nc]*L
+
+    B = B.to(device)
+    LAS = LAS.to(device)
+    
+    return net,net.M_torch,net.H_torch,B,LAS
+
 def gen_ring_disorder(seed,prm_dict,eX,vis_ori=None,opto_per_pop=None):
     net = ring_network.RingNetwork(seed=0,NC=[prm_dict.get('NE',4),prm_dict.get('NI',1)],
         Nori=prm_dict.get('Nori',180))
