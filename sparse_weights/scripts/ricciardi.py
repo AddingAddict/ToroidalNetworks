@@ -160,7 +160,7 @@ class Ricciardi(object):
             with open(nameout+'.pkl', 'wb') as handle:
                 pickle.dump(out_dict,handle)
         
-    def set_up_nonlinearity_tensor(self,nameout=None):
+    def set_up_nonlinearity_tensor(self,nameout=None,device=None):
         save_file = False
         if nameout is not None:
             try:
@@ -191,12 +191,13 @@ class Ricciardi(object):
                 phi_tab_E[idx]=self.calc_phi(u_tab[idx],self.tE)
                 phi_tab_I[idx]=self.calc_phi(u_tab[idx],self.tI)
 
-        if torch.cuda.is_available():
-            device = torch.device('cuda')
-        elif torch.backends.mps.is_available():
-            device = torch.device('mps')
-        else:
-            device = torch.device('cpu')
+        if device is None:
+            if torch.cuda.is_available():
+                device = torch.device('cuda')
+            elif torch.backends.mps.is_available():
+                device = torch.device('mps')
+            else:
+                device = torch.device('cpu')
         print("Using",device)
 
         u_tab_tensor = torch.from_numpy(u_tab.astype(np.float32)).to(device)

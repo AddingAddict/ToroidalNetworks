@@ -56,8 +56,8 @@ def gen_ring_order_tensor(prm_dict,vis_ori=None,opto_per_pop=None,device=None):
         else:
             device = torch.device('cpu')
     
-    net = ring_network.RingNetwork(seed=0,NC=[prm_dict.get('NE',4),prm_dict.get('NI',1)],
-        Nori=prm_dict.get('Nori',180))
+    net = ring_network.RingNetwork(seed=0,NC=[1,1],
+        Nori=prm_dict.get('Nori',20))
     
     K = prm_dict.get('K',500)
     SoriE = prm_dict.get('SoriE',30)
