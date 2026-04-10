@@ -201,9 +201,6 @@ def gen_ring_disorder_tensor(seed,prm_dict,eX,vis_ori=None,opto_per_pop=None,dev
     L = prm_dict.get('L',1)
     CVL = prm_dict.get('CVL',1)
 
-    WMat = J*np.array([[1,-gE],[1./beta,-gI/beta]],dtype=np.float32)
-    HVec = K*J*np.array([hE,hI/beta],dtype=np.float32)
-
     net.set_seed(seed)
     net.generate_disorder(WMat,np.array([[SoriE,SoriI],[SoriE,SoriI]]),HVec,SoriF*np.ones(2),K,
                           baseinp=1-(1-prm_dict.get('baseinp',0))*(1-prm_dict.get('basefrac',0)),
