@@ -141,6 +141,7 @@ def sim_dyn_tensor(rc,T,L,M,H,LAM,E_cond,mult_tau=False,max_min=30,method=None):
     except:
         rates = torch.randn((len(T),N),dtype=torch.float32)*1e4+1e4
         timeout = True
+        print('Integration failed')
     return torch.transpose(rates,0,1),timeout
 
 def sim_dyn_tensor_two_layer(rc,T,L,M,MX,RX,LAM,E_cond,mult_tau=False,max_min=30,method=None):
