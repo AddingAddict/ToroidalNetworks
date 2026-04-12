@@ -72,8 +72,8 @@ if bayes_iter == 0:
     full_prior = PostTimesBoxUniform(post,
         post_low =torch.tensor([0.0,-2.5,-4.0,-2.0, 0.2, 0.2, 0.2,-0.5]),
         post_high=torch.tensor([1.0, 2.0, 2.0, 2.5, 5.0, 5.0, 7.0, 2.0]),
-        low =torch.tensor([1.0,1.0,20,20,20],dtype=torch.float32),
-        high=torch.tensor([7.0,7.0,40,40,40],dtype=torch.float32),
+        low =torch.tensor([ 1.0, 1.0,20,20,20],dtype=torch.float32),
+        high=torch.tensor([10.0,10.0,40,40,40],dtype=torch.float32),
     )
 else:
     with open(f'./../notebooks/sbi_match_{bayes_iter:d}.pkl','rb') as handle:
@@ -81,7 +81,7 @@ else:
 
 ri = ric.Ricciardi()
 ri.set_up_nonlinearity('./phi_int')
-ri.set_up_nonlinearity_tensor(device='cpu')
+ri.set_up_nonlinearity_tensor()
 
 NtE = 50
 Nt = NtE*ri.tE

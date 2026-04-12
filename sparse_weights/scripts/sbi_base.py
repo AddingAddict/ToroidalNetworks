@@ -74,7 +74,7 @@ else:
 
 ri = ric.Ricciardi()
 ri.set_up_nonlinearity('./phi_int')
-ri.set_up_nonlinearity_tensor(device='cpu')
+ri.set_up_nonlinearity_tensor()
 
 NtE = 50
 Nt = NtE*ri.tE
