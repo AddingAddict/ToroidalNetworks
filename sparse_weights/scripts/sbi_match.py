@@ -208,6 +208,8 @@ def simulate_network(theta):
         balm = np.nan
         init_norm_min = np.array([np.nan,np.nan])
     else:
+        init_match_r = np.mean(init_match_sol[:,mask_time].cpu().numpy(),-1)
+        
         rms[0] = np.mean(init_match_r[vsm_mask])
         varrms[0] = np.var(init_match_r[vsm_mask])
         muE = B + H + M[:,net.C_all[0]]@init_match_r[net.C_all[0]]
@@ -218,7 +220,6 @@ def simulate_network(theta):
         muI[net.C_all[1]] *= ri.tI
         balm = np.mean((np.abs(muE + muI)/muE)[vsm_mask])
         
-        init_match_r = np.mean(init_match_sol[:,mask_time].cpu().numpy(),-1)
         m_init_match_r = np.zeros((2,Nori))
         for i in range(Nori):
             m_init_match_r[0,i] = np.mean(init_match_r[net.C_idxs[0][i]])
@@ -234,17 +235,17 @@ def simulate_network(theta):
     
     opto_match_sol,opto_match_timeout = integ.sim_dyn_tensor(ri,T,1.0,this_M,this_B + this_H,
                                                     this_LAS,net.C_conds[0],mult_tau=True,max_min=30)
-    opto_match_r = np.mean(opto_match_sol[:,mask_time].cpu().numpy(),-1)
     if opto_match_timeout:
         print('opto match network integration timed out')
         rms[1] = np.nan
         varrms[1] = np.nan
         opto_norm_min = np.array([np.nan,np.nan])
     else:
+        opto_match_r = np.mean(opto_match_sol[:,mask_time].cpu().numpy(),-1)
+        
         rms[1] = np.mean(opto_match_r[vsm_mask])
         varrms[1] = np.var(opto_match_r[vsm_mask])
         
-        opto_match_r = np.mean(opto_match_sol[:,mask_time].cpu().numpy(),-1)
         m_opto_match_r = np.zeros((2,Nori))
         for i in range(Nori):
             m_opto_match_r[0,i] = np.mean(opto_match_r[net.C_idxs[0][i]])
@@ -259,18 +260,18 @@ def simulate_network(theta):
 
 def get_obs(thetas):
     len_t = thetas.shape[0]
-    out = torch.zeros((len_t,16),dtype=torch.float32,device=thetas.device)
+    out = torch.zeros((len_t,14),dtype=torch.float32,device=thetas.device)
     for i in range(len_t):
         print('simulating sample # '+str(i+1))
         print('')
         theta = thetas[i]
         
         rbs,rms,varrbs,varrms,vardrb,vardrm,balb,balm,init_norm_min,opto_norm_min = simulate_network(theta)
-        out[i] = torch.tensor([rbs[0],rbs[1],varrbs[0],varrbs[1],vardrb,rms[0],rms[1],varrms[0],varrms[1],vardrm,balb,balm,init_norm_min[0],init_norm_min[1],opto_norm_min[0],opto_norm_min[1]],dtype=theta.dtype).to(theta.device)
+        out[i] = torch.tensor([rbs[0],rbs[1],varrbs[0],varrbs[1],vardrb,rms[0],rms[1],varrms[0],varrms[1],vardrm,balb,balm,np.min(init_norm_min,init_norm_min),np.min(opto_norm_min,opto_norm_min)],dtype=theta.dtype).to(theta.device)
     return out
 
 thetas = torch.zeros((0,13),dtype=torch.float32,device=torch.device('cpu'))
-xs = torch.zeros((0,16),dtype=torch.float32,device=torch.device('cpu'))
+xs = torch.zeros((0,14),dtype=torch.float32,device=torch.device('cpu'))
 while thetas.shape[0] < num_samp:
     this_samps = min(1, num_samp - thetas.shape[0])
     
