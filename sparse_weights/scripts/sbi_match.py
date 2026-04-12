@@ -267,7 +267,7 @@ def get_obs(thetas):
         theta = thetas[i]
         
         rbs,rms,varrbs,varrms,vardrb,vardrm,balb,balm,init_norm_min,opto_norm_min = simulate_network(theta)
-        out[i] = torch.tensor([rbs[0],rbs[1],varrbs[0],varrbs[1],vardrb,rms[0],rms[1],varrms[0],varrms[1],vardrm,balb,balm,np.min(init_norm_min,init_norm_min),np.min(opto_norm_min,opto_norm_min)],dtype=theta.dtype).to(theta.device)
+        out[i] = torch.tensor([rbs[0],rbs[1],varrbs[0],varrbs[1],vardrb,rms[0],rms[1],varrms[0],varrms[1],vardrm,balb,balm,np.min(init_norm_min),np.min(opto_norm_min)],dtype=theta.dtype).to(theta.device)
     return out
 
 thetas = torch.zeros((0,13),dtype=torch.float32,device=torch.device('cpu'))
