@@ -42,7 +42,7 @@ res_dir = './../results/'
 if not os.path.exists(res_dir):
     os.makedirs(res_dir)
 
-res_dir = res_dir + 'sbi_base/'
+res_dir = res_dir + 'sbi_match/'
 if not os.path.exists(res_dir):
     os.makedirs(res_dir)
 
@@ -269,7 +269,7 @@ def get_obs(thetas):
         out[i] = torch.tensor([rbs[0],rbs[1],varrbs[0],varrbs[1],vardrb,rms[0],rms[1],varrms[0],varrms[1],vardrm,balb,balm,init_norm_min[0],init_norm_min[1],opto_norm_min[0],opto_norm_min[1]],dtype=theta.dtype).to(theta.device)
     return out
 
-thetas = torch.zeros((0,8),dtype=torch.float32,device=torch.device('cpu'))
+thetas = torch.zeros((0,13),dtype=torch.float32,device=torch.device('cpu'))
 xs = torch.zeros((0,16),dtype=torch.float32,device=torch.device('cpu'))
 while thetas.shape[0] < num_samp:
     this_samps = min(1, num_samp - thetas.shape[0])
