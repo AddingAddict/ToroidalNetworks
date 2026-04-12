@@ -74,7 +74,7 @@ else:
 
 ri = ric.Ricciardi()
 ri.set_up_nonlinearity('./phi_int')
-ri.set_up_nonlinearity_tensor()
+ri.set_up_nonlinearity_tensor(device='cpu')
 
 NtE = 50
 Nt = NtE*ri.tE
@@ -147,25 +147,26 @@ def simulate_network(theta):
 
     start = time.process_time()
 
-    base_sol,base_timeout = integ.sim_dyn_tensor(ri,T,0.0,this_M,this_B,
+    init_sol,init_timeout = integ.sim_dyn_tensor(ri,T,0.0,this_M,this_B,
                                                     this_LAS,net.C_conds[0],mult_tau=True,max_min=30)
-    base_r = np.mean(base_sol[:,mask_time].cpu().numpy(),-1)
-    if base_timeout:
+    init_r = np.mean(init_sol[:,mask_time].cpu().numpy(),-1)
+    if init_timeout:
+        print('init network integration timed out')
         rs[0] = np.nan
         varrs[0] = np.nan
         bal = np.nan
     else:
-        rs[0] = np.mean(base_r)
-        varrs[0] = np.var(base_r)
-        muE = H + M[:,net.C_all[0]]@base_r[net.C_all[0]]
-        muI = M[:,net.C_all[1]]@base_r[net.C_all[1]]
+        rs[0] = np.mean(init_r)
+        varrs[0] = np.var(init_r)
+        muE = H + M[:,net.C_all[0]]@init_r[net.C_all[0]]
+        muI = M[:,net.C_all[1]]@init_r[net.C_all[1]]
         muE[net.C_all[0]] *= ri.tE
         muE[net.C_all[1]] *= ri.tI
         muI[net.C_all[0]] *= ri.tE
         muI[net.C_all[1]] *= ri.tI
         bal = np.mean(np.abs(muE + muI)/muE)
 
-    print("Integrating base network took ",time.process_time() - start," s")
+    print("Integrating init network took ",time.process_time() - start," s")
     print('')
 
     start = time.process_time()
@@ -174,13 +175,14 @@ def simulate_network(theta):
                                                     this_LAS,net.C_conds[0],mult_tau=True,max_min=30)
     opto_r = np.mean(opto_sol[:,mask_time].cpu().numpy(),-1)
     if opto_timeout:
+        print('opto network integration timed out')
         rs[1] = np.nan
         varrs[1] = np.nan
     else:
         rs[1] = np.mean(opto_r)
         varrs[1] = np.var(opto_r)
         
-    vardr = np.var(opto_r - base_r)
+    vardr = np.var(opto_r - init_r)
 
     return rs,varrs,vardr,bal
 
