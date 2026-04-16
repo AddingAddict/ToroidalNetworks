@@ -83,19 +83,19 @@ def runjobs():
     
     #--------------------------------------------------------------------------
     # The array of hashes
-    c_Vec=np.arange(13)
+    j_Vec=np.arange(20)
     
-    for c in c_Vec:
+    for j in j_Vec:
 
         time.sleep(0.2)
         
         #--------------------------------------------------------------------------
         # Make SBTACH
         inpath = currwd + "/sim_test.py"
-        c1 = "{:s} -c {:d}".format(
-            inpath,c)
+        c1 = "{:s} -j {:d}".format(
+            inpath,j)
         
-        jobname="sim_test"+"-c-{:d}".format(c)
+        jobname="sim_test"+"-j-{:d}".format(j)
         
         if not args2.test:
             jobnameDir=os.path.join(ofilesdir, jobname)
